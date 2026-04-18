@@ -26,6 +26,7 @@ class ReservationController {
     public function review(): void  { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); $this->render('review', ['page_title' => 'Review Reservation']); }
     public function approve(): void { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Reservation approved. (Capstone 1)'); Helpers::redirect('/reservations'); }
     public function reject(): void  { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Reservation rejected. (Capstone 1)'); Helpers::redirect('/reservations'); }
+    public function cancel(): void  { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE); Helpers::setFlash('success', 'Reservation cancelled. (Capstone 1)'); Helpers::redirect('/reservations'); }
     public function purposes(): void { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); $this->render('purposes', ['page_title' => 'Trip Purposes']); }
     public function storePurpose(): void { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Trip purpose saved. (Capstone 1)'); Helpers::redirect('/reservations/purposes'); }
 }
