@@ -2,7 +2,7 @@
 
 ### How to run
 - Download the Zip file of the repository
-- Extract the file and put it inside xampp/htdocs
+- Extract the file and put it inside xampp/htdocs/
 - Turn on Apache in Xampp
-- Go to http://localhost/lvms/ or http://localhost/lvms/index.php?url=login
-- Have fun
+- Go to http://localhost/lvms/ or http://localhost/lvms/index.php?url=login in your browser
+- Have fun :)
