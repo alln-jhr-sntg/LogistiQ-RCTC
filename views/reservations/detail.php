@@ -28,6 +28,14 @@ $statusLabel = ucwords(str_replace('_', ' ', $status));
         <?php if ($status === 'in_progress' && in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
             <a href="<?= Helpers::url('/trips/1/map') ?>" class="btn btn-solid">Live Map</a>
         <?php endif; ?>
+        <?php
+        $canCancel = false;
+        if ($role === ROLE_EMPLOYEE && $status === 'pending') $canCancel = true;
+        if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && in_array($status, ['pending', 'approved'])) $canCancel = true;
+        ?>
+        <?php if ($canCancel): ?>
+            <button type="button" class="btn btn-danger" onclick="document.getElementById('cancelModal').style.display='flex';">Cancel Reservation</button>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -162,3 +170,31 @@ $statusLabel = ucwords(str_replace('_', ' ', $status));
     </form>
 </div>
 <?php endif; ?>
+
+<?php if ($canCancel ?? false): ?>
+<!-- Cancel Reservation Modal -->
+<div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:var(--clr-surface);border-radius:var(--radius-lg);padding:28px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:4px;">Cancel Reservation</h3>
+        <p style="font-size:13px;color:var(--clr-text-3);margin-bottom:20px;">
+            This action cannot be undone. Please provide a reason for cancellation.
+        </p>
+        <form method="POST" action="<?= Helpers::url('/reservations/1/cancel') ?>">
+            <div class="form-group">
+                <label class="form-label">Cancellation Reason <span class="required">*</span></label>
+                <textarea class="form-textarea" name="cancellation_reason" placeholder="Explain why this reservation is being cancelled…" required style="min-height:90px;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="submit" class="btn btn-danger" style="flex:1;">Confirm Cancellation</button>
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('cancelModal').style.display='none';">Go Back</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('cancelModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+<?php endif; ?>
+
