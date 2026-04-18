@@ -1,0 +1,10 @@
+<div class="page-header"><div class="page-header-left"><h2>Driver Profile — Carlos Mendoza</h2><p>EMP-0025 — License and availability details</p></div><a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">← Back</a></div>
+<form method="POST" action="<?= Helpers::url('/users/3/driver-profile') ?>"><div class="form-card">
+<div class="form-section-title">License Information</div>
+<div class="form-row"><div class="form-group"><label class="form-label">License Number <span class="required">*</span></label><input type="text" class="form-input" name="license_number" value="N01-23-456789" required></div><div class="form-group"><label class="form-label">License Type <span class="required">*</span></label><select class="form-select" name="license_type" required><option value="Professional" selected>Professional</option><option value="Non-Professional">Non-Professional</option></select></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">License Expiry <span class="required">*</span></label><input type="date" class="form-input" name="license_expiry" value="2027-08-15" required></div><div class="form-group"><label class="form-label">Restriction Codes</label><input type="text" class="form-input" name="restriction_codes" value="1,2"><p class="form-hint">LTO restriction codes, comma-separated</p></div></div>
+<div class="form-group"><label class="form-label">License Photo</label><input type="file" class="form-input" name="license_photo" accept="image/*"><p class="form-hint">Current: license_carlos_mendoza.jpg</p></div>
+<div class="form-section-title">Availability Status</div>
+<div class="form-group"><label class="form-label">Current Status <span class="required">*</span></label><select class="form-select" name="status" required><option value="available">Available</option><option value="on_trip" selected>On Trip</option><option value="off_duty">Off Duty</option><option value="on_leave">On Leave</option></select></div>
+<div class="form-actions"><button type="submit" class="btn btn-solid">Save Driver Profile</button><a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">Cancel</a></div>
+</div></form>

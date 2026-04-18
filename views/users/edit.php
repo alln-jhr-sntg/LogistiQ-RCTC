@@ -1,0 +1,8 @@
+<div class="page-header"><div class="page-header-left"><h2>Edit User — Juan dela Cruz</h2><p>EMP-0012 — Employee — REMIX Engineering</p></div><a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">← Back</a></div>
+<form method="POST" action="<?= Helpers::url('/users/2/edit') ?>"><div class="form-card">
+<div class="form-section-title">Account Information</div>
+<div class="form-row"><div class="form-group"><label class="form-label">First Name <span class="required">*</span></label><input type="text" class="form-input" name="first_name" value="Juan" required></div><div class="form-group"><label class="form-label">Last Name <span class="required">*</span></label><input type="text" class="form-input" name="last_name" value="dela Cruz" required></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">Email <span class="required">*</span></label><input type="email" class="form-input" name="email" value="j.delacruz@remix.com.ph" required></div><div class="form-group"><label class="form-label">Phone Number</label><input type="text" class="form-input" name="phone_number" value="09171234567"></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" name="is_active"><option value="1" selected>Active</option><option value="0">Inactive</option></select></div><div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" name="password" placeholder="Leave blank to keep current"></div></div>
+<div class="form-actions"><button type="submit" class="btn btn-solid">Save Changes</button><a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">Cancel</a></div>
+</div></form>
