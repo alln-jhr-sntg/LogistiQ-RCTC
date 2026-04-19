@@ -101,7 +101,7 @@ if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && in_array($status, ['pendi
 </div>
 
 <?php if ($status === 'completed'): ?>
-<div class="section-title section-title--spaced">Trip Summary</div>
+<div class="section-title">Trip Summary</div>
 <div class="detail-grid">
     <div class="detail-card">
         <div class="detail-card-title">Actual Trip Data</div>
