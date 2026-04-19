@@ -246,11 +246,11 @@ button {
 }
 
 /* Form fields */
-.form-group {
+.auth-form-inner .form-group {
   margin-bottom: 20px;
 }
 
-.form-label {
+.auth-form-inner .form-label {
   display: block;
   font-size: 13px;
   font-weight: 500;
@@ -259,7 +259,7 @@ button {
   letter-spacing: 0.01em;
 }
 
-.form-input {
+.auth-form-inner .form-input {
   width: 100%;
   padding: 11px 14px;
   border: 1.5px solid var(--clr-border);
@@ -274,13 +274,13 @@ button {
   outline: none;
 }
 
-.form-input:focus {
+.auth-form-inner .form-input:focus {
   border-color: var(--clr-primary-lt);
   box-shadow: 0 0 0 3px rgba(61, 128, 96, 0.12);
   background: #fff;
 }
 
-.form-input::placeholder {
+.auth-form-inner .form-input::placeholder {
   color: var(--clr-text-3);
 }
 
@@ -623,28 +623,6 @@ button {
   text-transform: capitalize;
 }
 
-/*unused 
-.btn-logout {
-  width: 100%;
-  padding: 7px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-  font-family: var(--font-body);
-  transition:
-    background 0.15s,
-    color 0.15s;
-  margin-top: 8px;
-}
-
-.btn-logout:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.8);
-}
-*/
-
 /* ── Main content area ───────────────────────────────────────── */
 .main-wrap {
   flex: 1;
@@ -668,7 +646,7 @@ button {
 }
 
 .topbar-title {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--clr-text);
   letter-spacing: -0.01em;
@@ -998,6 +976,11 @@ button {
   color: var(--clr-text-3);
 }
 
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -1059,6 +1042,10 @@ button {
   font-size: 13px;
 }
 
+.btn-mt {
+  margin-top: 8px;
+}
+
 /* Status badges */
 .badge {
   display: inline-block;
@@ -1070,12 +1057,14 @@ button {
   text-transform: uppercase;
 }
 
-.badge-pending {
+.badge-pending,
+.badge-maintenance {
   background: #fef9e7;
   color: #9a6c00;
   border: 1px solid #f5d76e44;
 }
-.badge-approved {
+.badge-approved,
+.badge-available {
   background: var(--clr-success-bg);
   color: var(--clr-success);
   border: 1px solid rgba(39, 118, 74, 0.15);
@@ -1085,12 +1074,14 @@ button {
   color: var(--clr-error);
   border: 1px solid rgba(192, 57, 43, 0.15);
 }
-.badge-cancelled {
+.badge-cancelled,
+.badge-retired {
   background: var(--clr-surface-2);
   color: var(--clr-text-3);
   border: 1px solid var(--clr-border);
 }
-.badge-in-progress {
+.badge-in-progress,
+.badge-on-trip {
   background: #e8f4fd;
   color: #1565a0;
   border: 1px solid rgba(21, 101, 160, 0.15);
@@ -1099,27 +1090,6 @@ button {
   background: #edf7f1;
   color: #1b5e35;
   border: 1px solid rgba(27, 94, 53, 0.15);
-}
-
-.badge-available {
-  background: var(--clr-success-bg);
-  color: var(--clr-success);
-  border: 1px solid rgba(39, 118, 74, 0.15);
-}
-.badge-on-trip {
-  background: #e8f4fd;
-  color: #1565a0;
-  border: 1px solid rgba(21, 101, 160, 0.15);
-}
-.badge-maintenance {
-  background: #fef9e7;
-  color: #9a6c00;
-  border: 1px solid #f5d76e44;
-}
-.badge-retired {
-  background: var(--clr-surface-2);
-  color: var(--clr-text-3);
-  border: 1px solid var(--clr-border);
 }
 
 /* Card */
@@ -1264,6 +1234,10 @@ table.data-table {
   max-width: 720px;
 }
 
+.form-card--mt {
+  margin-top: 24px;
+}
+
 .form-section-title {
   font-size: 13px;
   font-weight: 600;
@@ -1397,6 +1371,17 @@ table.data-table {
   color: var(--clr-text);
 }
 
+.detail-muted {
+  color: var(--clr-text-3);
+}
+
+.detail-italic {
+  font-style: italic;
+}
+.detail-success {
+  color: var(--clr-success);
+}
+
 /* Placeholder rows for Capstone 1 */
 .placeholder-row {
   display: flex;
@@ -1425,4 +1410,168 @@ table.data-table {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ============================================================
+   MODAL SYSTEM
+   Used by: logout, cancel reservation, reject reservation,
+            mark completed, add purpose
+   ============================================================ */
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-card {
+  background: var(--clr-surface);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.modal-card-wide {
+  max-width: 480px;
+  text-align: left;
+}
+
+.modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+
+.modal-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
+.modal-icon-danger {
+  background: var(--clr-error-bg);
+  color: var(--clr-error);
+}
+
+.modal-icon-success {
+  background: var(--clr-success-bg);
+  color: var(--clr-success);
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.modal-body {
+  font-size: 14px;
+  color: var(--clr-text-3);
+  margin-bottom: 24px;
+}
+
+.modal-body-gap-sm {
+  margin-bottom: 6px;
+}
+
+.modal-reason-preview {
+  font-size: 13px;
+  color: var(--clr-text-2);
+  background: var(--clr-bg);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  text-align: left;
+  word-break: break-word;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.modal-actions .btn.btn-danger {
+  box-shadow: 2px 2px 8px rgba(215, 10, 10, 0.18);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--clr-text-3);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.modal-close svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* AI score breakdown */
+.ai-score-grid {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  background: var(--clr-bg);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.ai-score-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.ai-score-label {
+  color: var(--clr-text-3);
+}
+
+/* Rejection banner */
+.rejection-banner {
+  background: var(--clr-error-bg);
+  border: 1px solid rgba(192, 57, 43, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-top: 4px;
+}
+
+.rejection-banner__label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-error);
+  margin-bottom: 6px;
 }

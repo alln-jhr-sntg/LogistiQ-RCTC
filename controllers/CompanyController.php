@@ -6,4 +6,5 @@ class CompanyController {
     public function storeDepartment(): void { Auth::requireRole(ROLE_SUPER_ADMIN); Helpers::setFlash('success', 'Department saved. (Capstone 1)'); Helpers::redirect('/companies'); }
     public function access(): void         { Auth::requireRole(ROLE_SUPER_ADMIN); $this->render('access', ['page_title' => 'Admin Access']); }
     public function grantAccess(): void    { Auth::requireRole(ROLE_SUPER_ADMIN); Helpers::setFlash('success', 'Access granted. (Capstone 1)'); Helpers::redirect('/companies/access'); }
+    public function revokeAccess(): void   { Auth::requireRole(ROLE_SUPER_ADMIN); Helpers::setFlash('success', 'Access revoked. (Capstone 1)'); Helpers::redirect('/companies/access'); }
 }

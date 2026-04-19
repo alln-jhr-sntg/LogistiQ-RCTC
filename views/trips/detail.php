@@ -5,13 +5,10 @@
         <h2>Trip — RES-2025-00003</h2>
         <p>Laguna Construction Site &mdash; <span class="badge badge-in-progress">In Progress</span></p>
     </div>
-    <div style="display:flex;gap:8px;">
+    <div class="page-header-actions">
         <a href="<?= Helpers::url('/trips') ?>" class="btn btn-outline">← Back</a>
         <?php if ($role === ROLE_DRIVER): ?>
-            <a href="<?= Helpers::url('/trips/1/active') ?>" class="btn btn-solid">
-                <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                Go to Active Trip
-            </a>
+            <a href="<?= Helpers::url('/trips/1/active') ?>" class="btn btn-solid">Go to Active Trip</a>
         <?php else: ?>
             <a href="<?= Helpers::url('/trips/1/map') ?>" class="btn btn-solid">Live Map</a>
         <?php endif; ?>
@@ -40,34 +37,20 @@
         <div class="detail-field"><div class="detail-field-label">Odometer End</div><div class="detail-field-value">— Not yet recorded</div></div>
     </div>
 
+    <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
     <div class="detail-card">
-        <div class="detail-card-title">Notes</div>
-        <div class="detail-field">
-            <div class="detail-field-label">Driver Notes</div>
-            <div class="detail-field-value" style="color:var(--clr-text-3);font-style:italic;">No notes added.</div>
-        </div>
-        <?php if ($role !== ROLE_DRIVER): ?>
-        <div class="detail-field">
-            <div class="detail-field-label">Admin Notes</div>
-            <form method="POST" action="<?= Helpers::url('/trips/1/notes') ?>" style="margin-top:6px;">
-                <textarea class="form-textarea" name="admin_notes" placeholder="Add admin note…" style="min-height:70px;"></textarea>
-                <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;">Save Note</button>
-            </form>
-        </div>
-        <?php endif; ?>
+        <div class="detail-card-title">Admin Notes</div>
+        <form method="POST" action="<?= Helpers::url('/trips/1/notes') ?>">
+            <textarea class="form-textarea" name="admin_notes" placeholder="Add admin note…"></textarea>
+            <button type="submit" class="btn btn-outline btn-sm btn-mt">Save Note</button>
+        </form>
     </div>
-
-    <div class="detail-card">
-        <div class="detail-card-title">Incidents</div>
-        <div style="color:var(--clr-text-3);font-size:14px;font-style:italic;padding:8px 0;">No incidents reported for this trip.</div>
-    </div>
+    <?php endif; ?>
 
 </div>
 
-<?php if ($role !== ROLE_DRIVER): ?>
-<div style="display:flex;gap:10px;margin-top:4px;">
-    <form method="POST" action="<?= Helpers::url('/trips/1/complete') ?>">
-        <button type="submit" class="btn btn-solid">Mark Completed</button>
-    </form>
+<?php if ($role === ROLE_DRIVER): ?>
+<div class="page-header-actions form-actions">
+    <a href="<?= Helpers::url('/trips/1/active') ?>" class="btn btn-solid">Go to Active Trip</a>
 </div>
 <?php endif; ?>

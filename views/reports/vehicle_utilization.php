@@ -1,4 +1,12 @@
-<div class="page-header"><div class="page-header-left"><h2>Vehicle Utilization</h2></div></div>
+<div class="page-header">
+    <div class="page-header-left"><h2>Vehicle Utilization</h2></div>
+    <form method="POST" action="<?= Helpers::url('/reports/vehicle-utilization/export') ?>">
+        <button type="submit" class="btn btn-outline">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:4px;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Export
+        </button>
+    </form>
+</div>
 <div class="tab-bar"><a href="<?= Helpers::url('/reports/trip-history') ?>" class="tab-item">Trip History</a><a href="<?= Helpers::url('/reports/maintenance-due') ?>" class="tab-item">Maintenance Due</a><a href="<?= Helpers::url('/reports/vehicle-utilization') ?>" class="tab-item active">Vehicle Utilization</a></div>
 <div class="dashboard-grid" style="margin-bottom:24px;">
     <div class="stat-card"><div class="stat-label">Total Fleet</div><div class="stat-value">4</div></div>

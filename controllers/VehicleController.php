@@ -8,6 +8,7 @@ class VehicleController {
     public function update(): void         { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Vehicle updated. (Capstone 1)'); Helpers::redirect('/vehicles'); }
     public function categories(): void     { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); $this->render('categories', ['page_title' => 'Vehicle Categories']); }
     public function storeCategory(): void  { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Vehicle category saved. (Capstone 1)'); Helpers::redirect('/vehicles/categories'); }
+    public function updateCategory(): void { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Vehicle category updated. (Capstone 1)'); Helpers::redirect('/vehicles/categories'); }
     public function maintenance(): void    { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); $this->render('maintenance', ['page_title' => 'Maintenance Log']); }
     public function storeMaintenance(): void { Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN); Helpers::setFlash('success', 'Maintenance saved. (Capstone 1)'); Helpers::redirect('/vehicles'); }
 }
