@@ -113,9 +113,6 @@ if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && in_array($status, ['pendi
     </div>
     <div class="detail-card">
         <div class="detail-card-title">Notes & Incidents</div>
-        <?php if ($role === ROLE_EMPLOYEE): ?>
-        <div class="detail-field"><div class="detail-field-label">Driver Notes</div><div class="detail-field-value">Traffic was light. Arrived ahead of schedule.</div></div>
-        <?php endif; ?>
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
         <div class="detail-field"><div class="detail-field-label">Admin Notes</div><div class="detail-field-value detail-muted detail-italic">No notes.</div></div>
         <?php endif; ?>
@@ -137,7 +134,7 @@ if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && in_array($status, ['pendi
     <p class="form-hint">
         <?= $status === 'completed' ? 'Remarks can be submitted within 24 hours of trip completion.' : 'You may add remarks while this trip is in progress.' ?>
     </p>
-    <form method="POST" action="<?= Helpers::url('/reservations/1/remarks') ?>">
+    <form method="POST" action="<?= Helpers::url('/trips/1/notes') ?>">
         <div class="form-group">
             <textarea class="form-textarea" name="employee_remarks" placeholder="Add your remarks about this trip…" required></textarea>
         </div>

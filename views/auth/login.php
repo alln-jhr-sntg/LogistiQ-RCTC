@@ -7,7 +7,7 @@
                 </div>
                 <div class="auth-logo-text">Remix Construction<br>and Trading Corp.</div>
             </div>
-            <div class="auth-brand-headline">Logistics &amp; Vehicle<br><strong>Management System</strong></div>
+            <div class="auth-brand-headline">Logistics<br><strong>Management System</strong></div>
             <p class="auth-brand-sub">Centralized fleet dispatching and trip monitoring for Remix, Ideal Home, and TenBuild operations.</p>
         </div>
         <div class="auth-brand-bottom">
