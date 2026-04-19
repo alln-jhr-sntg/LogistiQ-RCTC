@@ -49,8 +49,4 @@
 
 </div>
 
-<?php if ($role === ROLE_DRIVER): ?>
-<div class="page-header-actions form-actions">
-    <a href="<?= Helpers::url('/trips/1/active') ?>" class="btn btn-solid">Go to Active Trip</a>
-</div>
-<?php endif; ?>
+
