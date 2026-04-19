@@ -51,6 +51,8 @@ $routes = [
     ['POST', '/reservations/2/cancel', 'ReservationController', 'cancel'],
     ['POST', '/reservations/3/cancel', 'ReservationController', 'cancel'],
     ['POST', '/reservations/4/cancel', 'ReservationController', 'cancel'],
+    ['POST', '/reservations/1/remarks','ReservationController', 'storeRemarks'],
+    ['POST', '/reservations/4/remarks','ReservationController', 'storeRemarks'],
 
     // Trips — admin/super admin
     ['GET',  '/trips',           'TripController', 'index'],
@@ -70,8 +72,11 @@ $routes = [
     ['GET',  '/vehicles',               'VehicleController', 'index'],
     ['GET',  '/vehicles/create',        'VehicleController', 'create'],
     ['POST', '/vehicles/create',        'VehicleController', 'store'],
-    ['GET',  '/vehicles/categories',    'VehicleController', 'categories'],
-    ['POST', '/vehicles/categories',    'VehicleController', 'storeCategory'],
+    ['GET',  '/vehicles/categories',      'VehicleController', 'categories'],
+    ['POST', '/vehicles/categories',      'VehicleController', 'storeCategory'],
+    ['POST', '/vehicles/categories/1/edit', 'VehicleController', 'updateCategory'],
+    ['POST', '/vehicles/categories/2/edit', 'VehicleController', 'updateCategory'],
+    ['POST', '/vehicles/categories/3/edit', 'VehicleController', 'updateCategory'],
     ['GET',  '/vehicles/1/edit',        'VehicleController', 'edit'],
     ['GET',  '/vehicles/2/edit',        'VehicleController', 'edit'],
     ['GET',  '/vehicles/3/edit',        'VehicleController', 'edit'],
@@ -99,6 +104,8 @@ $routes = [
     ['GET',  '/companies',              'CompanyController', 'index'],
     ['GET',  '/companies/access',       'CompanyController', 'access'],
     ['POST', '/companies/access',       'CompanyController', 'grantAccess'],
+    ['POST', '/companies/access/1/revoke', 'CompanyController', 'revokeAccess'],
+    ['POST', '/companies/access/2/revoke', 'CompanyController', 'revokeAccess'],
     ['GET',  '/companies/1/departments','CompanyController', 'departments'],
     ['GET',  '/companies/2/departments','CompanyController', 'departments'],
     ['GET',  '/companies/3/departments','CompanyController', 'departments'],
@@ -114,10 +121,13 @@ $routes = [
     ['POST', '/projects/1/edit', 'ProjectController', 'update'],
 
     // Reports
-    ['GET', '/reports',                     'ReportController', 'index'],
-    ['GET', '/reports/trip-history',        'ReportController', 'tripHistory'],
-    ['GET', '/reports/maintenance-due',     'ReportController', 'maintenanceDue'],
-    ['GET', '/reports/vehicle-utilization', 'ReportController', 'vehicleUtilization'],
+    ['GET', '/reports',                          'ReportController', 'index'],
+    ['GET', '/reports/trip-history',             'ReportController', 'tripHistory'],
+    ['GET', '/reports/maintenance-due',          'ReportController', 'maintenanceDue'],
+    ['GET', '/reports/vehicle-utilization',      'ReportController', 'vehicleUtilization'],
+    ['POST', '/reports/trip-history/export',     'ReportController', 'export'],
+    ['POST', '/reports/maintenance-due/export',  'ReportController', 'export'],
+    ['POST', '/reports/vehicle-utilization/export', 'ReportController', 'export'],
 
     // Notifications
     ['GET',  '/notifications',          'NotificationController', 'index'],

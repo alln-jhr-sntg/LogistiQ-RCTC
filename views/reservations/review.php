@@ -41,8 +41,40 @@
 </div>
 <div class="form-card">
     <div class="form-section-title">Reject</div>
-    <form method="POST" action="<?= Helpers::url('/reservations/1/reject') ?>">
-        <div class="form-group"><label class="form-label">Rejection Reason <span class="required">*</span></label><textarea class="form-textarea" name="rejection_reason" placeholder="State the reason…" required></textarea></div>
-        <div class="form-actions"><button type="submit" class="btn btn-danger">Reject Reservation</button></div>
+    <form id="rejectForm" method="POST" action="<?= Helpers::url('/reservations/1/reject') ?>">
+        <div class="form-group">
+            <label class="form-label">Rejection Reason <span class="required">*</span></label>
+            <textarea class="form-textarea" name="rejection_reason" id="rejectionReasonText" placeholder="State the reason…" required></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-danger" onclick="lvmsConfirmReject()">Reject Reservation</button>
+        </div>
     </form>
 </div>
+
+<!-- Reject Confirmation Modal -->
+<div id="rejectModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-icon modal-icon-danger">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <h3 class="modal-title">Reject Reservation?</h3>
+        <p class="modal-body modal-body-gap-sm">The requester will be notified with the reason below.</p>
+        <p id="rejectReasonPreview" class="modal-reason-preview"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('rejectModal').style.display='none';">Go Back</button>
+            <button type="button" class="btn btn-danger" onclick="document.getElementById('rejectForm').submit();">Confirm Reject</button>
+        </div>
+    </div>
+</div>
+<script>
+function lvmsConfirmReject() {
+    var reason = document.getElementById('rejectionReasonText').value.trim();
+    if (!reason) { document.getElementById('rejectionReasonText').focus(); return; }
+    document.getElementById('rejectReasonPreview').textContent = reason;
+    document.getElementById('rejectModal').style.display = 'flex';
+}
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>

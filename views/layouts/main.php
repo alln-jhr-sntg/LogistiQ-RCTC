@@ -123,8 +123,8 @@ function nav_is_active(string $path): string {
                     <div class="sidebar-user-role"><?= Helpers::e(ucfirst(str_replace('_', ' ', Auth::role() ?? ''))) ?></div>
                 </div>
             </div>
-            <form method="POST" action="<?= Helpers::url('/logout') ?>">
-                <button type="submit" class="nav-item nav-logout" title="Sign out">
+            <form method="POST" action="<?= Helpers::url('/logout') ?>" id="logoutForm">
+                <button type="button" class="nav-item nav-logout" title="Sign out" onclick="document.getElementById('logoutModal').style.display='flex';">
                     <svg class="nav-icon" viewBox="0 0 24 24">
                         <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H11c-1.1 0-2 .9-2 2v4h2V5h8v14h-8v-4H9v4c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
                     </svg>
@@ -172,6 +172,26 @@ function nav_is_active(string $path): string {
 </div><!-- /.app-shell -->
 
 <script src="/lvms/public/js/app.js"></script>
+
+<!-- ── Logout Confirmation Modal ─────────────────────────── -->
+<div id="logoutModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-icon modal-icon-danger">
+            <svg viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H11c-1.1 0-2 .9-2 2v4h2V5h8v14h-8v-4H9v4c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <h3 class="modal-title">Confirm Logout</h3>
+        <p class="modal-body">Are you sure you want to logout from the portal?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('logoutModal').style.display='none';">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="document.getElementById('logoutForm').submit();">Logout</button>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('logoutModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
 </body>
 </html>
 
