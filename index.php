@@ -51,8 +51,6 @@ $routes = [
     ['POST', '/reservations/2/cancel', 'ReservationController', 'cancel'],
     ['POST', '/reservations/3/cancel', 'ReservationController', 'cancel'],
     ['POST', '/reservations/4/cancel', 'ReservationController', 'cancel'],
-    ['POST', '/reservations/1/remarks','ReservationController', 'storeRemarks'],
-    ['POST', '/reservations/4/remarks','ReservationController', 'storeRemarks'],
 
     // Trips — admin/super admin
     ['GET',  '/trips',           'TripController', 'index'],

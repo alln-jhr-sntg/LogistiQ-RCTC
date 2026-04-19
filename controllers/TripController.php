@@ -73,10 +73,17 @@ class TripController
     }
 
     // POST /trips/[id]/notes
+    // Admin writes trips.admin_notes via this route (web).
+    // Employee writes trips.employee_notes via /reservations/[id] detail form (Cap 2).
     public function notes(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
         Helpers::setFlash('success', 'Note saved. (Capstone 1 — not saved to DB)');
-        Helpers::redirect('/trips/1');
+        $role = Auth::role();
+        if ($role === ROLE_EMPLOYEE) {
+            Helpers::redirect('/reservations');
+        } else {
+            Helpers::redirect('/trips/1');
+        }
     }
 }
