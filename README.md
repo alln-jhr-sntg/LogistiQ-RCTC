@@ -1,4 +1,4 @@
-# LogistiQ - Logistics Management System with AI-based Recommendations Mechanism for Remix Construction and Trading Corporation
+# LogistiQ - Web-based Vehicle Reservation and Fleet Management System with Rule-Based Vehicle Recommendation for Remix Construction and Trading Corporation
 
 ### How to run
 - Download the Zip file of the repository
