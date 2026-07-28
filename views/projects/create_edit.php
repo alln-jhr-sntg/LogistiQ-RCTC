@@ -8,9 +8,12 @@
 </div>
 <div class="form-group"><label class="form-label">Company <span class="required">*</span></label><select class="form-select" name="company_id" required>
     <option value="">— Select Company —</option>
-    <option value="1" <?= ($project['company_id'] ?? '') == 1 ? 'selected' : '' ?>>Remix Construction and Trading Corporation</option>
-    <option value="2" <?= ($project['company_id'] ?? '') == 2 ? 'selected' : '' ?>>Ideal Home</option>
-    <option value="3" <?= ($project['company_id'] ?? '') == 3 ? 'selected' : '' ?>>TenBuild</option>
+    <?php foreach ($companies as $co): ?>
+    <option value="<?= (int) $co['company_id'] ?>"
+        <?= (int)($project['company_id'] ?? 0) === (int)$co['company_id'] ? 'selected' : '' ?>>
+        <?= Helpers::e($co['company_name']) ?>
+    </option>
+    <?php endforeach; ?>
 </select></div>
 <div class="form-row">
     <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-input" name="start_date" value="<?= Helpers::e($project['start_date'] ?? '') ?>"></div>

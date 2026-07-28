@@ -114,15 +114,20 @@ function nav_is_active(string $path): string {
         </nav>
 
         <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-user-avatar">
+            <a href="<?= Helpers::url('/profile') ?>" class="sidebar-user" aria-label="Profile">
+                <div class="sidebar-user-avatar" >
+                    <?php if (Auth::profilePhoto()): ?>
+                    <img src="/lvms/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
+                        style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;">
+                    <?php else: ?>
                     <?= strtoupper(substr(Auth::fullName() ?? 'U', 0, 1)) ?>
+                    <?php endif; ?>
                 </div>
                 <div class="sidebar-user-info">
                     <div class="sidebar-user-name"><?= Helpers::e(Auth::fullName() ?? '') ?></div>
                     <div class="sidebar-user-role"><?= Helpers::e(ucfirst(str_replace('_', ' ', Auth::role() ?? ''))) ?></div>
                 </div>
-            </div>
+            </a>
             <form method="POST" action="<?= Helpers::url('/logout') ?>" id="logoutForm">
                 <button type="button" class="nav-item nav-logout" title="Sign out" onclick="document.getElementById('logoutModal').style.display='flex';">
                     <svg class="nav-icon" viewBox="0 0 24 24">
@@ -149,7 +154,12 @@ function nav_is_active(string $path): string {
                     <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
                 </a>
                 <a href="<?= Helpers::url('/profile') ?>" class="topbar-avatar" aria-label="Profile">
+                    <?php if (Auth::profilePhoto()): ?>
+                    <img src="/lvms/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
+                        style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;">
+                    <?php else: ?>
                     <?= strtoupper(substr(Auth::fullName() ?? 'U', 0, 1)) ?>
+                    <?php endif; ?>
                 </a>
             </div>
         </header>

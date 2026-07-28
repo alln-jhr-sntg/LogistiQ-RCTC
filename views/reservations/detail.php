@@ -1,217 +1,245 @@
 <?php
-$role   = Auth::role();
-$status = $reservation['status'];
-
-$badgeMap = [
-    'pending'     => 'badge-pending',
-    'approved'    => 'badge-approved',
-    'rejected'    => 'badge-rejected',
-    'cancelled'   => 'badge-cancelled',
-    'in_progress' => 'badge-in-progress',
-    'completed'   => 'badge-completed',
+$statusBadge = [
+    'pending'     => ['class' => 'badge-pending',   'label' => 'Pending'],
+    'approved'    => ['class' => 'badge-approved',  'label' => 'Approved'],
+    'rejected'    => ['class' => 'badge-cancelled', 'label' => 'Rejected'],
+    'cancelled'   => ['class' => 'badge-cancelled', 'label' => 'Cancelled'],
+    'in_progress' => ['class' => 'badge-on-trip',   'label' => 'In Progress'],
+    'completed'   => ['class' => 'badge-available', 'label' => 'Completed'],
 ];
-$badgeClass  = $badgeMap[$status] ?? 'badge-pending';
-$statusLabel = ucwords(str_replace('_', ' ', $status));
-
-$canCancel = false;
-if ($role === ROLE_EMPLOYEE && $status === 'pending') $canCancel = true;
-if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && in_array($status, ['pending', 'approved'])) $canCancel = true;
+$sb   = $statusBadge[$reservation['status']] ?? ['class' => 'badge-pending', 'label' => $reservation['status']];
+$role = Auth::role();
 ?>
-
 <div class="page-header">
     <div class="page-header-left">
-        <h2><?= Helpers::e($reservation['code']) ?></h2>
-        <p>Submitted <?= Helpers::e($reservation['submitted']) ?> &mdash; <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span></p>
+        <h2><?= Helpers::e($reservation['reservation_code']) ?></h2>
+        <p>Submitted <?= date('M d, Y', strtotime($reservation['created_at'])) ?></p>
     </div>
-    <div class="page-header-actions">
-        <a href="<?= Helpers::url('/reservations') ?>" class="btn btn-outline">← Back</a>
-        <?php if ($role !== ROLE_EMPLOYEE && $status === 'pending'): ?>
-            <a href="<?= Helpers::url('/reservations/1/review') ?>" class="btn btn-solid">Review</a>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge <?= $sb['class'] ?>" style="font-size:13px;padding:6px 12px;"><?= $sb['label'] ?></span>
+        <?php if ($canEdit): ?>
+        <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/edit') ?>"
+           class="btn btn-outline">Edit</a>
         <?php endif; ?>
-        <?php if ($status === 'in_progress' && in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
-            <a href="<?= Helpers::url('/trips/1/map') ?>" class="btn btn-solid">Live Map</a>
-        <?php endif; ?>
-        <?php if ($role === ROLE_EMPLOYEE && $status === 'in_progress'): ?>
-            <button type="button" class="btn btn-danger" onclick="document.getElementById('incidentModal').style.display='flex';">Report Incident</button>
+        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && $reservation['status'] === 'pending'): ?>
+        <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/review') ?>"
+           class="btn btn-solid">Review</a>
         <?php endif; ?>
         <?php if ($canCancel): ?>
-            <button type="button" class="btn btn-danger" onclick="document.getElementById('cancelModal').style.display='flex';">Cancel Reservation</button>
+        <button type="button" class="btn btn-danger"
+                onclick="document.getElementById('cancelModal').style.display='flex';">
+            Cancel
+        </button>
         <?php endif; ?>
+        <a href="<?= Helpers::url('/reservations') ?>" class="btn btn-outline">← Back</a>
     </div>
 </div>
 
-<div class="detail-grid">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
 
-    <div class="detail-card">
-        <div class="detail-card-title">Trip Information</div>
-        <div class="detail-field"><div class="detail-field-label">Purpose</div><div class="detail-field-value"><?= Helpers::e($reservation['purpose']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Destination</div><div class="detail-field-value"><?= Helpers::e($reservation['destination']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Origin</div><div class="detail-field-value">Company Warehouse (Main)</div></div>
-        <div class="detail-field"><div class="detail-field-label">Departure</div><div class="detail-field-value"><?= Helpers::e($reservation['departure']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Estimated Return</div><div class="detail-field-value"><?= Helpers::e($reservation['return']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Trip Details</div><div class="detail-field-value"><?= Helpers::e($reservation['trip_details']) ?></div></div>
-    </div>
-
-    <div class="detail-card">
-        <div class="detail-card-title">Requester & Department</div>
-        <div class="detail-field"><div class="detail-field-label">Requested By</div><div class="detail-field-value"><?= Helpers::e($reservation['requester']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Department</div><div class="detail-field-value"><?= Helpers::e($reservation['department']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Company</div><div class="detail-field-value"><?= Helpers::e($reservation['company']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Passenger Count</div><div class="detail-field-value"><?= Helpers::e((string)$reservation['passengers']) ?></div></div>
-        <div class="detail-field"><div class="detail-field-label">Cargo</div><div class="detail-field-value"><?= Helpers::e($reservation['cargo']) ?></div></div>
-    </div>
-
-    <?php if ($role !== ROLE_EMPLOYEE || !in_array($status, ['pending', 'rejected', 'cancelled'])): ?>
-    <div class="detail-card">
-        <div class="detail-card-title">Assignment</div>
-        <?php if (in_array($status, ['pending', 'rejected', 'cancelled'])): ?>
-            <div class="detail-field"><div class="detail-field-label">Assigned Vehicle</div><div class="detail-field-value detail-muted">— Not yet assigned</div></div>
-            <div class="detail-field"><div class="detail-field-label">Assigned Driver</div><div class="detail-field-value detail-muted">— Not yet assigned</div></div>
-            <div class="detail-field"><div class="detail-field-label">Reviewed By</div><div class="detail-field-value detail-muted">— Pending</div></div>
-        <?php else: ?>
-            <div class="detail-field"><div class="detail-field-label">Assigned Vehicle</div><div class="detail-field-value">ABC-1234 — Toyota Hi-Ace</div></div>
-            <div class="detail-field"><div class="detail-field-label">Assigned Driver</div><div class="detail-field-value">Carlos Mendoza</div></div>
-            <?php if ($role !== ROLE_EMPLOYEE): ?>
-            <div class="detail-field"><div class="detail-field-label">Reviewed By</div><div class="detail-field-value">Admin User</div></div>
-            <?php endif; ?>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
-
-    <?php if ($role !== ROLE_EMPLOYEE): ?>
-    <div class="detail-card">
-        <div class="detail-card-title">AI Vehicle Recommendation</div>
-        <?php if ($status === 'pending'): ?>
-            <div class="detail-field"><div class="detail-field-label">Status</div><div class="detail-field-value detail-muted">— Run recommendation engine on review</div></div>
-            <div class="detail-field"><div class="detail-field-label">Score</div><div class="detail-field-value detail-muted">—</div></div>
-        <?php else: ?>
-            <div class="detail-field"><div class="detail-field-label">Recommended Vehicle</div><div class="detail-field-value">ABC-1234 — Toyota Hi-Ace</div></div>
-            <div class="detail-field"><div class="detail-field-label">Score</div><div class="detail-field-value">92.50 / 100</div></div>
-            <div class="ai-score-grid">
-                <div class="ai-score-row"><span class="ai-score-label">Capacity fit</span><span>95</span></div>
-                <div class="ai-score-row"><span class="ai-score-label">Cargo fit</span><span>100</span></div>
-                <div class="ai-score-row"><span class="ai-score-label">Availability</span><span>90</span></div>
-                <div class="ai-score-row"><span class="ai-score-label">Purpose fit</span><span>88</span></div>
-                <div class="ai-score-row"><span class="ai-score-label">Maintenance</span><span>90</span></div>
+    <!-- Left column -->
+    <div>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Requester</div>
+            <div class="detail-field">
+                <div class="detail-field-label">Name</div>
+                <div class="detail-field-value">
+                    <?= Helpers::e($reservation['requester_first_name'] . ' ' . $reservation['requester_last_name']) ?>
+                </div>
             </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Department</div>
+                <div class="detail-field-value">
+                    <?= Helpers::e($reservation['company_code'] . ' — ' . $reservation['department_name']) ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Trip Details</div>
+            <div class="detail-field">
+                <div class="detail-field-label">Purpose</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['purpose_name']) ?></div>
+            </div>
+            <?php if ($reservation['project_name']): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Project</div>
+                <div class="detail-field-value">
+                    <?= Helpers::e($reservation['project_name']) ?>
+                    <?php if ($reservation['project_code']): ?>
+                    <span class="td-muted">(<?= Helpers::e($reservation['project_code']) ?>)</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Destination</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['destination']) ?></div>
+            </div>
+            <?php if ($reservation['trip_details']): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Notes</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['trip_details']) ?></div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="detail-card">
+            <div class="detail-card-title">Schedule</div>
+            <div class="detail-field">
+                <div class="detail-field-label">Departure</div>
+                <div class="detail-field-value">
+                    <?= date('D, M d Y — g:i A', strtotime($reservation['departure_datetime'])) ?>
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Est. Return</div>
+                <div class="detail-field-value">
+                    <?= date('D, M d Y — g:i A', strtotime($reservation['return_datetime'])) ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column -->
+    <div>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Passengers &amp; Cargo</div>
+            <div class="detail-field">
+                <div class="detail-field-label">Passengers</div>
+                <div class="detail-field-value"><?= (int) $reservation['passenger_count'] ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Cargo</div>
+                <div class="detail-field-value">
+                    <?= number_format((float) $reservation['cargo_weight_kg'], 2) ?> kg
+                    <?= $reservation['cargo_description'] ? ' — ' . Helpers::e($reservation['cargo_description']) : '' ?>
+                </div>
+            </div>
+        </div>
+
+        <?php if (in_array($reservation['status'], ['approved', 'in_progress', 'completed'])): ?>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Assignment</div>
+            <div class="detail-field">
+                <div class="detail-field-label">Vehicle</div>
+                <div class="detail-field-value">
+                    <?= $reservation['plate_number']
+                        ? Helpers::e($reservation['plate_number'] . ' — ' . $reservation['vehicle_brand'] . ' ' . $reservation['vehicle_model'])
+                        : '—' ?>
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Driver</div>
+                <div class="detail-field-value">
+                    <?= $reservation['driver_first_name']
+                        ? Helpers::e($reservation['driver_first_name'] . ' ' . $reservation['driver_last_name'])
+                        : '—' ?>
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Reviewed By</div>
+                <div class="detail-field-value">
+                    <?= $reservation['reviewer_first_name']
+                        ? Helpers::e($reservation['reviewer_first_name'] . ' ' . $reservation['reviewer_last_name'])
+                        : '—' ?>
+                </div>
+            </div>
+        </div>
         <?php endif; ?>
-    </div>
-    <?php endif; ?>
 
-</div>
+        <?php if ($reservation['status'] === 'rejected'): ?>
+        <div class="detail-card" style="margin-bottom:20px;border-color:#f5a09a;">
+            <div class="detail-card-title" style="color:#c0392b;">Rejection Reason</div>
+            <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
+                <?= Helpers::e($reservation['rejection_reason'] ?? 'No reason provided.') ?>
+            </p>
+        </div>
+        <?php endif; ?>
 
-<?php if ($status === 'completed'): ?>
-<div class="section-title">Trip Summary</div>
-<div class="detail-grid">
-    <div class="detail-card">
-        <div class="detail-card-title">Actual Trip Data</div>
-        <div class="detail-field"><div class="detail-field-label">Actual Departure</div><div class="detail-field-value">Dec 08, 2025 09:12 AM</div></div>
-        <div class="detail-field"><div class="detail-field-label">Actual Return</div><div class="detail-field-value">Dec 08, 2025 03:48 PM</div></div>
-        <div class="detail-field"><div class="detail-field-label">Odometer Start</div><div class="detail-field-value">11,920 km</div></div>
-        <div class="detail-field"><div class="detail-field-label">Odometer End</div><div class="detail-field-value">11,962 km</div></div>
-        <div class="detail-field"><div class="detail-field-label">Distance Travelled</div><div class="detail-field-value"><strong>42 km</strong></div></div>
-    </div>
-    <div class="detail-card">
-        <div class="detail-card-title">Notes & Incidents</div>
+        <?php if ($reservation['status'] === 'cancelled' && $reservation['cancellation_reason']): ?>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Cancellation Reason</div>
+            <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
+                <?= Helpers::e($reservation['cancellation_reason']) ?>
+            </p>
+        </div>
+        <?php endif; ?>
+
+        <!-- AI recommendation panel — wired in Step 10 -->
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
-        <div class="detail-field"><div class="detail-field-label">Admin Notes</div><div class="detail-field-value detail-muted detail-italic">No notes.</div></div>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title">Vehicle Recommendation</div>
+            <p class="td-muted" style="font-size:13px;">
+                AI recommendation scoring is wired in Step 10.
+            </p>
+        </div>
         <?php endif; ?>
-        <div class="detail-field"><div class="detail-field-label">Incidents</div><div class="detail-field-value detail-success">✓ No incidents reported</div></div>
+
+        <!-- Trip section — wired in Step 11 -->
+        <?php if (in_array($reservation['status'], ['in_progress', 'completed'])): ?>
+        <div class="detail-card">
+            <div class="detail-card-title">Trip Execution</div>
+            <p class="td-muted" style="font-size:13px;">
+                Odometer and actual times are wired in Step 11.
+            </p>
+        </div>
+        <?php endif; ?>
+
+        <!-- Destination map — shown when coordinates were pinned on create/edit -->
+        <?php if ($reservation['destination_lat'] && $reservation['destination_lng']): ?>
+        <div class="detail-card" style="padding:0;overflow:hidden;">
+            <div id="detailMap" style="height:220px;width:100%;"></div>
+        </div>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
+        var dLat = <?= (float) $reservation['destination_lat'] ?>;
+        var dLng = <?= (float) $reservation['destination_lng'] ?>;
+        var dMap = L.map('detailMap', { zoomControl: true, scrollWheelZoom: false })
+                    .setView([dLat, dLng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(dMap);
+        L.marker([dLat, dLng]).addTo(dMap)
+            .bindPopup('<?= addslashes(Helpers::e($reservation['destination'])) ?>')
+            .openPopup();
+        </script>
+        <?php endif; ?>
     </div>
-</div>
-<?php endif; ?>
 
-<?php if ($status === 'rejected'): ?>
-<div class="rejection-banner">
-    <div class="rejection-banner__label">Rejection Reason</div>
-    <div>No vehicles available on the requested date. Please submit a new request for a different date.</div>
 </div>
-<?php endif; ?>
-
-<?php if ($role === ROLE_EMPLOYEE && in_array($status, ['in_progress', 'completed'])): ?>
-<div class="form-card form-card--mt">
-    <div class="form-section-title">Your Remarks</div>
-    <p class="form-hint">
-        <?= $status === 'completed' ? 'Remarks can be submitted within 24 hours of trip completion.' : 'You may add remarks while this trip is in progress.' ?>
-    </p>
-    <form method="POST" action="<?= Helpers::url('/trips/1/notes') ?>">
-        <div class="form-group">
-            <textarea class="form-textarea" name="employee_remarks" placeholder="Add your remarks about this trip…" required></textarea>
-        </div>
-        <div class="form-actions">
-            <button type="submit" class="btn btn-solid">Submit Remarks</button>
-        </div>
-    </form>
-</div>
-<?php endif; ?>
 
 <?php if ($canCancel): ?>
-<!-- Cancel Reservation Modal -->
+<!-- Cancel Modal -->
 <div id="cancelModal" class="modal-overlay">
-    <div class="modal-card modal-card-wide">
+    <div class="modal-card">
         <div class="modal-header">
             <h3>Cancel Reservation</h3>
-        </div>
-        <p class="modal-body">This action cannot be undone. Please provide a reason for cancellation.</p>
-        <form method="POST" action="<?= Helpers::url('/reservations/1/cancel') ?>">
-            <div class="form-group">
-                <label class="form-label">Cancellation Reason <span class="required">*</span></label>
-                <textarea class="form-textarea" name="cancellation_reason" placeholder="Explain why this reservation is being cancelled…" required></textarea>
-            </div>
-            <div class="modal-actions">
-                <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
-                <button type="button" class="btn btn-outline" onclick="document.getElementById('cancelModal').style.display='none';">Go Back</button>
-            </div>
-        </form>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php if ($role === ROLE_EMPLOYEE && $status === 'in_progress'): ?>
-<!-- Report Incident Modal -->
-<div id="incidentModal" class="modal-overlay">
-    <div class="modal-card modal-card-wide">
-        <div class="modal-header">
-            <h3>Report an Incident</h3>
-            <button type="button" class="modal-close" onclick="document.getElementById('incidentModal').style.display='none';" aria-label="Close">
+            <button type="button" class="modal-close"
+                    onclick="document.getElementById('cancelModal').style.display='none';">
                 <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </button>
         </div>
-        <p class="modal-body">If something has happened during this trip, report it here. Your report will be forwarded to the admin immediately.</p>
-        <form method="POST" action="<?= Helpers::url('/trips/1/incident') ?>">
-            <input type="hidden" name="reservation_id" value="<?= Helpers::e($reservation['code']) ?>">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Incident Type <span class="required">*</span></label>
-                    <select class="form-select" name="incident_type" required>
-                        <option value="">— Select Type —</option>
-                        <option value="accident">Accident</option>
-                        <option value="breakdown">Breakdown</option>
-                        <option value="traffic_delay">Traffic Delay</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">When did it happen?</label>
-                    <input type="datetime-local" class="form-input" name="occurred_at">
-                </div>
-            </div>
+        <form method="POST"
+              action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/cancel') ?>">
             <div class="form-group">
-                <label class="form-label">Description <span class="required">*</span></label>
-                <textarea class="form-textarea" name="description" placeholder="Describe what happened in detail…" required></textarea>
+                <label class="form-label">Reason for Cancellation <span class="required">*</span></label>
+                <textarea class="form-textarea" name="cancellation_reason" rows="3" required></textarea>
             </div>
             <div class="modal-actions">
-                <button type="submit" class="btn btn-danger">Submit Incident Report</button>
-                <button type="button" class="btn btn-outline" onclick="document.getElementById('incidentModal').style.display='none';">Cancel</button>
+                <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                <button type="button" class="btn btn-outline"
+                        onclick="document.getElementById('cancelModal').style.display='none';">
+                    Keep Reservation
+                </button>
             </div>
         </form>
     </div>
 </div>
-<?php endif; ?>
-
 <script>
-['cancelModal','incidentModal'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+document.getElementById('cancelModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
 });
 </script>
+<?php endif; ?>

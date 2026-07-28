@@ -9,26 +9,41 @@
 </div>
 
 <div class="card"><div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Category</th><th>Max Passengers</th><th>Max Cargo (kg)</th><th>Vehicles</th><th>Actions</th></tr></thead>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Max Passengers</th>
+            <th>Max Cargo (kg)</th>
+            <th>Vehicles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
     <tbody>
+    <?php if (empty($categories)): ?>
         <tr>
-            <td><strong>Van</strong></td><td>15</td><td>500.00</td><td class="td-muted">2</td>
+            <td colspan="5" class="td-muted" style="text-align:center;padding:24px;">
+                No categories yet. Add one above.
+            </td>
+        </tr>
+    <?php else: ?>
+        <?php foreach ($categories as $cat): ?>
+        <tr>
+            <td><strong><?= Helpers::e($cat['category_name']) ?></strong></td>
+            <td><?= (int) $cat['max_passengers'] ?></td>
+            <td><?= number_format((float) $cat['max_cargo_kg'], 2) ?></td>
+            <td class="td-muted"><?= (int) $cat['vehicle_count'] ?></td>
             <td><div class="td-actions">
-                <button class="btn btn-outline btn-sm" onclick="lvmsEditCategory(1,'Van',15,500.00)">Edit</button>
+                <button class="btn btn-outline btn-sm"
+                    onclick="lvmsEditCategory(
+                        <?= (int)   $cat['category_id']   ?>,
+                        '<?= addslashes(Helpers::e($cat['category_name'])) ?>',
+                        <?= (int)   $cat['max_passengers'] ?>,
+                        <?= number_format((float) $cat['max_cargo_kg'], 2) ?>
+                    )">Edit</button>
             </div></td>
         </tr>
-        <tr>
-            <td><strong>Truck</strong></td><td>3</td><td>5000.00</td><td class="td-muted">1</td>
-            <td><div class="td-actions">
-                <button class="btn btn-outline btn-sm" onclick="lvmsEditCategory(2,'Truck',3,5000.00)">Edit</button>
-            </div></td>
-        </tr>
-        <tr>
-            <td><strong>Pickup</strong></td><td>5</td><td>1000.00</td><td class="td-muted">1</td>
-            <td><div class="td-actions">
-                <button class="btn btn-outline btn-sm" onclick="lvmsEditCategory(3,'Pickup',5,1000.00)">Edit</button>
-            </div></td>
-        </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
     </tbody>
 </table></div></div>
 
@@ -44,8 +59,8 @@
         <form method="POST" action="<?= Helpers::url('/vehicles/categories') ?>">
             <div class="form-row form-row-3">
                 <div class="form-group"><label class="form-label">Name <span class="required">*</span></label><input type="text" class="form-input" name="category_name" required></div>
-                <div class="form-group"><label class="form-label">Max Passengers</label><input type="number" class="form-input" name="max_passengers" min="1"></div>
-                <div class="form-group"><label class="form-label">Max Cargo (kg)</label><input type="number" class="form-input" name="max_cargo_kg" min="0" step="0.01"></div>
+                <div class="form-group"><label class="form-label">Max Passengers</label><input type="number" class="form-input" name="max_passengers" min="1" value="1"></div>
+                <div class="form-group"><label class="form-label">Max Cargo (kg)</label><input type="number" class="form-input" name="max_cargo_kg" min="0" step="0.01" value="0"></div>
             </div>
             <div class="modal-actions">
                 <button type="submit" class="btn btn-solid">Save Category</button>

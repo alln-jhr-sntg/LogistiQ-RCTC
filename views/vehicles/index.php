@@ -1,8 +1,95 @@
-<div class="page-header"><div class="page-header-left"><h2>Fleet Management</h2><p>Shared vehicle fleet across all companies</p></div><div style="display:flex;gap:8px;"><a href="<?= Helpers::url('/vehicles/categories') ?>" class="btn btn-outline">Categories</a><a href="<?= Helpers::url('/vehicles/create') ?>" class="btn btn-solid"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Vehicle</a></div></div>
-<div class="filter-bar"><input type="text" class="filter-input" placeholder="Search plate, brand or model…" style="flex:1;min-width:200px;"><select class="filter-select"><option>All Statuses</option><option>Available</option><option>On Trip</option><option>Under Maintenance</option><option>Retired</option></select></div>
-<div class="card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Plate</th><th>Vehicle</th><th>Category</th><th>Capacity</th><th>Odometer</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-<tr><td><strong>ABC-1234</strong></td><td>Toyota Hi-Ace<br><span class="td-muted">2022 — White</span></td><td class="td-muted">Van</td><td class="td-muted">12 pax / 0 kg</td><td class="td-muted">12,450 km</td><td><span class="badge badge-on-trip">On Trip</span></td><td><div class="td-actions"><a href="<?= Helpers::url('/vehicles/1/edit') ?>" class="btn btn-outline btn-sm">Edit</a><a href="<?= Helpers::url('/vehicles/1/maintenance') ?>" class="btn btn-outline btn-sm">Maintenance</a></div></td></tr>
-<tr><td><strong>XYZ-5678</strong></td><td>Mitsubishi L300<br><span class="td-muted">2021 — Silver</span></td><td class="td-muted">Van</td><td class="td-muted">8 pax / 500 kg</td><td class="td-muted">34,200 km</td><td><span class="badge badge-available">Available</span></td><td><div class="td-actions"><a href="<?= Helpers::url('/vehicles/2/edit') ?>" class="btn btn-outline btn-sm">Edit</a><a href="<?= Helpers::url('/vehicles/2/maintenance') ?>" class="btn btn-outline btn-sm">Maintenance</a></div></td></tr>
-<tr><td><strong>DEF-9012</strong></td><td>Isuzu Elf<br><span class="td-muted">2020 — White</span></td><td class="td-muted">Truck</td><td class="td-muted">3 pax / 3,000 kg</td><td class="td-muted">58,900 km</td><td><span class="badge badge-maintenance">Under Maintenance</span></td><td><div class="td-actions"><a href="<?= Helpers::url('/vehicles/3/edit') ?>" class="btn btn-outline btn-sm">Edit</a><a href="<?= Helpers::url('/vehicles/3/maintenance') ?>" class="btn btn-outline btn-sm">Maintenance</a></div></td></tr>
-<tr><td><strong>GHI-3456</strong></td><td>Ford Ranger<br><span class="td-muted">2023 — Gray</span></td><td class="td-muted">Pickup</td><td class="td-muted">5 pax / 1,000 kg</td><td class="td-muted">8,100 km</td><td><span class="badge badge-available">Available</span></td><td><div class="td-actions"><a href="<?= Helpers::url('/vehicles/4/edit') ?>" class="btn btn-outline btn-sm">Edit</a><a href="<?= Helpers::url('/vehicles/4/maintenance') ?>" class="btn btn-outline btn-sm">Maintenance</a></div></td></tr>
-</tbody></table></div></div>
+<?php
+$statusBadge = [
+    'available'         => 'badge-available',
+    'reserved'          => 'badge-pending',
+    'on_trip'           => 'badge-on-trip',
+    'under_maintenance' => 'badge-maintenance',
+    'retired'           => 'badge-cancelled',
+];
+$statusLabel = [
+    'available'         => 'Available',
+    'reserved'          => 'Reserved',
+    'on_trip'           => 'On Trip',
+    'under_maintenance' => 'Under Maintenance',
+    'retired'           => 'Retired',
+];
+?>
+<div class="page-header">
+    <div class="page-header-left">
+        <h2>Fleet Management</h2>
+        <p>Shared vehicle fleet across all companies</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a href="<?= Helpers::url('/vehicles/categories') ?>" class="btn btn-outline">Categories</a>
+        <a href="<?= Helpers::url('/vehicles/create') ?>" class="btn btn-solid">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Vehicle
+        </a>
+    </div>
+</div>
+
+<form method="GET" action="/lvms/index.php">
+    <input type="hidden" name="url" value="vehicles">
+    <div class="filter-bar">
+        <select class="filter-select" name="status" onchange="this.form.submit()">
+            <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>All Statuses</option>
+            <option value="available"         <?= $statusFilter === 'available'         ? 'selected' : '' ?>>Available</option>
+            <option value="reserved"          <?= $statusFilter === 'reserved'          ? 'selected' : '' ?>>Reserved</option>
+            <option value="on_trip"           <?= $statusFilter === 'on_trip'           ? 'selected' : '' ?>>On Trip</option>
+            <option value="under_maintenance" <?= $statusFilter === 'under_maintenance' ? 'selected' : '' ?>>Under Maintenance</option>
+            <option value="retired"           <?= $statusFilter === 'retired'           ? 'selected' : '' ?>>Retired</option>
+        </select>
+    </div>
+</form>
+
+<div class="card"><div class="table-wrap"><table class="data-table">
+    <thead>
+        <tr>
+            <th>Plate</th>
+            <th>Vehicle</th>
+            <th>Category</th>
+            <th>Capacity</th>
+            <th>Odometer</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    <?php if (empty($vehicles)): ?>
+        <tr>
+            <td colspan="7" class="td-muted" style="text-align:center;padding:24px;">
+                <?= $statusFilter !== '' ? 'No vehicles with status "' . Helpers::e($statusFilter) . '".' : 'No vehicles yet.' ?>
+            </td>
+        </tr>
+    <?php else: ?>
+        <?php foreach ($vehicles as $v): ?>
+        <tr>
+            <td><strong><?= Helpers::e($v['plate_number']) ?></strong></td>
+            <td>
+                <?= Helpers::e($v['brand'] . ' ' . $v['model']) ?><br>
+                <span class="td-muted"><?= (int) $v['year_model'] ?> — <?= $v['color'] ? Helpers::e($v['color']) : '—' ?></span>
+            </td>
+            <td class="td-muted"><?= Helpers::e($v['category_name']) ?></td>
+            <td class="td-muted">
+                <?= (int) $v['passenger_capacity'] ?> pax /
+                <?= number_format((float) $v['cargo_capacity_kg'], 0) ?> kg
+            </td>
+            <td class="td-muted"><?= number_format((float) $v['current_odometer_km'], 0) ?> km</td>
+            <td>
+                <?php
+                $sKey  = $v['status'];
+                $sBadge = $statusBadge[$sKey]  ?? 'badge-pending';
+                $sText  = $statusLabel[$sKey]  ?? $sKey;
+                ?>
+                <span class="badge <?= $sBadge ?>"><?= $sText ?></span>
+            </td>
+            <td>
+                <div class="td-actions">
+                    <a href="<?= Helpers::url('/vehicles/' . $v['vehicle_id'] . '/edit') ?>" class="btn btn-outline btn-sm">Edit</a>
+                    <a href="<?= Helpers::url('/vehicles/' . $v['vehicle_id'] . '/maintenance') ?>" class="btn btn-outline btn-sm">Maintenance</a>
+                </div>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    </tbody>
+</table></div></div>

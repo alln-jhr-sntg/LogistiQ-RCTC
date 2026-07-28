@@ -5,10 +5,12 @@ class Auth
     public static function login(array $user): void
     {
         session_regenerate_id(true);
-        $_SESSION['user_id']    = $user['user_id'];
-        $_SESSION['role']       = $user['role'];
-        $_SESSION['full_name']  = $user['first_name'] . ' ' . $user['last_name'];
-        $_SESSION['company_id'] = $user['company_id'];
+        $_SESSION['user_id']       = $user['user_id'];
+        $_SESSION['role']          = $user['role'];
+        $_SESSION['full_name']     = $user['first_name'] . ' ' . $user['last_name'];
+        $_SESSION['company_id']    = $user['company_id'];
+        $_SESSION['department_id'] = $user['department_id'] ?? null;
+        $_SESSION['profile_photo'] = $user['profile_photo'] ?? null;
     }
 
     public static function logout(): void
@@ -17,10 +19,13 @@ class Auth
         session_destroy();
     }
 
-    public static function check(): bool    { return isset($_SESSION['user_id']); }
-    public static function id(): ?int       { return $_SESSION['user_id']   ?? null; }
-    public static function role(): ?string  { return $_SESSION['role']      ?? null; }
-    public static function fullName(): ?string { return $_SESSION['full_name'] ?? null; }
+    public static function check(): bool        { return isset($_SESSION['user_id']); }
+    public static function id(): ?int           { return $_SESSION['user_id']       ?? null; }
+    public static function role(): ?string      { return $_SESSION['role']          ?? null; }
+    public static function fullName(): ?string  { return $_SESSION['full_name']     ?? null; }
+    public static function companyId(): ?int    { return $_SESSION['company_id']    ?? null; }
+    public static function departmentId(): ?int { return $_SESSION['department_id'] ?? null; }
+    public static function profilePhoto(): ?string { return $_SESSION['profile_photo'] ?? null; }
 
     public static function isSuperAdmin(): bool   { return self::role() === ROLE_SUPER_ADMIN; }
     public static function isAdmin(): bool        { return self::role() === ROLE_ADMIN; }

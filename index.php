@@ -17,6 +17,11 @@ $uri    = '/' . trim($_GET['url'], '/');
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ── Route table ──────────────────────────────────────────────
+// Dynamic segments use {id} — matched as one-or-more digits and
+// passed to the controller method in the order they appear in
+// the URI. Static segments must come before {id} patterns for
+// the same prefix to prevent 'create', 'categories', etc. from
+// being captured as an {id} segment.
 $routes = [
 
     // Auth
@@ -34,97 +39,75 @@ $routes = [
     ['GET',  '/profile', 'ProfileController', 'index'],
     ['POST', '/profile', 'ProfileController', 'update'],
 
-    // Reservations
-    ['GET',  '/reservations',          'ReservationController', 'index'],
-    ['GET',  '/reservations/create',   'ReservationController', 'create'],
-    ['POST', '/reservations/create',   'ReservationController', 'store'],
-    ['GET',  '/reservations/purposes', 'ReservationController', 'purposes'],
-    ['POST', '/reservations/purposes', 'ReservationController', 'storePurpose'],
-    ['GET',  '/reservations/1',        'ReservationController', 'detail'],
-    ['GET',  '/reservations/2',        'ReservationController', 'detail'],
-    ['GET',  '/reservations/3',        'ReservationController', 'detail'],
-    ['GET',  '/reservations/4',        'ReservationController', 'detail'],
-    ['GET',  '/reservations/1/review', 'ReservationController', 'review'],
-    ['POST', '/reservations/1/approve','ReservationController', 'approve'],
-    ['POST', '/reservations/1/reject', 'ReservationController', 'reject'],
-    ['POST', '/reservations/1/cancel', 'ReservationController', 'cancel'],
-    ['POST', '/reservations/2/cancel', 'ReservationController', 'cancel'],
-    ['POST', '/reservations/3/cancel', 'ReservationController', 'cancel'],
-    ['POST', '/reservations/4/cancel', 'ReservationController', 'cancel'],
+    // Reservations — static before {id}
+    ['GET',  '/reservations',                    'ReservationController', 'index'],
+    ['GET',  '/reservations/create',             'ReservationController', 'create'],
+    ['POST', '/reservations/create',             'ReservationController', 'store'],
+    ['GET',  '/reservations/purposes',           'ReservationController', 'purposes'],
+    ['POST', '/reservations/purposes',           'ReservationController', 'storePurpose'],
+    ['POST', '/reservations/purposes/{id}/edit', 'ReservationController', 'updatePurpose'],
+    ['GET',  '/reservations/{id}',               'ReservationController', 'detail'],
+    ['GET',  '/reservations/{id}/edit',          'ReservationController', 'editReservation'],
+    ['POST', '/reservations/{id}/edit',          'ReservationController', 'updateReservation'],
+    ['GET',  '/reservations/{id}/review',        'ReservationController', 'review'],
+    ['POST', '/reservations/{id}/approve',       'ReservationController', 'approve'],
+    ['POST', '/reservations/{id}/reject',        'ReservationController', 'reject'],
+    ['POST', '/reservations/{id}/cancel',        'ReservationController', 'cancel'],
 
-    // Trips — admin/super admin
-    ['GET',  '/trips',           'TripController', 'index'],
-    ['GET',  '/trips/1',         'TripController', 'detail'],
-    ['GET',  '/trips/2',         'TripController', 'detail'],
-    ['GET',  '/trips/3',         'TripController', 'detail'],
-    ['GET',  '/trips/1/map',     'TripController', 'liveMap'],
-    ['POST', '/trips/1/start',   'TripController', 'start'],
-    ['POST', '/trips/1/complete','TripController', 'complete'],
-    ['POST', '/trips/1/notes',   'TripController', 'notes'],
+    // Trips
+    ['GET',  '/trips',                  'TripController', 'index'],
+    ['GET',  '/trips/{id}',             'TripController', 'detail'],
+    ['GET',  '/trips/{id}/map',         'TripController', 'liveMap'],
+    ['POST', '/trips/{id}/start',       'TripController', 'start'],
+    ['POST', '/trips/{id}/complete',    'TripController', 'complete'],
+    ['POST', '/trips/{id}/notes',       'TripController', 'notes'],
+    ['GET',  '/trips/{id}/active',      'TripController', 'active'],
+    ['POST', '/trips/{id}/incident',    'TripController', 'reportIncident'],
 
-    // Trips — driver
-    ['GET',  '/trips/1/active',   'TripController', 'active'],
-    ['POST', '/trips/1/incident', 'TripController', 'reportIncident'],
+    // Vehicles — static before {id}
+    ['GET',  '/vehicles',                           'VehicleController', 'index'],
+    ['GET',  '/vehicles/create',                    'VehicleController', 'create'],
+    ['POST', '/vehicles/create',                    'VehicleController', 'store'],
+    ['GET',  '/vehicles/categories',                'VehicleController', 'categories'],
+    ['POST', '/vehicles/categories',                'VehicleController', 'storeCategory'],
+    ['POST', '/vehicles/categories/{id}/edit',      'VehicleController', 'updateCategory'],
+    ['GET',  '/vehicles/{id}/edit',                 'VehicleController', 'edit'],
+    ['POST', '/vehicles/{id}/edit',                 'VehicleController', 'update'],
+    ['GET',  '/vehicles/{id}/maintenance',          'VehicleController', 'maintenance'],
+    ['POST', '/vehicles/{id}/maintenance',          'VehicleController', 'storeMaintenance'],
+    ['POST', '/vehicles/{id}/maintenance/check',    'VehicleController', 'checkMaintenance'],
 
-    // Vehicles
-    ['GET',  '/vehicles',               'VehicleController', 'index'],
-    ['GET',  '/vehicles/create',        'VehicleController', 'create'],
-    ['POST', '/vehicles/create',        'VehicleController', 'store'],
-    ['GET',  '/vehicles/categories',      'VehicleController', 'categories'],
-    ['POST', '/vehicles/categories',      'VehicleController', 'storeCategory'],
-    ['POST', '/vehicles/categories/1/edit', 'VehicleController', 'updateCategory'],
-    ['POST', '/vehicles/categories/2/edit', 'VehicleController', 'updateCategory'],
-    ['POST', '/vehicles/categories/3/edit', 'VehicleController', 'updateCategory'],
-    ['GET',  '/vehicles/1/edit',        'VehicleController', 'edit'],
-    ['GET',  '/vehicles/2/edit',        'VehicleController', 'edit'],
-    ['GET',  '/vehicles/3/edit',        'VehicleController', 'edit'],
-    ['GET',  '/vehicles/4/edit',        'VehicleController', 'edit'],
-    ['POST', '/vehicles/1/edit',        'VehicleController', 'update'],
-    ['GET',  '/vehicles/1/maintenance', 'VehicleController', 'maintenance'],
-    ['GET',  '/vehicles/2/maintenance', 'VehicleController', 'maintenance'],
-    ['GET',  '/vehicles/3/maintenance', 'VehicleController', 'maintenance'],
-    ['GET',  '/vehicles/4/maintenance', 'VehicleController', 'maintenance'],
-    ['POST', '/vehicles/1/maintenance', 'VehicleController', 'storeMaintenance'],
+    // Users — static before {id}
+    ['GET',  '/users',                      'UserController', 'index'],
+    ['GET',  '/users/create',               'UserController', 'create'],
+    ['POST', '/users/create',               'UserController', 'store'],
+    ['GET',  '/users/{id}/edit',            'UserController', 'edit'],
+    ['POST', '/users/{id}/edit',            'UserController', 'update'],
+    ['GET',  '/users/{id}/driver-profile',  'UserController', 'driverProfile'],
+    ['POST', '/users/{id}/driver-profile',  'UserController', 'updateDriverProfile'],
 
-    // Users
-    ['GET',  '/users',                  'UserController', 'index'],
-    ['GET',  '/users/create',           'UserController', 'create'],
-    ['POST', '/users/create',           'UserController', 'store'],
-    ['GET',  '/users/1/edit',           'UserController', 'edit'],
-    ['GET',  '/users/2/edit',           'UserController', 'edit'],
-    ['GET',  '/users/3/edit',           'UserController', 'edit'],
-    ['GET',  '/users/4/edit',           'UserController', 'edit'],
-    ['POST', '/users/2/edit',           'UserController', 'update'],
-    ['GET',  '/users/3/driver-profile', 'UserController', 'driverProfile'],
-    ['POST', '/users/3/driver-profile', 'UserController', 'updateDriverProfile'],
-
-    // Companies
-    ['GET',  '/companies',              'CompanyController', 'index'],
-    ['GET',  '/companies/access',       'CompanyController', 'access'],
-    ['POST', '/companies/access',       'CompanyController', 'grantAccess'],
-    ['POST', '/companies/access/1/revoke', 'CompanyController', 'revokeAccess'],
-    ['POST', '/companies/access/2/revoke', 'CompanyController', 'revokeAccess'],
-    ['GET',  '/companies/1/departments','CompanyController', 'departments'],
-    ['GET',  '/companies/2/departments','CompanyController', 'departments'],
-    ['GET',  '/companies/3/departments','CompanyController', 'departments'],
-    ['POST', '/companies/1/departments','CompanyController', 'storeDepartment'],
+    // Companies — static before {id}
+    ['GET',  '/companies',                      'CompanyController', 'index'],
+    ['GET',  '/companies/access',               'CompanyController', 'access'],
+    ['POST', '/companies/access',               'CompanyController', 'grantAccess'],
+    ['POST', '/companies/access/{id}/revoke',   'CompanyController', 'revokeAccess'],
+    ['GET',  '/companies/{id}/departments',     'CompanyController', 'departments'],
+    ['POST', '/companies/{id}/departments',     'CompanyController', 'storeDepartment'],
 
     // Projects
-    ['GET',  '/projects',        'ProjectController', 'index'],
-    ['GET',  '/projects/create', 'ProjectController', 'create'],
-    ['POST', '/projects/create', 'ProjectController', 'store'],
-    ['GET',  '/projects/1/edit', 'ProjectController', 'edit'],
-    ['GET',  '/projects/2/edit', 'ProjectController', 'edit'],
-    ['GET',  '/projects/3/edit', 'ProjectController', 'edit'],
-    ['POST', '/projects/1/edit', 'ProjectController', 'update'],
+    ['GET',  '/projects',           'ProjectController', 'index'],
+    ['GET',  '/projects/create',    'ProjectController', 'create'],
+    ['POST', '/projects/create',    'ProjectController', 'store'],
+    ['GET',  '/projects/{id}/edit', 'ProjectController', 'edit'],
+    ['POST', '/projects/{id}/edit', 'ProjectController', 'update'],
 
     // Reports
-    ['GET', '/reports',                          'ReportController', 'index'],
-    ['GET', '/reports/trip-history',             'ReportController', 'tripHistory'],
-    ['GET', '/reports/maintenance-due',          'ReportController', 'maintenanceDue'],
-    ['GET', '/reports/vehicle-utilization',      'ReportController', 'vehicleUtilization'],
-    ['POST', '/reports/trip-history/export',     'ReportController', 'export'],
-    ['POST', '/reports/maintenance-due/export',  'ReportController', 'export'],
+    ['GET',  '/reports',                            'ReportController', 'index'],
+    ['GET',  '/reports/trip-history',               'ReportController', 'tripHistory'],
+    ['GET',  '/reports/maintenance-due',            'ReportController', 'maintenanceDue'],
+    ['GET',  '/reports/vehicle-utilization',        'ReportController', 'vehicleUtilization'],
+    ['POST', '/reports/trip-history/export',        'ReportController', 'export'],
+    ['POST', '/reports/maintenance-due/export',     'ReportController', 'export'],
     ['POST', '/reports/vehicle-utilization/export', 'ReportController', 'export'],
 
     // Notifications
@@ -137,24 +120,58 @@ $routes = [
 ];
 
 // ── Dispatch ─────────────────────────────────────────────────
+/**
+ * Compile a route pattern containing {id} placeholders into a
+ * regex. Static text is escaped; {id} becomes a capturing group
+ * matching one or more digits.
+ */
+function compileRoutePattern(string $routeUri): string
+{
+    $escaped = preg_quote($routeUri, '#');
+    $pattern = str_replace('\{id\}', '(\d+)', $escaped);
+    return '#^' . $pattern . '$#';
+}
+
 $matched = false;
 
 foreach ($routes as [$routeMethod, $routeUri, $controller, $action]) {
-    if ($method === $routeMethod && $uri === $routeUri) {
-        $matched = true;
-
-        $controllerFile = __DIR__ . '/controllers/' . $controller . '.php';
-        if (!file_exists($controllerFile)) {
-            http_response_code(501);
-            echo '501 Not Implemented';
-            exit;
-        }
-
-        require_once $controllerFile;
-        $instance = new $controller();
-        $instance->$action();
-        break;
+    if ($method !== $routeMethod) {
+        continue;
     }
+
+    if (!str_contains($routeUri, '{id}')) {
+        if ($uri !== $routeUri) {
+            continue;
+        }
+        $params = [];
+    } else {
+        $pattern = compileRoutePattern($routeUri);
+        if (!preg_match($pattern, $uri, $matches)) {
+            continue;
+        }
+        $params = array_map('intval', array_slice($matches, 1));
+    }
+
+    $matched = true;
+
+    $controllerFile = __DIR__ . '/controllers/' . $controller . '.php';
+    if (!file_exists($controllerFile)) {
+        http_response_code(501);
+        echo '501 Not Implemented';
+        exit;
+    }
+
+    require_once $controllerFile;
+    $instance = new $controller();
+
+    if (!method_exists($instance, $action)) {
+        http_response_code(501);
+        echo '501 Not Implemented — ' . htmlspecialchars($controller . '::' . $action);
+        exit;
+    }
+
+    $instance->$action(...$params);
+    break;
 }
 
 if (!$matched) {
