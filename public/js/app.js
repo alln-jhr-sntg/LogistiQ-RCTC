@@ -40,3 +40,27 @@
         }
     });
 })();
+
+// ── Notification badge polling ────────────────────────────────
+(function () {
+    var badge = document.getElementById('notifBadge');
+    if (!badge) return;
+
+    function updateBadge() {
+        fetch('/lvms/index.php?url=notifications/count')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var n = data.count || 0;
+                if (n > 0) {
+                    badge.textContent    = n > 99 ? '99+' : n;
+                    badge.style.display  = 'inline-flex';
+                } else {
+                    badge.style.display  = 'none';
+                }
+            })
+            .catch(function () { /* silent — badge stays as-is on network error */ });
+    }
+
+    updateBadge();                    // Immediate check on page load
+    setInterval(updateBadge, 30000);  // Poll every 30 seconds
+})();

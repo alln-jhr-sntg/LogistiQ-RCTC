@@ -56,8 +56,35 @@ class VehicleModel extends BaseModel
     }
 
     /**
-     * Return all vehicles currently available for assignment.
-     * Used by VehicleRecommendationService in Step 10.
+     * Return vehicles eligible for the recommendation engine.
+     * Includes status = 'available' AND 'reserved' — 'reserved' vehicles
+     * may still be schedulable for different date ranges.
+     * The Phase 1 date-overlap check in VehicleRecommendationService
+     * determines whether a specific vehicle truly conflicts with the
+     * requested window.
+     * Excludes: 'on_trip', 'under_maintenance', 'retired'.
+     *
+     * preferred_purpose_ids is included via v.* and read per-vehicle
+     * by VehicleRecommendationService for purpose_fit scoring.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findForRecommendation(): array
+    {
+        return $this->fetchAll(
+            'SELECT   v.*, vc.category_name
+             FROM     vehicles v
+             JOIN     vehicle_categories vc ON vc.category_id = v.category_id
+             WHERE    v.status IN (\'available\', \'reserved\')
+             ORDER BY v.plate_number ASC'
+        );
+    }
+
+    /**
+     * Return only vehicles with status = 'available'.
+     * Used by the review form vehicle dropdown and trip assignment.
+     * A simpler check than findForRecommendation — the admin is expected
+     * to know if a specific vehicle is suitable for the requested dates.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -85,25 +112,28 @@ class VehicleModel extends BaseModel
             'INSERT INTO vehicles
                 (category_id, plate_number, brand, model, year_model,
                  color, fuel_type, passenger_capacity, cargo_capacity_kg,
-                 current_odometer_km, gross_weight_kg, status, remarks)
+                 current_odometer_km, gross_weight_kg, status, remarks,
+                 preferred_purpose_ids)
              VALUES
                 (:category_id, :plate_number, :brand, :model, :year_model,
                  :color, :fuel_type, :passenger_capacity, :cargo_capacity_kg,
-                 :current_odometer_km, :gross_weight_kg, :status, :remarks)',
+                 :current_odometer_km, :gross_weight_kg, :status, :remarks,
+                 :preferred_purpose_ids)',
             [
-                ':category_id'         => $data['category_id'],
-                ':plate_number'        => $data['plate_number'],
-                ':brand'               => $data['brand'],
-                ':model'               => $data['model'],
-                ':year_model'          => $data['year_model'],
-                ':color'               => $data['color']               ?? null,
-                ':fuel_type'           => $data['fuel_type'],
-                ':passenger_capacity'  => $data['passenger_capacity'],
-                ':cargo_capacity_kg'   => $data['cargo_capacity_kg']   ?? 0,
-                ':current_odometer_km' => $data['current_odometer_km'] ?? 0,
-                ':gross_weight_kg'     => $data['gross_weight_kg'],
-                ':status'              => $data['status']              ?? 'available',
-                ':remarks'             => $data['remarks']             ?? null,
+                ':category_id'           => $data['category_id'],
+                ':plate_number'          => $data['plate_number'],
+                ':brand'                 => $data['brand'],
+                ':model'                 => $data['model'],
+                ':year_model'            => $data['year_model'],
+                ':color'                 => $data['color']                 ?? null,
+                ':fuel_type'             => $data['fuel_type'],
+                ':passenger_capacity'    => $data['passenger_capacity'],
+                ':cargo_capacity_kg'     => $data['cargo_capacity_kg']     ?? 0,
+                ':current_odometer_km'   => $data['current_odometer_km']   ?? 0,
+                ':gross_weight_kg'       => $data['gross_weight_kg'],
+                ':status'                => $data['status']                ?? 'available',
+                ':remarks'               => $data['remarks']               ?? null,
+                ':preferred_purpose_ids' => $data['preferred_purpose_ids'] ?? null,
             ]
         );
         return $this->lastInsertId();
@@ -121,32 +151,119 @@ class VehicleModel extends BaseModel
     {
         $this->execute(
             'UPDATE vehicles
-             SET    category_id         = :category_id,
-                    plate_number        = :plate_number,
-                    brand               = :brand,
-                    model               = :model,
-                    year_model          = :year_model,
-                    color               = :color,
-                    fuel_type           = :fuel_type,
-                    gross_weight_kg     = :gross_weight_kg,
-                    current_odometer_km = :current_odometer_km,
-                    status              = :status,
-                    remarks             = :remarks
-             WHERE  vehicle_id          = :id',
+             SET    category_id           = :category_id,
+                    plate_number          = :plate_number,
+                    brand                 = :brand,
+                    model                 = :model,
+                    year_model            = :year_model,
+                    color                 = :color,
+                    fuel_type             = :fuel_type,
+                    gross_weight_kg       = :gross_weight_kg,
+                    current_odometer_km   = :current_odometer_km,
+                    status                = :status,
+                    remarks               = :remarks,
+                    preferred_purpose_ids = :preferred_purpose_ids
+             WHERE  vehicle_id            = :id',
             [
-                ':category_id'         => $data['category_id'],
-                ':plate_number'        => $data['plate_number'],
-                ':brand'               => $data['brand'],
-                ':model'               => $data['model'],
-                ':year_model'          => $data['year_model'],
-                ':color'               => $data['color']               ?? null,
-                ':fuel_type'           => $data['fuel_type'],
-                ':gross_weight_kg'     => $data['gross_weight_kg'],
-                ':current_odometer_km' => $data['current_odometer_km'] ?? 0,
-                ':status'              => $data['status'],
-                ':remarks'             => $data['remarks']             ?? null,
-                ':id'                  => $id,
+                ':category_id'           => $data['category_id'],
+                ':plate_number'          => $data['plate_number'],
+                ':brand'                 => $data['brand'],
+                ':model'                 => $data['model'],
+                ':year_model'            => $data['year_model'],
+                ':color'                 => $data['color']                 ?? null,
+                ':fuel_type'             => $data['fuel_type'],
+                ':gross_weight_kg'       => $data['gross_weight_kg'],
+                ':current_odometer_km'   => $data['current_odometer_km']  ?? 0,
+                ':status'                => $data['status'],
+                ':remarks'               => $data['remarks']              ?? null,
+                ':preferred_purpose_ids' => $data['preferred_purpose_ids'] ?? null,
+                ':id'                    => $id,
             ]
+        );
+    }
+
+    /**
+     * Return all non-retired vehicles with their latest maintenance data,
+     * ordered by urgency (overdue first, then due soon, then ok, then no baseline).
+     * Used by ReportController::maintenanceDue().
+     *
+     * The correlated subquery finds the latest vehicle_maintenance row that
+     * has a next_service_km value set. Rows without next_service_km are skipped
+     * so they don't replace a valid baseline row.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findForMaintenanceReport(): array
+    {
+        return $this->fetchAll(
+            'SELECT v.*,
+                    vc.category_name,
+                    vm.service_date        AS last_service_date,
+                    vm.next_service_km,
+                    vm.next_service_date,
+                    vm.odometer_at_service,
+                    (v.current_odometer_km - IFNULL(vm.next_service_km, 0)) AS km_over,
+                    (IFNULL(vm.next_service_km, 0) - v.current_odometer_km) AS km_remaining
+             FROM   vehicles v
+             LEFT JOIN vehicle_categories  vc ON vc.category_id   = v.category_id
+             LEFT JOIN vehicle_maintenance vm ON vm.maintenance_id = (
+                 SELECT vm2.maintenance_id
+                 FROM   vehicle_maintenance vm2
+                 WHERE  vm2.vehicle_id      = v.vehicle_id
+                   AND  vm2.next_service_km IS NOT NULL
+                 ORDER  BY vm2.service_date DESC, vm2.maintenance_id DESC
+                 LIMIT  1
+             )
+             WHERE  v.status != \'retired\'
+             ORDER  BY
+                 CASE
+                     WHEN vm.next_service_km IS NULL                        THEN 3
+                     WHEN v.current_odometer_km >= vm.next_service_km       THEN 0
+                     WHEN v.current_odometer_km >= vm.next_service_km - 500 THEN 1
+                     ELSE                                                        2
+                 END,
+                 (v.current_odometer_km - IFNULL(vm.next_service_km, 0)) DESC'
+        );
+    }
+
+    /**
+     * Return all non-retired vehicles with completed trip counts and total
+     * distance driven within an optional date range.
+     * Uses LEFT JOIN so vehicles with zero trips in the range still appear.
+     * Used by ReportController::vehicleUtilization().
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findForUtilizationReport(string $dateFrom = '', string $dateTo = ''): array
+    {
+        // Build JOIN ON condition dynamically — positional params in JOIN ON
+        // are processed left to right by PDO just like WHERE params.
+        $joinCondition = "t.vehicle_id = v.vehicle_id AND t.trip_status = 'completed'";
+        $params        = [];
+
+        if ($dateFrom !== '') {
+            $joinCondition .= ' AND DATE(t.actual_departure) >= ?';
+            $params[]       = $dateFrom;
+        }
+        if ($dateTo !== '') {
+            $joinCondition .= ' AND DATE(t.actual_departure) <= ?';
+            $params[]       = $dateTo;
+        }
+
+        return $this->fetchAll(
+            "SELECT v.vehicle_id, v.plate_number, v.brand, v.model, v.year_model,
+                    v.status, v.current_odometer_km,
+                    vc.category_name,
+                    COUNT(t.trip_id)                                       AS trip_count,
+                    COALESCE(SUM(t.odometer_end_km - t.odometer_start_km), 0) AS total_km
+             FROM   vehicles v
+             LEFT JOIN vehicle_categories vc ON vc.category_id = v.category_id
+             LEFT JOIN trips t ON $joinCondition
+             WHERE  v.status != 'retired'
+             GROUP  BY v.vehicle_id, v.plate_number, v.brand, v.model,
+                       v.year_model, v.status, v.current_odometer_km, vc.category_name
+             ORDER  BY total_km DESC, trip_count DESC",
+            $params
         );
     }
 
@@ -172,5 +289,38 @@ class VehicleModel extends BaseModel
             'UPDATE vehicles SET status = :status WHERE vehicle_id = :id',
             [':status' => $status, ':id' => $id]
         );
+    }
+
+    /**
+     * Return true if this vehicle has an approved/in_progress reservation
+     * that overlaps the requested window. Used by VehicleRecommendationService
+     * Phase 1 availability check.
+     *
+     * Overlap condition (correct interval logic per the plan):
+     *   existing.departure < requested.return
+     *   AND existing.return > requested.departure
+     *
+     * A vehicle whose reservation ends exactly at the requested departure
+     * time is NOT considered conflicting (strict inequalities).
+     */
+    public function hasConflictingReservation(
+        int    $vehicleId,
+        string $requestedDeparture,
+        string $requestedReturn
+    ): bool {
+        $row = $this->fetchOne(
+            'SELECT COUNT(*) AS cnt
+             FROM   reservations
+             WHERE  assigned_vehicle_id = :vehicle_id
+               AND  status              IN (\'approved\', \'in_progress\')
+               AND  departure_datetime  < :requested_return
+               AND  return_datetime     > :requested_departure',
+            [
+                ':vehicle_id'          => $vehicleId,
+                ':requested_return'    => $requestedReturn,
+                ':requested_departure' => $requestedDeparture,
+            ]
+        );
+        return (int) ($row['cnt'] ?? 0) > 0;
     }
 }

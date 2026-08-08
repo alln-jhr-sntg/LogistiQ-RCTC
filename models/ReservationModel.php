@@ -98,11 +98,87 @@ class ReservationModel extends BaseModel
         }
     }
 
-    // ── Step 9 — Reservation list + detail + edit + cancel ───────
+    // ── Step 10 — AI recommendation + review ─────────────────────
+
+    /**
+     * Store the AI recommendation result on the reservation row.
+     * Called once from ReservationController::review() after the
+     * scoring engine runs. Guarded by checking ai_recommended_vehicle_id
+     * is null before calling — so it only runs once per reservation.
+     */
+    public function updateAiRecommendation(
+        int    $id,
+        ?int   $vehicleId,
+        float  $score,
+        string $notes
+    ): void {
+        $this->execute(
+            'UPDATE reservations
+             SET    ai_recommended_vehicle_id = :vehicle_id,
+                    ai_recommendation_score   = :score,
+                    ai_recommendation_notes   = :notes
+             WHERE  reservation_id            = :id',
+            [
+                ':vehicle_id' => $vehicleId,
+                ':score'      => $score,
+                ':notes'      => $notes,
+                ':id'         => $id,
+            ]
+        );
+    }
+
+    /**
+     * Approve a reservation — set status, vehicle, driver, reviewer.
+     * Driver status is NOT updated here; that happens in TripController::start()
+     * per the plan (Pre-Step Decision, Step 10 note).
+     */
+    public function approve(int $id, array $data): void
+    {
+        $this->execute(
+            'UPDATE reservations
+             SET    status              = \'approved\',
+                    assigned_vehicle_id = :vehicle_id,
+                    assigned_driver_id  = :driver_id,
+                    reviewed_by         = :reviewed_by,
+                    reviewed_at         = NOW()
+             WHERE  reservation_id      = :id',
+            [
+                ':vehicle_id'  => $data['vehicle_id'],
+                ':driver_id'   => $data['driver_id'],
+                ':reviewed_by' => $data['reviewed_by'],
+                ':id'          => $id,
+            ]
+        );
+    }
+
+    /**
+     * Reject a reservation — set status, reason, reviewer.
+     */
+    public function reject(int $id, array $data): void
+    {
+        $this->execute(
+            'UPDATE reservations
+             SET    status           = \'rejected\',
+                    rejection_reason = :reason,
+                    reviewed_by      = :reviewed_by,
+                    reviewed_at      = NOW()
+             WHERE  reservation_id   = :id',
+            [
+                ':reason'      => $data['reason'],
+                ':reviewed_by' => $data['reviewed_by'],
+                ':id'          => $id,
+            ]
+        );
+    }
 
     /**
      * Shared JOIN fragment used by all list and detail queries.
      * Aliased to avoid ambiguity between multiple joined user rows.
+     *
+     * Note: preferred_category_ids was removed from this SELECT.
+     * Purpose-fit scoring now reads preferred_purpose_ids on vehicles
+     * directly — VehicleRecommendationService no longer needs a
+     * category preference column from the reservation's joined purpose row.
      */
     private function baseSelect(): string
     {
@@ -253,6 +329,20 @@ class ReservationModel extends BaseModel
                 ':id'                 => $id,
                 ':user_id'            => $userId,
             ]
+        );
+    }
+
+    /**
+     * Update the status column directly.
+     * Used by TripController to transition: approved → in_progress → completed.
+     * All other status transitions (approve, reject, cancel) use their own
+     * dedicated methods that also set related columns (reviewed_by, etc.).
+     */
+    public function updateStatus(int $id, string $status): void
+    {
+        $this->execute(
+            'UPDATE reservations SET status = :status WHERE reservation_id = :id',
+            [':status' => $status, ':id' => $id]
         );
     }
 

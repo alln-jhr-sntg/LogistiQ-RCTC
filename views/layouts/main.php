@@ -95,6 +95,12 @@ function nav_is_active(string $path): string {
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
                 <span class="nav-label">My Reservations</span>
             </a>
+
+            <!-- Employee: trips tied to their reservations -->
+            <a href="<?= Helpers::url('/trips') ?>" title="My Trips" class="nav-item <?= nav_is_active('/trips') ?>">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M1 3h15v13H1V3zm15 4h4l3 3v6h-7V7zM5.5 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm13 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                <span class="nav-label">My Trips</span>
+            </a>
             <?php endif; ?>
 
             <?php if ($role === ROLE_DRIVER): ?>
@@ -150,8 +156,28 @@ function nav_is_active(string $path): string {
         <header class="topbar">
             <h1 class="topbar-title"><?= Helpers::e($page_title ?? '') ?></h1>
             <div class="topbar-right">
-                <a href="<?= Helpers::url('/notifications') ?>" class="topbar-notif" aria-label="Notifications">
+                <?php
+                // Render initial badge count server-side so it appears on page load,
+                // not after the first JS poll (which can take up to 30s).
+                $_initNotifCount = 0;
+                if (Auth::id()) {
+                    try {
+                        $_nm = new NotificationModel();
+                        $_initNotifCount = $_nm->getUnreadCount((int) Auth::id());
+                    } catch (Throwable $_e) { /* silent */ }
+                }
+                ?>
+                <a href="<?= Helpers::url('/notifications') ?>" class="topbar-notif" aria-label="Notifications" style="position:relative;">
                     <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                    <span id="notifBadge"
+                          style="display:<?= $_initNotifCount > 0 ? 'inline-flex' : 'none' ?>;
+                                 position:absolute; top:-4px; right:-4px;
+                                 min-width:16px; height:16px; padding:0 4px; border-radius:8px;
+                                 background:var(--clr-danger, #e5323b); color:#fff; font-size:10px;
+                                 font-weight:700; line-height:16px; text-align:center;
+                                 align-items:center; justify-content:center;">
+                        <?= $_initNotifCount > 0 ? ($_initNotifCount > 99 ? '99+' : $_initNotifCount) : '' ?>
+                    </span>
                 </a>
                 <a href="<?= Helpers::url('/profile') ?>" class="topbar-avatar" aria-label="Profile">
                     <?php if (Auth::profilePhoto()): ?>

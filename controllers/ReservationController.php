@@ -361,25 +361,172 @@ class ReservationController
         Helpers::redirect('/reservations/' . $id);
     }
 
-    // ── Step 10 — Review / Approve / Reject (stubs until Step 10) ─
+    // ── Step 10 — Review / Approve / Reject ──────────────────────
 
+    // GET /reservations/{id}/review
     public function review(int $id): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
-        $this->render('review', ['page_title' => 'Review Reservation']);
+
+        $resModel    = new ReservationModel();
+        $reservation = $resModel->findById($id);
+
+        if (!$reservation || $reservation['status'] !== 'pending') {
+            Helpers::setFlash('error', 'This reservation cannot be reviewed.');
+            Helpers::redirect('/reservations');
+        }
+
+        // Run AI recommendation only once — guard by checking if already done
+        if ($reservation['ai_recommended_vehicle_id'] === null) {
+            $topId = VehicleRecommendationService::recommend($reservation);
+
+            // Build summary note from log results
+            $logModel = new AiRecommendationLogModel();
+            $logs     = $logModel->findByReservation($id);
+            $topScore = 0.0;
+            $topName  = 'None';
+            foreach ($logs as $log) {
+                if (!$log['disqualified']
+                    && (int) $log['vehicle_id'] === (int) $topId) {
+                    $topScore = $log['score'];
+                    $topName  = $log['plate_number']
+                        . ' — ' . $log['brand'] . ' ' . $log['model'];
+                }
+            }
+            $notes = $topId
+                ? "Recommended: $topName (score: $topScore)"
+                : 'No eligible vehicles found after disqualification filters.';
+
+            $resModel->updateAiRecommendation($id, $topId, $topScore, $notes);
+            $reservation = $resModel->findById($id); // refresh with AI fields
+        }
+
+        $logModel   = new AiRecommendationLogModel();
+        $aiLogs     = $logModel->findByReservation($id);
+
+        $vehicleModel = new VehicleModel();
+        $driverModel  = new DriverProfileModel();
+
+        $this->render('review', [
+            'page_title'  => 'Review ' . $reservation['reservation_code'],
+            'reservation' => $reservation,
+            'aiLogs'      => $aiLogs,
+            'vehicles'    => $vehicleModel->findForRecommendation(),
+            'drivers'     => $driverModel->findAvailable(),
+        ]);
     }
 
+    // POST /reservations/{id}/approve
     public function approve(int $id): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
-        Helpers::setFlash('success', 'Reservation approved. (Step 10 pending)');
+
+        $vehicleId = (int) ($_POST['assigned_vehicle_id'] ?? 0);
+        $driverId  = (int) ($_POST['assigned_driver_id']  ?? 0);
+
+        if ($vehicleId === 0 || $driverId === 0) {
+            Helpers::setFlash('error', 'Please select both a vehicle and a driver.');
+            Helpers::redirect('/reservations/' . $id . '/review');
+        }
+
+        $resModel    = new ReservationModel();
+        $reservation = $resModel->findById($id);
+
+        if (!$reservation || $reservation['status'] !== 'pending') {
+            Helpers::setFlash('error', 'This reservation cannot be approved.');
+            Helpers::redirect('/reservations');
+        }
+
+        // Approve the reservation
+        $resModel->approve($id, [
+            'vehicle_id'  => $vehicleId,
+            'driver_id'   => $driverId,
+            'reviewed_by' => (int) Auth::id(),
+        ]);
+
+        // Set vehicle to 'reserved' — driver stays 'available' until trip starts (Step 11)
+        $vehicleModel = new VehicleModel();
+        $vehicleModel->updateStatus($vehicleId, 'reserved');
+
+        // Create the trip row — pending_start, ready for the driver to start via the app
+        $tripModel = new TripModel();
+        $tripModel->create([
+            'reservation_id' => $id,
+            'vehicle_id'     => $vehicleId,
+            'driver_id'      => $driverId,
+        ]);
+
+        $auditModel = new AuditLogModel();
+        $auditModel->log(
+            (int) Auth::id(),
+            'RESERVATION_APPROVED',
+            'reservations',
+            $id,
+            ['status' => 'pending'],
+            ['status' => 'approved',
+             'assigned_vehicle_id' => $vehicleId,
+             'assigned_driver_id'  => $driverId]
+        );
+
+        $notifModel = new NotificationModel();
+        $notifModel->createForUsers([(int) $reservation['requested_by']], [
+            'title'          => 'Reservation Approved',
+            'message'        => $reservation['reservation_code'] . ' — '
+                . $reservation['destination'] . ' has been approved.',
+            'type'           => 'reservation',
+            'reference_id'   => $id,
+            'reference_type' => 'reservation',
+        ]);
+
+        Helpers::setFlash('success',
+            'Reservation ' . $reservation['reservation_code'] . ' approved.');
         Helpers::redirect('/reservations/' . $id);
     }
 
+    // POST /reservations/{id}/reject
     public function reject(int $id): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
-        Helpers::setFlash('success', 'Reservation rejected. (Step 10 pending)');
+
+        $reason = trim($_POST['rejection_reason'] ?? '');
+        if ($reason === '') {
+            Helpers::setFlash('error', 'Rejection reason is required.');
+            Helpers::redirect('/reservations/' . $id . '/review');
+        }
+
+        $resModel    = new ReservationModel();
+        $reservation = $resModel->findById($id);
+
+        if (!$reservation || $reservation['status'] !== 'pending') {
+            Helpers::setFlash('error', 'This reservation cannot be rejected.');
+            Helpers::redirect('/reservations');
+        }
+
+        $resModel->reject($id, [
+            'reason'      => $reason,
+            'reviewed_by' => (int) Auth::id(),
+        ]);
+
+        $auditModel = new AuditLogModel();
+        $auditModel->log(
+            (int) Auth::id(),
+            'RESERVATION_REJECTED',
+            'reservations',
+            $id,
+            ['status' => 'pending'],
+            ['status' => 'rejected', 'rejection_reason' => $reason]
+        );
+
+        $notifModel = new NotificationModel();
+        $notifModel->createForUsers([(int) $reservation['requested_by']], [
+            'title'          => 'Reservation Rejected',
+            'message'        => $reservation['reservation_code'] . ' was rejected: ' . $reason,
+            'type'           => 'reservation',
+            'reference_id'   => $id,
+            'reference_type' => 'reservation',
+        ]);
+
+        Helpers::setFlash('success', 'Reservation rejected.');
         Helpers::redirect('/reservations/' . $id);
     }
 

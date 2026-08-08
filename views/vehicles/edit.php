@@ -6,6 +6,15 @@
     <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">← Back</a>
 </div>
 
+<?php
+// Parse the vehicle's preferred_purpose_ids CSV into a set for O(1) lookups.
+// PDO returns NULL as null and an empty column as ''. Both mean no preference.
+$rawPref         = $vehicle['preferred_purpose_ids'] ?? '';
+$selectedPurposes = ($rawPref !== null && $rawPref !== '')
+    ? array_flip(array_map('intval', explode(',', $rawPref)))
+    : [];
+?>
+
 <form method="POST" action="<?= Helpers::url('/vehicles/' . $vehicle['vehicle_id'] . '/edit') ?>">
 <div class="form-card">
     <div class="form-section-title">Vehicle Information</div>
@@ -94,6 +103,35 @@
         <label class="form-label">Remarks</label>
         <textarea class="form-textarea" name="remarks"><?= Helpers::e($vehicle['remarks'] ?? '') ?></textarea>
     </div>
+
+    <div class="form-section-title">AI Recommendation</div>
+    <div class="form-group">
+        <label class="form-label">Preferred Trip Purposes</label>
+        <div style="border: 1.5px solid var(--clr-border); border-radius: var(--radius-md);
+                    padding: 10px 14px; max-height: 160px; overflow-y: auto;
+                    background: var(--clr-bg); display: flex; flex-direction: column; gap: 8px;">
+            <?php if (empty($purposes)): ?>
+                <p style="font-size:13px; color:var(--clr-text-3); margin:0;">No active trip purposes found.</p>
+            <?php else: ?>
+                <?php foreach ($purposes as $purpose): ?>
+                <label style="display:flex; align-items:center; gap:8px;
+                               font-size:14px; color:var(--clr-text); cursor:pointer;">
+                    <input type="checkbox"
+                           name="preferred_purpose_ids[]"
+                           value="<?= (int) $purpose['purpose_id'] ?>"
+                           <?= isset($selectedPurposes[(int) $purpose['purpose_id']]) ? 'checked' : '' ?>>
+                    <?= Helpers::e($purpose['purpose_name']) ?>
+                </label>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <p class="form-hint">
+            Checked purposes score 1.0 for this vehicle; unchecked purposes score 0.0.
+            Leave all unchecked for neutral scoring (0.5) — use this when the vehicle
+            has no strong preference for any particular trip type.
+        </p>
+    </div>
+
     <div class="form-actions">
         <button type="submit" class="btn btn-solid">Save Changes</button>
         <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">Cancel</a>

@@ -47,3 +47,9 @@ const ROLE_DASHBOARD = [
 
 // App base path — no trailing slash
 const APP_BASE = '/lvms';
+
+// Google Maps JavaScript API key — used by Step 16 live map.
+// Replace the placeholder with your actual key from Google Cloud Console.
+// Required APIs: Maps JavaScript API
+// Docs: https://developers.google.com/maps/documentation/javascript/get-api-key
+const GOOGLE_MAPS_API_KEY = 'GOOGLE_MAPS_API_KEY_REMOVED';

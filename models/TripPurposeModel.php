@@ -10,6 +10,8 @@
  *   Step 8   — TripLimitService max_per_project check
  *   Step 9   — ReservationController create form dropdown
  *   Step 10  — VehicleRecommendationService purpose-fit scoring
+ *             (scoring now reads preferred_purpose_ids on vehicles,
+ *              not preferred_category_ids on trip_purposes)
  */
 class TripPurposeModel extends BaseModel
 {
@@ -28,7 +30,8 @@ class TripPurposeModel extends BaseModel
 
     /**
      * Return only active purposes.
-     * Used in reservation create form dropdown.
+     * Used in reservation create form dropdown and vehicle create/edit
+     * form preferred-purposes multi-select.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -63,17 +66,16 @@ class TripPurposeModel extends BaseModel
         $this->execute(
             'INSERT INTO trip_purposes
                 (purpose_name, description, requires_project,
-                 max_per_project, preferred_category_ids, is_active)
+                 max_per_project, is_active)
              VALUES
                 (:purpose_name, :description, :requires_project,
-                 :max_per_project, :preferred_category_ids, :is_active)',
+                 :max_per_project, :is_active)',
             [
-                ':purpose_name'          => $data['purpose_name'],
-                ':description'           => $data['description']           ?? null,
-                ':requires_project'      => $data['requires_project']      ?? 0,
-                ':max_per_project'       => $data['max_per_project']       ?? null,
-                ':preferred_category_ids'=> $data['preferred_category_ids']?? null,
-                ':is_active'             => $data['is_active']             ?? 1,
+                ':purpose_name'     => $data['purpose_name'],
+                ':description'      => $data['description']      ?? null,
+                ':requires_project' => $data['requires_project'] ?? 0,
+                ':max_per_project'  => $data['max_per_project']  ?? null,
+                ':is_active'        => $data['is_active']        ?? 1,
             ]
         );
         return $this->lastInsertId();
@@ -89,21 +91,19 @@ class TripPurposeModel extends BaseModel
     {
         $this->execute(
             'UPDATE trip_purposes
-             SET    purpose_name           = :purpose_name,
-                    description            = :description,
-                    requires_project       = :requires_project,
-                    max_per_project        = :max_per_project,
-                    preferred_category_ids = :preferred_category_ids,
-                    is_active              = :is_active
-             WHERE  purpose_id             = :id',
+             SET    purpose_name     = :purpose_name,
+                    description      = :description,
+                    requires_project = :requires_project,
+                    max_per_project  = :max_per_project,
+                    is_active        = :is_active
+             WHERE  purpose_id       = :id',
             [
-                ':purpose_name'           => $data['purpose_name'],
-                ':description'            => $data['description']            ?? null,
-                ':requires_project'       => $data['requires_project']       ?? 0,
-                ':max_per_project'        => $data['max_per_project']        ?? null,
-                ':preferred_category_ids' => $data['preferred_category_ids'] ?? null,
-                ':is_active'              => $data['is_active']              ?? 1,
-                ':id'                     => $id,
+                ':purpose_name'     => $data['purpose_name'],
+                ':description'      => $data['description']      ?? null,
+                ':requires_project' => $data['requires_project'] ?? 0,
+                ':max_per_project'  => $data['max_per_project']  ?? null,
+                ':is_active'        => $data['is_active']        ?? 1,
+                ':id'               => $id,
             ]
         );
     }

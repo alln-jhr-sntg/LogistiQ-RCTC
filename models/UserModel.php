@@ -44,6 +44,29 @@ class UserModel extends BaseModel
     }
 
     /** Store bearer token for Android API. */
+    /**
+     * Find an active user by their API bearer token.
+     * Used by api/index.php middleware on every non-login request.
+     * Returns null if the token is invalid or the user is inactive.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findByApiToken(string $token): ?array
+    {
+        return $this->fetchOne(
+            'SELECT * FROM users
+             WHERE  api_token = :token
+               AND  is_active = 1
+             LIMIT  1',
+            [':token' => $token]
+        );
+    }
+
+    /**
+     * Store or replace the bearer token for a user.
+     * Called on login — replaces any previous token.
+     * Set to NULL on logout (not currently implemented).
+     */
     public function updateApiToken(int $userId, string $token): void
     {
         $this->execute(

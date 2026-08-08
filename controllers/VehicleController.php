@@ -36,10 +36,13 @@ class VehicleController
 
         $catModel   = new VehicleCategoryModel();
         $categories = $catModel->findAll();
+        $purposeModel = new TripPurposeModel();
+        $purposes     = $purposeModel->findActive();
 
         $this->render('create', [
             'page_title' => 'Add Vehicle',
             'categories' => $categories,
+            'purposes'   => $purposes,
         ]);
     }
 
@@ -61,6 +64,9 @@ class VehicleController
         $gvwr       = (float) ($_POST['gross_weight_kg']       ?? 0);
         $status     = trim(    $_POST['status']                ?? 'available');
         $remarks    = trim(    $_POST['remarks']               ?? '') ?: null;
+        $preferredPurposeIds = !empty($_POST['preferred_purpose_ids'])
+            ? implode(',', array_map('intval', $_POST['preferred_purpose_ids']))
+            : null;
 
         if ($plate === '' || $categoryId === 0 || $brand === '' ||
             $model === '' || $yearModel === 0  || $gvwr  === 0.0) {
@@ -84,6 +90,7 @@ class VehicleController
                 'gross_weight_kg'     => $gvwr,
                 'status'              => $status,
                 'remarks'             => $remarks,
+                'preferred_purpose_ids' => $preferredPurposeIds,
             ]);
         } catch (PDOException $e) {
             if ($e->getCode() === '23000') {
@@ -124,11 +131,14 @@ class VehicleController
 
         $catModel   = new VehicleCategoryModel();
         $categories = $catModel->findAll();
+        $purposeModel = new TripPurposeModel();
+        $purposes     = $purposeModel->findActive();
 
         $this->render('edit', [
             'page_title' => 'Edit Vehicle — ' . $vehicle['plate_number'],
             'vehicle'    => $vehicle,
             'categories' => $categories,
+            'purposes'   => $purposes,
         ]);
     }
 
@@ -148,6 +158,9 @@ class VehicleController
         $odometer   = (float) ($_POST['current_odometer_km']  ?? 0);
         $status     = trim(    $_POST['status']                ?? 'available');
         $remarks    = trim(    $_POST['remarks']               ?? '') ?: null;
+        $preferredPurposeIds = !empty($_POST['preferred_purpose_ids'])
+            ? implode(',', array_map('intval', $_POST['preferred_purpose_ids']))
+            : null;
 
         if ($plate === '' || $categoryId === 0 || $brand === '' ||
             $model === '' || $yearModel === 0) {
@@ -176,6 +189,7 @@ class VehicleController
                 'current_odometer_km' => $odometer,
                 'status'              => $status,
                 'remarks'             => $remarks,
+                'preferred_purpose_ids' => $preferredPurposeIds,
             ]);
         } catch (PDOException $e) {
             if ($e->getCode() === '23000') {
@@ -418,12 +432,33 @@ class VehicleController
     }
 
     // POST /vehicles/{id}/maintenance/check
-    // Stub — wired to MaintenanceService in Step 12.
     public function checkMaintenance(int $id): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
-        // Step 12: replace this stub with MaintenanceService::checkAfterTrip()
-        Helpers::setFlash('info', 'Maintenance check will be available after Step 12.');
+
+        $vehicleModel = new VehicleModel();
+        $vehicle      = $vehicleModel->findById($id);
+
+        if (!$vehicle) {
+            Helpers::setFlash('error', 'Vehicle not found.');
+            Helpers::redirect('/vehicles');
+        }
+
+        $result = MaintenanceService::checkAfterTrip(
+            $id,
+            (float) $vehicle['current_odometer_km']
+        );
+
+        $flashes = [
+            'notified_overdue'    => ['success', $vehicle['plate_number'] . ' is overdue for service — admins have been notified.'],
+            'notified_due_soon'   => ['success', $vehicle['plate_number'] . ' is approaching its service interval — admins have been notified.'],
+            'skipped_dedup'       => ['info',    'A maintenance notification for ' . $vehicle['plate_number'] . ' was already sent in the last 24 hours.'],
+            'skipped_no_baseline' => ['info',    'No maintenance history on record for ' . $vehicle['plate_number'] . ' — log a service entry first to enable this check.'],
+            'ok'                  => ['info',    $vehicle['plate_number'] . ' odometer is within the service interval. No notification needed.'],
+        ];
+
+        [$type, $message] = $flashes[$result] ?? ['info', 'Maintenance check complete.'];
+        Helpers::setFlash($type, $message);
         Helpers::redirect('/vehicles/' . $id . '/maintenance');
     }
 }

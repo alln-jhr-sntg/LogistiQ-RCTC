@@ -166,23 +166,86 @@ $role = Auth::role();
         </div>
         <?php endif; ?>
 
-        <!-- AI recommendation panel — wired in Step 10 -->
+        <!-- AI recommendation panel — shows after review is run -->
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
         <div class="detail-card" style="margin-bottom:20px;">
             <div class="detail-card-title">Vehicle Recommendation</div>
-            <p class="td-muted" style="font-size:13px;">
-                AI recommendation scoring is wired in Step 10.
+            <?php if ($reservation['ai_recommended_vehicle_id']): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Score</div>
+                <div class="detail-field-value">
+                    <?= number_format((float) $reservation['ai_recommendation_score'], 2) ?>
+                    / 1.00
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Notes</div>
+                <div class="detail-field-value" style="font-size:13px;">
+                    <?= Helpers::e($reservation['ai_recommendation_notes'] ?? '—') ?>
+                </div>
+            </div>
+            <?php elseif ($reservation['status'] === 'pending'): ?>
+            <p class="td-muted" style="font-size:13px;margin:0;">
+                Vehicle recommendation runs when an admin opens the review form.
+                <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/review') ?>">
+                    Review now →
+                </a>
             </p>
+            <?php else: ?>
+            <p class="td-muted" style="font-size:13px;margin:0;">No recommendation data available.</p>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 
-        <!-- Trip section — wired in Step 11 -->
-        <?php if (in_array($reservation['status'], ['in_progress', 'completed'])): ?>
-        <div class="detail-card">
-            <div class="detail-card-title">Trip Execution</div>
-            <p class="td-muted" style="font-size:13px;">
-                Odometer and actual times are wired in Step 11.
-            </p>
+        <!-- Trip execution — wired in Step 11 -->
+        <?php if (!empty($trip)): ?>
+        <?php
+            $tripBadge = [
+                'pending_start' => ['class' => 'badge-pending',   'label' => 'Pending Start'],
+                'in_progress'   => ['class' => 'badge-on-trip',   'label' => 'In Progress'],
+                'completed'     => ['class' => 'badge-available', 'label' => 'Completed'],
+                'incident'      => ['class' => 'badge-cancelled', 'label' => 'Incident'],
+            ];
+            $tb = $tripBadge[$trip['trip_status']] ?? ['class' => 'badge-pending', 'label' => $trip['trip_status']];
+        ?>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Trip Execution</span>
+                <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id']) ?>"
+                   style="font-size:12px;font-weight:500;color:var(--clr-primary);">
+                    View full details →
+                </a>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Status</div>
+                <div class="detail-field-value">
+                    <span class="badge <?= $tb['class'] ?>"><?= $tb['label'] ?></span>
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Actual Departure</div>
+                <div class="detail-field-value">
+                    <?= $trip['actual_departure']
+                        ? date('D, M d Y — g:i A', strtotime($trip['actual_departure']))
+                        : '<span class="td-muted">Not yet started</span>' ?>
+                </div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Actual Return</div>
+                <div class="detail-field-value">
+                    <?= $trip['actual_return']
+                        ? date('D, M d Y — g:i A', strtotime($trip['actual_return']))
+                        : '<span class="td-muted">Still on trip</span>' ?>
+                </div>
+            </div>
+            <?php if ($trip['odometer_start_km'] !== null && $trip['odometer_end_km'] !== null): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Distance Travelled</div>
+                <div class="detail-field-value">
+                    <?= number_format((float)$trip['odometer_end_km'] - (float)$trip['odometer_start_km'], 0) ?> km
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

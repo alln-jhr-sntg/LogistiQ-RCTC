@@ -62,7 +62,8 @@ $routes = [
     ['POST', '/trips/{id}/complete',    'TripController', 'complete'],
     ['POST', '/trips/{id}/notes',       'TripController', 'notes'],
     ['GET',  '/trips/{id}/active',      'TripController', 'active'],
-    ['POST', '/trips/{id}/incident',    'TripController', 'reportIncident'],
+    ['POST', '/trips/{id}/incident',              'TripController', 'reportIncident'],
+    ['POST', '/trips/{id}/incident/{id}/resolve', 'TripController', 'resolveIncident'],
 
     // Vehicles — static before {id}
     ['GET',  '/vehicles',                           'VehicleController', 'index'],
@@ -110,9 +111,14 @@ $routes = [
     ['POST', '/reports/maintenance-due/export',     'ReportController', 'export'],
     ['POST', '/reports/vehicle-utilization/export', 'ReportController', 'export'],
 
+    // GPS feed — JSON endpoint for the admin live map
+    ['GET',  '/gps/{id}/feed', 'GpsController', 'feed'],
+
     // Notifications
-    ['GET',  '/notifications',          'NotificationController', 'index'],
-    ['POST', '/notifications/read-all', 'NotificationController', 'markAllRead'],
+    ['GET',  '/notifications',           'NotificationController', 'index'],
+    ['GET',  '/notifications/count',     'NotificationController', 'count'],
+    ['GET',  '/notifications/{id}/read', 'NotificationController', 'markOneRead'],
+    ['POST', '/notifications/read-all',  'NotificationController', 'markAllRead'],
 
     // Settings
     ['GET',  '/settings', 'SettingsController', 'index'],

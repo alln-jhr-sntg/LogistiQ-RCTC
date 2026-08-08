@@ -1,80 +1,221 @@
+<?php
+$aiRecommendedId = (int) ($reservation['ai_recommended_vehicle_id'] ?? 0);
+
+// Separate scored vs disqualified for display
+$scored       = array_filter($aiLogs, fn($l) => !(int) $l['disqualified']);
+$disqualified = array_filter($aiLogs, fn($l)  => (int)  $l['disqualified']);
+
+function scoreBar(float $score): string {
+    $pct   = (int) round($score * 100);
+    $color = $score >= 0.7 ? '#27ae60' : ($score >= 0.4 ? '#e67e22' : '#e74c3c');
+    return "<div style='display:flex;align-items:center;gap:6px;'>"
+         . "<div style='flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden;'>"
+         . "<div style='width:{$pct}%;height:100%;background:{$color};'></div></div>"
+         . "<span style='font-size:12px;color:var(--clr-text-3);min-width:30px;'>{$score}</span>"
+         . "</div>";
+}
+?>
 <div class="page-header">
-    <div class="page-header-left"><h2>Review — RES-2025-00001</h2><p>Approve or reject and assign a vehicle and driver</p></div>
-    <a href="<?= Helpers::url('/reservations/1') ?>" class="btn btn-outline">← Back</a>
-</div>
-<div class="detail-grid">
-    <div class="detail-card">
-        <div class="detail-card-title">Request Summary</div>
-        <div class="detail-field"><div class="detail-field-label">Requester</div><div class="detail-field-value">Juan dela Cruz — Engineering (REMIX)</div></div>
-        <div class="detail-field"><div class="detail-field-label">Destination</div><div class="detail-field-value">Pasig City Warehouse</div></div>
-        <div class="detail-field"><div class="detail-field-label">Departure</div><div class="detail-field-value">Dec 10, 2025 08:00 AM</div></div>
-        <div class="detail-field"><div class="detail-field-label">Return</div><div class="detail-field-value">Dec 10, 2025 05:00 PM</div></div>
-        <div class="detail-field"><div class="detail-field-label">Passengers</div><div class="detail-field-value">3</div></div>
-        <div class="detail-field"><div class="detail-field-label">Cargo</div><div class="detail-field-value">0 kg</div></div>
+    <div class="page-header-left">
+        <h2>Review <?= Helpers::e($reservation['reservation_code']) ?></h2>
+        <p>
+            <?= Helpers::e($reservation['requester_first_name'] . ' ' . $reservation['requester_last_name']) ?>
+            — <?= Helpers::e($reservation['destination']) ?>
+            — <?= date('M d, Y g:i A', strtotime($reservation['departure_datetime'])) ?>
+        </p>
     </div>
-    <div class="detail-card">
-        <div class="detail-card-title">AI Vehicle Recommendation</div>
-        <div style="background:var(--clr-bg);border-radius:var(--radius-md);padding:14px;margin-bottom:12px;">
-            <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--clr-text-3);margin-bottom:8px;">Top Match</div>
-            <div style="font-size:15px;font-weight:600;">ABC-1234 — Toyota Hi-Ace</div>
-            <div style="font-size:13px;color:var(--clr-text-3);margin:4px 0 10px;">Score: 92.50 / 100</div>
-            <div style="display:grid;gap:4px;">
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--clr-text-3);">Capacity fit</span><span>95</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--clr-text-3);">Cargo fit</span><span>100</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--clr-text-3);">Availability</span><span>90</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--clr-text-3);">Purpose fit</span><span>88</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--clr-text-3);">Maintenance</span><span>90</span></div>
-            </div>
-        </div>
-        <p style="font-size:12px;color:var(--clr-text-3);">Capstone 1 — scores are static placeholders.</p>
-    </div>
-</div>
-<div class="form-card" style="margin-bottom:16px;">
-    <div class="form-section-title">Assign & Approve</div>
-    <form method="POST" action="<?= Helpers::url('/reservations/1/approve') ?>">
-        <div class="form-row">
-            <div class="form-group"><label class="form-label">Assign Vehicle <span class="required">*</span></label><select class="form-select" name="vehicle_id" required><option value="">— Select Vehicle —</option><option value="1">ABC-1234 — Toyota Hi-Ace (Available)</option><option value="2">XYZ-5678 — Mitsubishi L300 (Available)</option></select></div>
-            <div class="form-group"><label class="form-label">Assign Driver <span class="required">*</span></label><select class="form-select" name="driver_id" required><option value="">— Select Driver —</option><option value="1">Carlos Mendoza (Available)</option><option value="2">Roberto Cruz (Available)</option></select></div>
-        </div>
-        <div class="form-actions"><button type="submit" class="btn btn-solid">Approve & Assign</button></div>
-    </form>
-</div>
-<div class="form-card">
-    <div class="form-section-title">Reject</div>
-    <form id="rejectForm" method="POST" action="<?= Helpers::url('/reservations/1/reject') ?>">
-        <div class="form-group">
-            <label class="form-label">Rejection Reason <span class="required">*</span></label>
-            <textarea class="form-textarea" name="rejection_reason" id="rejectionReasonText" placeholder="State the reason…" required></textarea>
-        </div>
-        <div class="form-actions">
-            <button type="button" class="btn btn-danger" onclick="lvmsConfirmReject()">Reject Reservation</button>
-        </div>
-    </form>
+    <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id']) ?>"
+       class="btn btn-outline">← Detail</a>
 </div>
 
-<!-- Reject Confirmation Modal -->
-<div id="rejectModal" class="modal-overlay">
-    <div class="modal-card">
-        <div class="modal-icon modal-icon-danger">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        </div>
-        <h3 class="modal-title">Reject Reservation?</h3>
-        <p class="modal-body modal-body-gap-sm">The requester will be notified with the reason below.</p>
-        <p id="rejectReasonPreview" class="modal-reason-preview"></p>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-outline" onclick="document.getElementById('rejectModal').style.display='none';">Go Back</button>
-            <button type="button" class="btn btn-danger" onclick="document.getElementById('rejectForm').submit();">Confirm Reject</button>
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:start;">
+
+<!-- ── Left: AI Recommendation Panel ───────────────────────── -->
+<div>
+    <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card-title">Request Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+            <div class="detail-field">
+                <div class="detail-field-label">Purpose</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['purpose_name']) ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Passengers</div>
+                <div class="detail-field-value"><?= (int) $reservation['passenger_count'] ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Cargo</div>
+                <div class="detail-field-value"><?= number_format((float) $reservation['cargo_weight_kg'], 0) ?> kg</div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Department</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['company_code'] . ' — ' . $reservation['department_name']) ?></div>
+            </div>
         </div>
     </div>
+
+    <?php if (!empty($scored)): ?>
+    <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card-title">Vehicle Scores</div>
+        <div class="table-wrap">
+        <table class="data-table" style="font-size:13px;">
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Capacity</th>
+                    <th>Cargo</th>
+                    <th>Avail.</th>
+                    <th>Purpose</th>
+                    <th>Maint.</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($scored as $log):
+                $isTop = (int) $log['vehicle_id'] === $aiRecommendedId;
+            ?>
+            <tr style="<?= $isTop ? 'background:var(--clr-accent);' : '' ?>">
+                <td>
+                    <?php if ($isTop): ?>
+                    <span style="font-size:10px;background:var(--clr-primary);color:#fff;
+                                 padding:1px 5px;border-radius:3px;margin-right:4px;">
+                        TOP
+                    </span>
+                    <?php endif; ?>
+                    <strong><?= Helpers::e($log['plate_number']) ?></strong><br>
+                    <span class="td-muted"><?= Helpers::e($log['brand'] . ' ' . $log['model']) ?></span>
+                </td>
+                <td><?= scoreBar((float) $log['capacity_score']) ?></td>
+                <td><?= scoreBar((float) $log['cargo_score']) ?></td>
+                <td><?= scoreBar((float) $log['availability_score']) ?></td>
+                <td><?= scoreBar((float) $log['purpose_fit_score']) ?></td>
+                <td><?= scoreBar((float) $log['maintenance_score']) ?></td>
+                <td><strong><?= $log['score'] ?></strong></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <?php else: ?>
+    <div class="detail-card" style="margin-bottom:20px;border-color:#f5a09a;">
+        <div class="detail-card-title" style="color:#c0392b;">No Eligible Vehicles</div>
+        <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
+            All available vehicles were disqualified. See the disqualification table below,
+            or override manually by selecting a vehicle in the approval form.
+        </p>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($disqualified)): ?>
+    <div class="detail-card">
+        <div class="detail-card-title">Disqualified Vehicles</div>
+        <div class="table-wrap">
+        <table class="data-table" style="font-size:13px;">
+            <thead>
+                <tr><th>Vehicle</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($disqualified as $log): ?>
+            <tr>
+                <td>
+                    <strong><?= Helpers::e($log['plate_number']) ?></strong><br>
+                    <span class="td-muted"><?= Helpers::e($log['brand'] . ' ' . $log['model']) ?></span>
+                </td>
+                <td class="td-muted"><?= Helpers::e($log['disqualify_reason']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
+
+<!-- ── Right: Decision Form ─────────────────────────────────── -->
+<div>
+    <!-- Tab toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button type="button" id="btnApprove" class="btn btn-solid"
+                onclick="showSection('approve')">Approve</button>
+        <button type="button" id="btnReject"  class="btn btn-outline"
+                onclick="showSection('reject')">Reject</button>
+    </div>
+
+    <!-- Approve form -->
+    <div id="sectionApprove" class="form-card">
+        <div class="form-section-title">Assign Vehicle &amp; Driver</div>
+        <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/approve') ?>">
+            <div class="form-group">
+                <label class="form-label">Vehicle <span class="required">*</span></label>
+                <select class="form-select" name="assigned_vehicle_id" required>
+                    <option value="">— Select Vehicle —</option>
+                    <?php foreach ($vehicles as $v): ?>
+                    <option value="<?= (int) $v['vehicle_id'] ?>"
+                        <?= (int) $v['vehicle_id'] === $aiRecommendedId ? 'selected' : '' ?>>
+                        <?= Helpers::e($v['plate_number'] . ' — ' . $v['brand'] . ' ' . $v['model']
+                            . ' (' . $v['passenger_capacity'] . ' pax)') ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <?php if ($aiRecommendedId): ?>
+                <p class="form-hint">
+                    AI recommended: <?php
+                    foreach ($scored as $log) {
+                        if ((int) $log['vehicle_id'] === $aiRecommendedId) {
+                            echo Helpers::e($log['plate_number'] . ' — score ' . $log['score']);
+                            break;
+                        }
+                    }
+                    ?> (pre-selected, override allowed)
+                </p>
+                <?php endif; ?>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Driver <span class="required">*</span></label>
+                <select class="form-select" name="assigned_driver_id" required>
+                    <option value="">— Select Driver —</option>
+                    <?php if (empty($drivers)): ?>
+                    <option disabled>No available drivers</option>
+                    <?php else: ?>
+                    <?php foreach ($drivers as $d): ?>
+                    <option value="<?= (int) $d['user_id'] ?>">
+                        <?= Helpers::e($d['first_name'] . ' ' . $d['last_name'])
+                            . ($d['employee_id'] ? ' (' . $d['employee_id'] . ')' : '') ?>
+                    </option>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-solid">Approve Reservation</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reject form (hidden by default) -->
+    <div id="sectionReject" class="form-card" style="display:none;">
+        <div class="form-section-title">Rejection Reason</div>
+        <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/reject') ?>">
+            <div class="form-group">
+                <label class="form-label">Reason <span class="required">*</span></label>
+                <textarea class="form-textarea" name="rejection_reason" rows="4" required
+                          placeholder="Explain why this reservation is being rejected..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Reject Reservation</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
+
 <script>
-function lvmsConfirmReject() {
-    var reason = document.getElementById('rejectionReasonText').value.trim();
-    if (!reason) { document.getElementById('rejectionReasonText').focus(); return; }
-    document.getElementById('rejectReasonPreview').textContent = reason;
-    document.getElementById('rejectModal').style.display = 'flex';
+function showSection(which) {
+    document.getElementById('sectionApprove').style.display = which === 'approve' ? '' : 'none';
+    document.getElementById('sectionReject').style.display  = which === 'reject'  ? '' : 'none';
+    document.getElementById('btnApprove').className = which === 'approve' ? 'btn btn-solid' : 'btn btn-outline';
+    document.getElementById('btnReject').className  = which === 'reject'  ? 'btn btn-solid' : 'btn btn-outline';
 }
-document.getElementById('rejectModal').addEventListener('click', function(e) {
-    if (e.target === this) this.style.display = 'none';
-});
 </script>

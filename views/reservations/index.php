@@ -20,12 +20,18 @@ $role = Auth::role();
 ?>
 <div class="page-header">
     <div class="page-header-left"><h2>Reservations</h2></div>
-    <?php if (in_array($role, [ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
-    <a href="<?= Helpers::url('/reservations/create') ?>" class="btn btn-solid">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        New Reservation
-    </a>
-    <?php endif; ?>
+    <div style="display: flex; gap:8px;">
+        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
+        <a href="<?= Helpers::url('/reservations/purposes') ?>" class="btn btn-outline">Purposes</a>
+        <?php endif; ?>
+
+        <?php if (in_array($role, [ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
+        <a href="<?= Helpers::url('/reservations/create') ?>" class="btn btn-solid">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            New Reservation
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- Status tabs -->

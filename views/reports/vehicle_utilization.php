@@ -7,16 +7,98 @@
         </button>
     </form>
 </div>
-<div class="tab-bar"><a href="<?= Helpers::url('/reports/trip-history') ?>" class="tab-item">Trip History</a><a href="<?= Helpers::url('/reports/maintenance-due') ?>" class="tab-item">Maintenance Due</a><a href="<?= Helpers::url('/reports/vehicle-utilization') ?>" class="tab-item active">Vehicle Utilization</a></div>
-<div class="dashboard-grid" style="margin-bottom:24px;">
-    <div class="stat-card"><div class="stat-label">Total Fleet</div><div class="stat-value">4</div></div>
-    <div class="stat-card"><div class="stat-label">Total Trips</div><div class="stat-value">—</div></div>
-    <div class="stat-card"><div class="stat-label">Total Distance</div><div class="stat-value">—</div></div>
-    <div class="stat-card"><div class="stat-label">Avg. Trips / Vehicle</div><div class="stat-value">—</div></div>
+
+<div class="tab-bar">
+    <a href="<?= Helpers::url('/reports/trip-history') ?>"         class="tab-item">Trip History</a>
+    <a href="<?= Helpers::url('/reports/maintenance-due') ?>"      class="tab-item">Maintenance Due</a>
+    <a href="<?= Helpers::url('/reports/vehicle-utilization') ?>"  class="tab-item active">Vehicle Utilization</a>
 </div>
-<div class="card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Vehicle</th><th>Category</th><th>Total Trips</th><th>Odometer</th><th>Status</th></tr></thead><tbody>
-<tr><td><strong>ABC-1234</strong><br><span class="td-muted">Toyota Hi-Ace 2022</span></td><td class="td-muted">Van</td><td>—</td><td class="td-muted">12,450 km</td><td><span class="badge badge-on-trip">On Trip</span></td></tr>
-<tr><td><strong>XYZ-5678</strong><br><span class="td-muted">Mitsubishi L300 2021</span></td><td class="td-muted">Van</td><td>—</td><td class="td-muted">34,200 km</td><td><span class="badge badge-available">Available</span></td></tr>
-<tr><td><strong>DEF-9012</strong><br><span class="td-muted">Isuzu Elf 2020</span></td><td class="td-muted">Truck</td><td>—</td><td class="td-muted">58,900 km</td><td><span class="badge badge-maintenance">Under Maintenance</span></td></tr>
-<tr><td><strong>GHI-3456</strong><br><span class="td-muted">Ford Ranger 2023</span></td><td class="td-muted">Pickup</td><td>—</td><td class="td-muted">8,100 km</td><td><span class="badge badge-available">Available</span></td></tr>
-</tbody></table></div></div>
+
+<form method="GET" action="/lvms/index.php" style="margin-bottom:16px;">
+    <input type="hidden" name="url" value="reports/vehicle-utilization">
+    <div class="filter-bar">
+        <input type="date" class="filter-input" name="date_from"
+               value="<?= Helpers::e($date_from) ?>" placeholder="From">
+        <input type="date" class="filter-input" name="date_to"
+               value="<?= Helpers::e($date_to) ?>" placeholder="To">
+        <button type="submit" class="btn btn-solid btn-sm">Filter</button>
+        <a href="<?= Helpers::url('/reports/vehicle-utilization') ?>" class="btn btn-outline btn-sm">Clear</a>
+    </div>
+</form>
+
+<?php if ($date_from !== '' || $date_to !== ''): ?>
+<p class="td-muted" style="font-size:13px; margin-bottom:16px;">
+    Showing completed trips
+    <?= $date_from ? 'from ' . date('M d, Y', strtotime($date_from)) : '' ?>
+    <?= $date_to   ? 'to '   . date('M d, Y', strtotime($date_to))   : '' ?>
+</p>
+<?php endif; ?>
+
+<div class="dashboard-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-label">Total Fleet</div>
+        <div class="stat-value"><?= $fleet_count ?></div>
+        <div class="stat-sub">Non-retired vehicles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Completed Trips</div>
+        <div class="stat-value"><?= number_format($total_trips) ?></div>
+        <div class="stat-sub"><?= ($date_from || $date_to) ? 'In selected range' : 'All time' ?></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Distance</div>
+        <div class="stat-value"><?= number_format($total_km, 0) ?> km</div>
+        <div class="stat-sub"><?= ($date_from || $date_to) ? 'In selected range' : 'All time' ?></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg. Trips / Vehicle</div>
+        <div class="stat-value"><?= $avg_trips ?></div>
+        <div class="stat-sub">Across active fleet</div>
+    </div>
+</div>
+
+<div class="card"><div class="table-wrap"><table class="data-table">
+    <thead>
+        <tr>
+            <th>Vehicle</th>
+            <th>Category</th>
+            <th>Completed Trips</th>
+            <th>Distance</th>
+            <th>Current Odometer</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    <?php if (empty($vehicles)): ?>
+        <tr><td colspan="6" class="td-muted" style="text-align:center;padding:24px;">No vehicles found.</td></tr>
+    <?php else: ?>
+        <?php foreach ($vehicles as $v): ?>
+        <?php
+            $badgeClass = match($v['status']) {
+                'available'         => 'badge-available',
+                'reserved'          => 'badge-pending',
+                'on_trip'           => 'badge-in-progress',
+                'under_maintenance' => 'badge-cancelled',
+                default             => 'badge-cancelled',
+            };
+            $statusLabel = ucwords(str_replace('_', ' ', $v['status']));
+        ?>
+        <tr>
+            <td>
+                <strong><?= Helpers::e($v['plate_number']) ?></strong><br>
+                <span class="td-muted"><?= Helpers::e($v['brand'] . ' ' . $v['model'] . ' ' . $v['year_model']) ?></span>
+            </td>
+            <td class="td-muted"><?= Helpers::e($v['category_name']) ?></td>
+            <td><?= (int) $v['trip_count'] ?></td>
+            <td class="td-muted">
+                <?= (int) $v['trip_count'] > 0
+                    ? number_format((float) $v['total_km'], 0) . ' km'
+                    : '—' ?>
+            </td>
+            <td class="td-muted"><?= number_format((float) $v['current_odometer_km'], 0) ?> km</td>
+            <td><span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span></td>
+        </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    </tbody>
+</table></div></div>
