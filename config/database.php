@@ -8,11 +8,11 @@ class Database
     public static function getInstance(): PDO
     {
         if (self::$instance === null) {
-            $host    = 'localhost';
-            $dbname  = 'lvms';
-            $user    = 'root';
-            $pass    = '';
-            $charset = 'utf8mb4';
+            $host    = DB_HOST;
+            $dbname  = DB_NAME;
+            $user    = DB_USER;
+            $pass    = DB_PASS;
+            $charset = DB_CHARSET;
             $dsn     = "mysql:host={$host};dbname={$dbname};charset={$charset}";
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,

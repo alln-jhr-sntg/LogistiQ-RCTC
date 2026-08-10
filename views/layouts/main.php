@@ -10,7 +10,7 @@ function nav_is_active(string $path): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= Helpers::e($page_title ?? 'LVMS') ?> — LVMS</title>
-    <link rel="stylesheet" href="/lvms/public/css/app.css">
+    <link rel="stylesheet" href="<?= APP_BASE ?>/public/css/app.css">
 </head>
 <body class="app-body">
 
@@ -123,7 +123,7 @@ function nav_is_active(string $path): string {
             <a href="<?= Helpers::url('/profile') ?>" class="sidebar-user" aria-label="Profile">
                 <div class="sidebar-user-avatar" >
                     <?php if (Auth::profilePhoto()): ?>
-                    <img src="/lvms/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
+                    <img src="<?= APP_BASE ?>/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
                         style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;">
                     <?php else: ?>
                     <?= strtoupper(substr(Auth::fullName() ?? 'U', 0, 1)) ?>
@@ -181,7 +181,7 @@ function nav_is_active(string $path): string {
                 </a>
                 <a href="<?= Helpers::url('/profile') ?>" class="topbar-avatar" aria-label="Profile">
                     <?php if (Auth::profilePhoto()): ?>
-                    <img src="/lvms/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
+                    <img src="<?= APP_BASE ?>/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
                         style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;">
                     <?php else: ?>
                     <?= strtoupper(substr(Auth::fullName() ?? 'U', 0, 1)) ?>
@@ -207,7 +207,8 @@ function nav_is_active(string $path): string {
 
 </div><!-- /.app-shell -->
 
-<script src="/lvms/public/js/app.js"></script>
+<script>const APP_BASE = '<?= APP_BASE ?>';</script>
+<script src="<?= APP_BASE ?>/public/js/app.js"></script>
 
 <!-- ── Logout Confirmation Modal ─────────────────────────── -->
 <div id="logoutModal" class="modal-overlay">

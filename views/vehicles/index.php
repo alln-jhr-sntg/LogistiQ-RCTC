@@ -27,7 +27,7 @@ $statusLabel = [
     </div>
 </div>
 
-<form method="GET" action="/lvms/index.php">
+<form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="vehicles">
     <div class="filter-bar">
         <select class="filter-select" name="status" onchange="this.form.submit()">

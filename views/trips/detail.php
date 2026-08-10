@@ -28,7 +28,7 @@ $statusLabel = match($trip['trip_status']) {
 // bookmark, referer stripped by browser privacy settings, etc.)
 $referer     = $_SERVER['HTTP_REFERER'] ?? '';
 $refererPath = $referer !== '' ? (parse_url($referer, PHP_URL_PATH) ?? '') : '';
-$isSameSite  = str_starts_with($refererPath, '/lvms/index.php');
+$isSameSite  = str_starts_with($refererPath, APP_BASE . '/index.php');
 
 $backUrl = $isSameSite
     ? $referer

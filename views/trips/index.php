@@ -23,7 +23,7 @@ $statuses = [
 <div class="tab-bar">
     <?php foreach ($statuses as $val => $label): ?>
         <?php if ($val === 'incident' && $isDriver) continue; ?>
-        <a href="/lvms/index.php?url=trips<?= $val !== '' ? '&status=' . $val : '' ?>"
+        <a href="<?= APP_BASE ?>/index.php?url=trips<?= $val !== '' ? '&status=' . $val : '' ?>"
            class="tab-item <?= $statusFilter === $val ? 'active' : '' ?>">
             <?= $label ?>
         </a>

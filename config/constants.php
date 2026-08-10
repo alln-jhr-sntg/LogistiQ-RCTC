@@ -45,9 +45,6 @@ const ROLE_DASHBOARD = [
     ROLE_DRIVER      => '/dashboard/driver',
 ];
 
-// App base path — no trailing slash
-const APP_BASE = '/lvms';
-
 // Google Maps JavaScript API key used by live map.
 // Required APIs: Maps JavaScript API
 require_once __DIR__ . '/secrets.php';

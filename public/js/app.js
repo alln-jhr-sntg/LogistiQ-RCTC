@@ -47,7 +47,7 @@
     if (!badge) return;
 
     function updateBadge() {
-        fetch('/lvms/index.php?url=notifications/count')
+        fetch(APP_BASE + '/index.php?url=notifications/count')
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 var n = data.count || 0;

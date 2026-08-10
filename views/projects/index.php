@@ -8,7 +8,7 @@
     </a>
 </div>
 
-<form method="GET" action="/lvms/index.php">
+<form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="projects">
     <div class="filter-bar">
         <select class="filter-select" name="company_id" onchange="this.form.submit()">

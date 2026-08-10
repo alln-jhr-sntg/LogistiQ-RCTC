@@ -13,7 +13,7 @@ $roleBadge = [
     </a>
 </div>
 
-<form method="GET" action="/lvms/index.php">
+<form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="users">
     <div class="filter-bar">
         <select class="filter-select" name="role" onchange="this.form.submit()">

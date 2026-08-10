@@ -15,7 +15,7 @@
 </div>
 
 <!-- Filters (GET so the filtered URL is bookmarkable) -->
-<form method="GET" action="/lvms/index.php" style="margin-bottom:16px;">
+<form method="GET" action="<?= APP_BASE ?>/index.php" style="margin-bottom:16px;">
     <input type="hidden" name="url" value="reports/trip-history">
     <div class="filter-bar">
         <input type="date" class="filter-input" name="date_from"

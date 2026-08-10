@@ -5,7 +5,7 @@
     <!-- Avatar / Photo card -->
     <div class="detail-card" style="text-align:center;">
         <?php if ($user['profile_photo']): ?>
-        <img src="/lvms/public/uploads/profile_photos/<?= Helpers::e($user['profile_photo']) ?>"
+        <img src="<?= APP_BASE ?>/public/uploads/profile_photos/<?= Helpers::e($user['profile_photo']) ?>"
              alt="Profile photo"
              style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;">
         <?php else: ?>

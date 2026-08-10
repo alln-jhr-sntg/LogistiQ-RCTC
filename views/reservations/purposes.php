@@ -164,7 +164,7 @@
 <script>
 function lvmsEditPurpose(id, name, description, requiresProject, maxPerProject, isActive) {
     document.getElementById('editPurposeForm').action =
-        '/lvms/index.php?url=reservations/purposes/' + id + '/edit';
+        APP_BASE + '/index.php?url=reservations/purposes/' + id + '/edit';
     document.getElementById('editPurposeName').value       = name;
     document.getElementById('editDescription').value       = description;
     document.getElementById('editRequiresProject').checked = requiresProject === 1;

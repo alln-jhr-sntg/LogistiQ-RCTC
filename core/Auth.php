@@ -36,7 +36,7 @@ class Auth
     public static function requireLogin(): void
     {
         if (!self::check()) {
-            header('Location: /lvms/index.php?url=login');
+            header('Location: ' . APP_BASE . '/index.php?url=login');
             exit;
         }
     }

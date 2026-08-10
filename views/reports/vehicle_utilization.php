@@ -14,7 +14,7 @@
     <a href="<?= Helpers::url('/reports/vehicle-utilization') ?>"  class="tab-item active">Vehicle Utilization</a>
 </div>
 
-<form method="GET" action="/lvms/index.php" style="margin-bottom:16px;">
+<form method="GET" action="<?= APP_BASE ?>/index.php" style="margin-bottom:16px;">
     <input type="hidden" name="url" value="reports/vehicle-utilization">
     <div class="filter-bar">
         <input type="date" class="filter-input" name="date_from"

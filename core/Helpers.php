@@ -4,14 +4,14 @@ class Helpers
 {
     public static function redirect(string $path): never
     {
-        $url = '/lvms/index.php?url=' . ltrim($path, '/');
+        $url = APP_BASE . '/index.php?url=' . ltrim($path, '/');
         header('Location: ' . $url);
         exit;
     }
 
     public static function url(string $path): string
     {
-        return '/lvms/index.php?url=' . ltrim($path, '/');
+        return APP_BASE . '/index.php?url=' . ltrim($path, '/');
     }
 
     public static function setFlash(string $type, string $message): void

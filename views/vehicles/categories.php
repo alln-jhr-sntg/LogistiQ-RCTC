@@ -30,7 +30,7 @@
         <tr>
             <td><strong><?= Helpers::e($cat['category_name']) ?></strong></td>
             <td><?= (int) $cat['max_passengers'] ?></td>
-            <td><?= number_format((float) $cat['max_cargo_kg'], 2) ?></td>
+            <td><?= number_format((float) $cat['max_cargo_kg'], 2, '.', '') ?></td>
             <td class="td-muted"><?= (int) $cat['vehicle_count'] ?></td>
             <td><div class="td-actions">
                 <button class="btn btn-outline btn-sm"
@@ -38,7 +38,7 @@
                         <?= (int)   $cat['category_id']   ?>,
                         '<?= addslashes(Helpers::e($cat['category_name'])) ?>',
                         <?= (int)   $cat['max_passengers'] ?>,
-                        <?= number_format((float) $cat['max_cargo_kg'], 2) ?>
+                        <?= number_format((float) $cat['max_cargo_kg'], 2, '.', '') ?>
                     )">Edit</button>
             </div></td>
         </tr>
@@ -95,7 +95,7 @@
 
 <script>
 function lvmsEditCategory(id, name, passengers, cargo) {
-    document.getElementById('editCategoryForm').action = '/lvms/index.php?url=vehicles/categories/' + id + '/edit';
+    document.getElementById('editCategoryForm').action = APP_BASE + '/index.php?url=vehicles/categories/' + id + '/edit';
     document.getElementById('editCategoryName').value = name;
     document.getElementById('editCategoryPassengers').value = passengers;
     document.getElementById('editCategoryCargo').value = cargo;

@@ -37,7 +37,7 @@ $role = Auth::role();
 <!-- Status tabs -->
 <div class="tab-bar" style="margin-bottom:20px;">
     <?php foreach ($tabs as $key => $label): ?>
-    <a href="/lvms/index.php?url=reservations<?= $key !== '' ? '&status=' . $key : '' ?>"
+    <a href="<?= APP_BASE ?>/index.php?url=reservations<?= $key !== '' ? '&status=' . $key : '' ?>"
        class="tab-item <?= $statusFilter === $key ? 'active' : '' ?>">
         <?= $label ?>
     </a>
