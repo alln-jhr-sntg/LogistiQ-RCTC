@@ -37,7 +37,7 @@ function nav_is_active(string $path): string {
                 <span class="nav-label">Dashboard</span>
             </a>
 
-            <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
+            <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN], true)): ?>
             <!-- Reservations -->
             <a href="<?= Helpers::url('/reservations') ?>" title="Reservations" class="nav-item <?= nav_is_active('/reservations') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
@@ -49,13 +49,17 @@ function nav_is_active(string $path): string {
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M1 3h15v13H1V3zm15 4h4l3 3v6h-7V7zM5.5 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm13 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
                 <span class="nav-label">Trips</span>
             </a>
+            <?php endif; ?>
 
+            <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN], true)): ?>
             <!-- Vehicles -->
             <a href="<?= Helpers::url('/vehicles') ?>" title="Vehicles" class="nav-item <?= nav_is_active('/vehicles') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5zm-8.5-4c.83 0 1.5.67 1.5 1.5S11.33 16 10.5 16 9 15.33 9 14.5 9.67 13 10.5 13zm3 0c.83 0 1.5.67 1.5 1.5S14.33 16 13.5 16 12 15.33 12 14.5 12.67 13 13.5 13z"/></svg>
                 <span class="nav-label">Vehicles</span>
             </a>
+            <?php endif; ?>
 
+            <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN], true)): ?>
             <!-- Projects -->
             <a href="<?= Helpers::url('/projects') ?>" title="Projects" class="nav-item <?= nav_is_active('/projects') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.54 15.96.5 13.46.5c-1.29 0-2.35.54-3.16 1.38L10 2.18l-.3-.3C8.9 1.04 7.84.5 6.54.5 4.04.5 2 2.54 2 4.66c0 .46.11.9.18 1.34H0v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-9.3-3.49c.38-.43.92-.69 1.76-.69 1.34 0 2.04.7 2.04 1.84 0 .46-.28 1.15-.73 1.84H10.73c-.08-.23-.53-.73-.73-1.14.1-.66.32-1.43.7-1.85zM5.5 4.16c0-1.14.7-1.84 2.04-1.84.84 0 1.38.26 1.76.69.38.43.6 1.19.7 1.85-.2.41-.65.91-.73 1.14H6.23C5.78 5.31 5.5 4.62 5.5 4.16zM20 18H4v-2h16v2zm0-5H4V8h5.08L7 11h2l2-3h2l2 3h2l-2.08-3H20v5z"/></svg>
@@ -67,15 +71,15 @@ function nav_is_active(string $path): string {
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 <span class="nav-label">Reports</span>
             </a>
-            <?php endif; ?>
 
-            <?php if ($role === ROLE_SUPER_ADMIN): ?>
             <!-- Users -->
             <a href="<?= Helpers::url('/users') ?>" title="Users" class="nav-item <?= nav_is_active('/users') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 <span class="nav-label">Users</span>
             </a>
+            <?php endif; ?>
 
+            <?php if ($role === ROLE_SUPER_ADMIN): ?>
             <!-- Companies -->
             <a href="<?= Helpers::url('/companies') ?>" title="Companies" class="nav-item <?= nav_is_active('/companies') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
@@ -131,7 +135,7 @@ function nav_is_active(string $path): string {
                 </div>
                 <div class="sidebar-user-info">
                     <div class="sidebar-user-name"><?= Helpers::e(Auth::fullName() ?? '') ?></div>
-                    <div class="sidebar-user-role"><?= Helpers::e(ucfirst(str_replace('_', ' ', Auth::role() ?? ''))) ?></div>
+                    <div class="sidebar-user-role"><?= Helpers::e(ROLE_LABELS[Auth::role()] ?? '') ?></div>
                 </div>
             </a>
             <form method="POST" action="<?= Helpers::url('/logout') ?>" id="logoutForm">

@@ -14,7 +14,7 @@ class ReservationController
     // GET /reservations
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $role   = Auth::role();
         $status = $_GET['status'] ?? '';
@@ -23,13 +23,11 @@ class ReservationController
 
         if ($role === ROLE_EMPLOYEE) {
             $reservations = $resModel->findForEmployee((int) Auth::id(), $status);
-        } elseif ($role === ROLE_ADMIN) {
-            $accessModel = new AdminDepartmentAccessModel();
-            $deptIds     = array_column(
-                $accessModel->getByAdmin((int) Auth::id()), 'department_id'
-            );
-            $reservations = $resModel->findForAdmin($deptIds, $status);
         } else {
+            // Admin, fleet_admin and super_admin see every company's
+            // reservations here — transparency is intentional. Acting on a
+            // record outside your own company is blocked separately, at the
+            // point of action (review/approve/reject/cancel/edit).
             $reservations = $resModel->findAll($status);
         }
 
@@ -45,7 +43,7 @@ class ReservationController
     // GET /reservations/create
     public function create(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $purposeModel = new TripPurposeModel();
         $projectModel = new ProjectModel();
@@ -65,7 +63,7 @@ class ReservationController
     // POST /reservations/create
     public function store(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $deptId    = Auth::departmentId();
         if (!$deptId) {
@@ -161,7 +159,7 @@ class ReservationController
     // GET /reservations/{id}
     public function detail(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $resModel    = new ReservationModel();
         $reservation = $resModel->findById($id);
@@ -188,7 +186,7 @@ class ReservationController
             && (int) $reservation['requested_by'] === (int) Auth::id()) {
             $canCancel = true;
         }
-        if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])
+        if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN], true)
             && in_array($reservation['status'], ['pending', 'approved'])) {
             $canCancel = true;
         }
@@ -206,7 +204,7 @@ class ReservationController
     // POST /reservations/{id}/cancel
     public function cancel(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $reason = trim($_POST['cancellation_reason'] ?? '');
         if ($reason === '') {
@@ -221,6 +219,8 @@ class ReservationController
             Helpers::setFlash('error', 'Reservation not found.');
             Helpers::redirect('/reservations');
         }
+
+        Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations/' . $id);
 
         $role = Auth::role();
 
@@ -260,7 +260,7 @@ class ReservationController
     // GET /reservations/{id}/edit
     public function editReservation(int $id): void
     {
-        Auth::requireRole(ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $resModel    = new ReservationModel();
         $reservation = $resModel->findById($id);
@@ -269,6 +269,8 @@ class ReservationController
             Helpers::setFlash('error', 'Reservation not found.');
             Helpers::redirect('/reservations');
         }
+
+        Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations/' . $id);
 
         // Only the requester can edit their own pending reservation
         if (Auth::role() === ROLE_EMPLOYEE &&
@@ -293,7 +295,7 @@ class ReservationController
     // POST /reservations/{id}/edit
     public function updateReservation(int $id): void
     {
-        Auth::requireRole(ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_EMPLOYEE, ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $purposeId = (int)   ($_POST['purpose_id']         ?? 0);
         $projectId = $_POST['project_id'] !== '' ? (int) $_POST['project_id'] : null;
@@ -321,6 +323,13 @@ class ReservationController
         // Fetch old values for audit log before update
         $resModel = new ReservationModel();
         $old      = $resModel->findById($id);
+
+        if (!$old) {
+            Helpers::setFlash('error', 'Reservation not found.');
+            Helpers::redirect('/reservations');
+        }
+
+        Auth::requireCompanyScope((int) $old['company_id'], '/reservations/' . $id);
 
         $affected = $resModel->updateByEmployee($id, (int) Auth::id(), [
             'purpose_id'         => $purposeId,
@@ -366,7 +375,7 @@ class ReservationController
     // GET /reservations/{id}/review
     public function review(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $resModel    = new ReservationModel();
         $reservation = $resModel->findById($id);
@@ -375,6 +384,8 @@ class ReservationController
             Helpers::setFlash('error', 'This reservation cannot be reviewed.');
             Helpers::redirect('/reservations');
         }
+
+        Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
         // Run AI recommendation only once — guard by checking if already done
         if ($reservation['ai_recommended_vehicle_id'] === null) {
@@ -419,7 +430,7 @@ class ReservationController
     // POST /reservations/{id}/approve
     public function approve(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $vehicleId = (int) ($_POST['assigned_vehicle_id'] ?? 0);
         $driverId  = (int) ($_POST['assigned_driver_id']  ?? 0);
@@ -436,6 +447,8 @@ class ReservationController
             Helpers::setFlash('error', 'This reservation cannot be approved.');
             Helpers::redirect('/reservations');
         }
+
+        Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
         // Approve the reservation
         $resModel->approve($id, [
@@ -486,7 +499,7 @@ class ReservationController
     // POST /reservations/{id}/reject
     public function reject(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $reason = trim($_POST['rejection_reason'] ?? '');
         if ($reason === '') {
@@ -501,6 +514,8 @@ class ReservationController
             Helpers::setFlash('error', 'This reservation cannot be rejected.');
             Helpers::redirect('/reservations');
         }
+
+        Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
         $resModel->reject($id, [
             'reason'      => $reason,
@@ -534,7 +549,7 @@ class ReservationController
 
     public function purposes(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
         $purposeModel = new TripPurposeModel();
         $catModel     = new VehicleCategoryModel();
         $this->render('purposes', [
@@ -546,7 +561,7 @@ class ReservationController
 
     public function storePurpose(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
         $name          = trim($_POST['purpose_name']    ?? '');
         $desc          = trim($_POST['description']     ?? '') ?: null;
         $reqProject    = isset($_POST['requires_project']) ? 1 : 0;
@@ -568,7 +583,7 @@ class ReservationController
 
     public function updatePurpose(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
         $name          = trim($_POST['purpose_name']    ?? '');
         $desc          = trim($_POST['description']     ?? '') ?: null;
         $reqProject    = isset($_POST['requires_project']) ? 1 : 0;
@@ -600,16 +615,21 @@ class ReservationController
         string $destination
     ): void {
         try {
-            // Admins with access to this department
-            $accessModel = new AdminDepartmentAccessModel();
-            $adminIds    = $accessModel->getAdminsByDepartment($deptId);
+            $userModel  = new UserModel();
+            $recipients = array_merge(
+                array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id'),
+                array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id')
+            );
 
-            // Super admins always receive notifications
-            $userModel    = new UserModel();
-            $superAdmins  = $userModel->findByRole(ROLE_SUPER_ADMIN);
-            $superIds     = array_column($superAdmins, 'user_id');
+            // Admins of the reservation's own company
+            $deptModel = new DepartmentModel();
+            $dept      = $deptModel->findById($deptId);
+            if ($dept) {
+                $companyAdmins = $userModel->findAll(ROLE_ADMIN, (int) $dept['company_id']);
+                $recipients    = array_merge($recipients, array_column($companyAdmins, 'user_id'));
+            }
 
-            $recipients = array_unique(array_merge($adminIds, $superIds));
+            $recipients = array_unique($recipients);
 
             if (empty($recipients)) {
                 return;

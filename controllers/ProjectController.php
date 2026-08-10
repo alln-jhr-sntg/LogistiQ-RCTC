@@ -9,10 +9,58 @@ class ProjectController
         require_once __DIR__ . '/../views/layouts/main.php';
     }
 
+    // Companies list scoped to what the actor may create/edit projects for:
+    //   super_admin  — every company
+    //   fleet_admin  — REMIX only
+    //   admin        — own company only
+    // Used to populate the create/edit dropdown. This is a UX filter, not
+    // the security boundary — requireProjectCompanyScope() is the boundary.
+    private function assignableCompanies(): array
+    {
+        $companyModel = new CompanyModel();
+        $role         = Auth::role();
+
+        if ($role === ROLE_SUPER_ADMIN) {
+            return $companyModel->findAll();
+        }
+        if ($role === ROLE_FLEET_ADMIN) {
+            $remix = $companyModel->findByCode('REMIX');
+            return $remix ? [$remix] : [];
+        }
+
+        $own = $companyModel->findById((int) Auth::companyId());
+        return $own ? [$own] : [];
+    }
+
+    // Project company-scope rule (differs from the generic Auth guard):
+    //   super_admin  — any company
+    //   fleet_admin  — REMIX only, not every company
+    //   admin        — own company only
+    private function requireProjectCompanyScope(int $companyId): void
+    {
+        $role = Auth::role();
+
+        if ($role === ROLE_SUPER_ADMIN) {
+            return;
+        }
+
+        if ($role === ROLE_FLEET_ADMIN) {
+            $remix = (new CompanyModel())->findByCode('REMIX');
+            if ($remix && (int) $remix['company_id'] === $companyId) {
+                return;
+            }
+        } elseif ($role === ROLE_ADMIN && $companyId === (int) Auth::companyId()) {
+            return;
+        }
+
+        Helpers::setFlash('error', 'You are not permitted to act on projects for that company.');
+        Helpers::redirect('/projects');
+    }
+
     // GET /projects
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $companyFilter = (int) ($_GET['company_id'] ?? 0);
         $projectModel  = new ProjectModel();
@@ -32,22 +80,19 @@ class ProjectController
     // GET /projects/create
     public function create(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
-
-        $companyModel = new CompanyModel();
-        $companies    = $companyModel->findAll();
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $this->render('create_edit', [
             'page_title' => 'New Project',
             'project'    => null,
-            'companies'  => $companies,
+            'companies'  => $this->assignableCompanies(),
         ]);
     }
 
     // POST /projects/create
     public function store(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $name      = trim($_POST['project_name'] ?? '');
         $code      = trim($_POST['project_code']  ?? '') ?: null;
@@ -63,6 +108,8 @@ class ProjectController
             Helpers::setFlash('error', 'Project name and company are required.');
             Helpers::redirect('/projects/create');
         }
+
+        $this->requireProjectCompanyScope($companyId);
 
         $projectModel = new ProjectModel();
         $newId        = $projectModel->create([
@@ -95,7 +142,7 @@ class ProjectController
     // GET /projects/{id}/edit
     public function edit(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $projectModel = new ProjectModel();
         $project      = $projectModel->findById($id);
@@ -105,20 +152,19 @@ class ProjectController
             Helpers::redirect('/projects');
         }
 
-        $companyModel = new CompanyModel();
-        $companies    = $companyModel->findAll();
+        $this->requireProjectCompanyScope((int) $project['company_id']);
 
         $this->render('create_edit', [
             'page_title' => 'Edit Project — ' . $project['project_name'],
             'project'    => $project,
-            'companies'  => $companies,
+            'companies'  => $this->assignableCompanies(),
         ]);
     }
 
     // POST /projects/{id}/edit
     public function update(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $name      = trim($_POST['project_name'] ?? '');
         $code      = trim($_POST['project_code']  ?? '') ?: null;
@@ -142,6 +188,11 @@ class ProjectController
             Helpers::setFlash('error', 'Project not found.');
             Helpers::redirect('/projects');
         }
+
+        // Actor must be permitted to act on the project's current company
+        // AND on the company it's being re-parented to (if different).
+        $this->requireProjectCompanyScope((int) $old['company_id']);
+        $this->requireProjectCompanyScope($companyId);
 
         $projectModel->update($id, [
             'project_name' => $name,

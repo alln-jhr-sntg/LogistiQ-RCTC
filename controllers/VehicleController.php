@@ -14,7 +14,7 @@ class VehicleController
     // GET /vehicles
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $statusFilter = $_GET['status'] ?? '';
         $vehicleModel = new VehicleModel();
@@ -32,7 +32,7 @@ class VehicleController
     // GET /vehicles/create
     public function create(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $catModel   = new VehicleCategoryModel();
         $categories = $catModel->findAll();
@@ -49,7 +49,7 @@ class VehicleController
     // POST /vehicles/create
     public function store(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $plate      = strtoupper(trim($_POST['plate_number']   ?? ''));
         $categoryId = (int)   ($_POST['category_id']           ?? 0);
@@ -119,7 +119,7 @@ class VehicleController
     // GET /vehicles/{id}/edit
     public function edit(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $vehicleModel = new VehicleModel();
         $vehicle      = $vehicleModel->findById($id);
@@ -145,7 +145,7 @@ class VehicleController
     // POST /vehicles/{id}/edit
     public function update(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $plate      = strtoupper(trim($_POST['plate_number']   ?? ''));
         $categoryId = (int)   ($_POST['category_id']           ?? 0);
@@ -218,7 +218,7 @@ class VehicleController
     // GET /vehicles/categories
     public function categories(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $catModel   = new VehicleCategoryModel();
         $categories = $catModel->findAll();
@@ -232,7 +232,7 @@ class VehicleController
     // POST /vehicles/categories
     public function storeCategory(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $name          = trim($_POST['category_name'] ?? '');
         $maxPassengers = max(1, (int)   ($_POST['max_passengers'] ?? 1));
@@ -271,7 +271,7 @@ class VehicleController
     // POST /vehicles/categories/{id}/edit
     public function updateCategory(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $name          = trim($_POST['category_name'] ?? '');
         $maxPassengers = max(1, (int)   ($_POST['max_passengers'] ?? 1));
@@ -319,7 +319,7 @@ class VehicleController
     // GET /vehicles/{id}/maintenance
     public function maintenance(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $vehicleModel = new VehicleModel();
         $vehicle      = $vehicleModel->findById($id);
@@ -368,7 +368,7 @@ class VehicleController
     // POST /vehicles/{id}/maintenance
     public function storeMaintenance(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $maintType  = trim($_POST['maintenance_type']    ?? '');
         $serviceDate = trim($_POST['service_date']       ?? '');
@@ -434,7 +434,7 @@ class VehicleController
     // POST /vehicles/{id}/maintenance/check
     public function checkMaintenance(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $vehicleModel = new VehicleModel();
         $vehicle      = $vehicleModel->findById($id);

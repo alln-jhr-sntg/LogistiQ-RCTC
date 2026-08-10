@@ -12,10 +12,16 @@ class UserController
     // GET /users
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $roleFilter    = $_GET['role']       ?? '';
         $companyFilter = (int) ($_GET['company_id'] ?? 0);
+
+        // Admin sees only their own company's staff — a directory of another
+        // company's users is not fleet transparency, unlike reservations/trips.
+        if (Auth::role() === ROLE_ADMIN) {
+            $companyFilter = (int) Auth::companyId();
+        }
 
         $userModel = new UserModel();
         $users     = $userModel->findAll($roleFilter, $companyFilter);
@@ -35,7 +41,7 @@ class UserController
     // GET /users/create
     public function create(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $companyModel = new CompanyModel();
         $deptModel    = new DepartmentModel();
@@ -50,7 +56,7 @@ class UserController
     // POST /users/create
     public function store(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $firstName    = trim($_POST['first_name']   ?? '');
         $lastName     = trim($_POST['last_name']    ?? '');
@@ -58,7 +64,7 @@ class UserController
         $password     =      $_POST['password']     ?? '';
         $role         = trim($_POST['role']         ?? '');
         $companyId    = (int) ($_POST['company_id'] ?? 0);
-        $departmentId = $_POST['department_id'] !== '' ? (int) $_POST['department_id'] : null;
+        $departmentId = ($_POST['department_id'] ?? '') !== '' ? (int) $_POST['department_id'] : null;
         $employeeId   = trim($_POST['employee_id']  ?? '') ?: null;
         $phone        = trim($_POST['phone_number'] ?? '') ?: null;
 
@@ -68,8 +74,14 @@ class UserController
             Helpers::redirect('/users/create');
         }
 
-        // Drivers and super_admins have no department
-        if (in_array($role, ['driver', 'super_admin'], true)) {
+        $allowedRoles = ROLE_ASSIGNABLE[Auth::role()] ?? [];
+        if (!in_array($role, $allowedRoles, true)) {
+            Helpers::setFlash('error', 'You are not permitted to assign that role.');
+            Helpers::redirect('/users/create');
+        }
+
+        // Drivers, super_admins, and fleet_admins have no department
+        if (in_array($role, [ROLE_DRIVER, ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN], true)) {
             $departmentId = null;
         }
 
@@ -112,7 +124,7 @@ class UserController
     // GET /users/{id}/edit
     public function edit(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $userModel = new UserModel();
         $user      = $userModel->findById($id);
@@ -136,14 +148,14 @@ class UserController
     // POST /users/{id}/edit
     public function update(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $firstName    = trim($_POST['first_name']   ?? '');
         $lastName     = trim($_POST['last_name']    ?? '');
         $email        = trim($_POST['email']        ?? '');
         $role         = trim($_POST['role']         ?? '');
         $companyId    = (int) ($_POST['company_id'] ?? 0);
-        $departmentId = $_POST['department_id'] !== '' ? (int) $_POST['department_id'] : null;
+        $departmentId = ($_POST['department_id'] ?? '') !== '' ? (int) $_POST['department_id'] : null;
         $employeeId   = trim($_POST['employee_id']  ?? '') ?: null;
         $phone        = trim($_POST['phone_number'] ?? '') ?: null;
         $isActive     = (int) ($_POST['is_active']  ?? 1);
@@ -155,16 +167,37 @@ class UserController
             Helpers::redirect('/users/' . $id . '/edit');
         }
 
-        if (in_array($role, ['driver', 'super_admin'], true)) {
-            $departmentId = null;
-        }
-
         $userModel = new UserModel();
         $old       = $userModel->findById($id);
 
         if (!$old) {
             Helpers::setFlash('error', 'User not found.');
             Helpers::redirect('/users');
+        }
+
+        $actorRole    = Auth::role();
+        $allowedRoles = ROLE_ASSIGNABLE[$actorRole] ?? [];
+
+        // The actor must be permitted to assign the submitted role AND to
+        // have created the user's current role — an admin must not be able
+        // to edit a super_admin at all, even without changing their role.
+        if (!in_array($role, $allowedRoles, true) || !in_array($old['role'], $allowedRoles, true)) {
+            Helpers::setFlash('error', 'You are not permitted to assign or edit that role.');
+            Helpers::redirect('/users/' . $id . '/edit');
+        }
+
+        if ($actorRole !== ROLE_SUPER_ADMIN && $companyId !== (int) $old['company_id']) {
+            Helpers::setFlash('error', "You are not permitted to change a user's company.");
+            Helpers::redirect('/users/' . $id . '/edit');
+        }
+
+        if ($actorRole === ROLE_ADMIN && (int) $old['company_id'] !== (int) Auth::companyId()) {
+            Helpers::setFlash('error', 'You can only edit users in your own company.');
+            Helpers::redirect('/users/' . $id . '/edit');
+        }
+
+        if (in_array($role, [ROLE_DRIVER, ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN], true)) {
+            $departmentId = null;
         }
 
         // Handle profile photo upload
@@ -224,7 +257,7 @@ class UserController
     // GET /users/{id}/driver-profile
     public function driverProfile(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $userModel = new UserModel();
         $user      = $userModel->findById($id);
@@ -247,7 +280,7 @@ class UserController
     // POST /users/{id}/driver-profile
     public function updateDriverProfile(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $licenseNumber  = trim($_POST['license_number']   ?? '');
         $licenseType    = trim($_POST['license_type']     ?? '');

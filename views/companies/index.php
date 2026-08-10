@@ -17,7 +17,6 @@ $badgeMap = [
         <h2>Companies</h2>
         <p>The three companies sharing the vehicle fleet</p>
     </div>
-    <a href="<?= Helpers::url('/companies/access') ?>" class="btn btn-outline">Admin Access Grants</a>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">

@@ -18,6 +18,15 @@ class DashboardController
         ]);
     }
 
+    public function fleetAdmin(): void
+    {
+        Auth::requireRole(ROLE_FLEET_ADMIN);
+        $this->render('fleet_admin', [
+            'page_title' => 'Dashboard',
+            'stats' => ['pending_res' => '—', 'approved_today' => '—', 'active_trips' => '—', 'vehicles_avail' => '—'],
+        ]);
+    }
+
     public function admin(): void
     {
         Auth::requireRole(ROLE_ADMIN);

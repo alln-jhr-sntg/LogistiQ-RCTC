@@ -8,14 +8,17 @@
  * These web methods are admin override paths.
  *
  * Role matrix:
- *   index()          — super_admin, admin, driver
- *   detail()         — super_admin, admin, driver
- *   start()          — super_admin, admin only (web override)
- *   complete()       — super_admin, admin only (web override)
- *   notes()          — super_admin, admin (admin_notes),
+ *   index()          — super_admin, fleet_admin, admin, driver, employee
+ *   detail()         — super_admin, fleet_admin, admin, driver, employee
+ *   start()          — super_admin, fleet_admin, admin (web override)
+ *   complete()       — super_admin, fleet_admin, admin (web override)
+ *   notes()          — super_admin, fleet_admin, admin (admin_notes),
  *                      employee (employee_notes via reservation detail)
- *   reportIncident() — super_admin, admin only (Decision 5)
- *   resolveIncident()— super_admin, admin only
+ *   reportIncident() — super_admin, fleet_admin, admin (Decision 5)
+ *   resolveIncident()— super_admin, fleet_admin, admin
+ *
+ * Admin may act only on trips belonging to their own company; super_admin
+ * and fleet_admin act across every company (shared fleet).
  */
 class TripController
 {
@@ -31,7 +34,7 @@ class TripController
     // GET /trips
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
 
         $role         = Auth::role();
         $statusFilter = $_GET['status'] ?? '';
@@ -41,13 +44,10 @@ class TripController
             $trips = $tripModel->findForDriver((int) Auth::id(), $statusFilter);
         } elseif ($role === ROLE_EMPLOYEE) {
             $trips = $tripModel->findForEmployee((int) Auth::id(), $statusFilter);
-        } elseif ($role === ROLE_ADMIN) {
-            $accessModel = new AdminDepartmentAccessModel();
-            $deptIds     = array_column(
-                $accessModel->getByAdmin((int) Auth::id()), 'department_id'
-            );
-            $trips = $tripModel->findForAdmin($deptIds, $statusFilter);
         } else {
+            // Admin, fleet_admin and super_admin see every company's trips
+            // here — transparency is intentional. Acting on a trip outside
+            // your own company is blocked separately, at the point of action.
             $trips = $tripModel->findAll($statusFilter);
         }
 
@@ -64,7 +64,7 @@ class TripController
     // GET /trips/{id}
     public function detail(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
 
         $tripModel = new TripModel();
         $trip      = $tripModel->findById($id);
@@ -106,7 +106,7 @@ class TripController
     // with 'pending_start' at approval time.
     public function start(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $odometerStart = (float) ($_POST['odometer_start_km'] ?? 0);
 
@@ -117,6 +117,8 @@ class TripController
             Helpers::setFlash('error', 'No trip found for this reservation. Has it been approved?');
             Helpers::redirect('/reservations/' . $id);
         }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/reservations/' . $id);
 
         // Guard against double-start: only pending_start can be transitioned
         if ($trip['trip_status'] !== 'pending_start') {
@@ -162,7 +164,7 @@ class TripController
     // POST /trips/{id}/complete
     public function complete(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $odometerEnd = (float) ($_POST['odometer_end_km'] ?? 0);
 
@@ -173,6 +175,8 @@ class TripController
             Helpers::setFlash('error', 'Trip not found.');
             Helpers::redirect('/trips');
         }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
         if ($trip['trip_status'] === 'completed') {
             Helpers::setFlash('error', 'This trip is already completed.');
@@ -239,7 +243,7 @@ class TripController
     // POST /trips/{id}/notes
     public function notes(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $role = Auth::role();
 
@@ -250,6 +254,8 @@ class TripController
             Helpers::setFlash('error', 'Trip not found.');
             Helpers::redirect('/trips');
         }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
         if ($trip['trip_status'] === 'completed') {
             Helpers::setFlash('error', 'Notes cannot be added to a completed trip.');
@@ -281,7 +287,7 @@ class TripController
     // POST /trips/{id}/incident
     public function reportIncident(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $tripModel = new TripModel();
         $trip      = $tripModel->findById($id);
@@ -290,6 +296,8 @@ class TripController
             Helpers::setFlash('error', 'Trip not found.');
             Helpers::redirect('/trips');
         }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
         if ($trip['trip_status'] === 'completed') {
             Helpers::setFlash('error', 'Cannot report an incident on a completed trip.');
@@ -329,11 +337,12 @@ class TripController
              'incident_type' => $incidentType]
         );
 
-        // Notify super_admins, admins, and the reservation requester
+        // Notify super_admins, fleet_admins, admins, and the reservation requester
         $userModel   = new UserModel();
         $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
         $admins      = array_column($userModel->findByRole(ROLE_ADMIN), 'user_id');
-        $recipients  = array_unique(array_merge($superAdmins, $admins));
+        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins, $admins));
 
         // Include the requester if they're not the reporter
         if ((int) $trip['requested_by'] !== (int) Auth::id()) {
@@ -361,7 +370,7 @@ class TripController
     // GET /trips/{id}/map
     public function liveMap(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $tripModel = new TripModel();
         $trip      = $tripModel->findById($id);
@@ -400,7 +409,7 @@ class TripController
     // POST /trips/{trip_id}/incident/{incident_id}/resolve
     public function resolveIncident(int $tripId, int $incidentId): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $resolutionNotes = trim($_POST['resolution_notes'] ?? '');
 
@@ -409,8 +418,25 @@ class TripController
             Helpers::redirect('/trips/' . $tripId);
         }
 
+        $tripModel = new TripModel();
+        $trip      = $tripModel->findById($tripId);
+
+        if (!$trip) {
+            Helpers::setFlash('error', 'Trip not found.');
+            Helpers::redirect('/trips');
+        }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $tripId);
+
         $incidentModel = new TripIncidentModel();
-        $updated       = $incidentModel->markResolved($incidentId, $resolutionNotes);
+        $incident      = $incidentModel->findById($incidentId);
+
+        if (!$incident || (int) $incident['trip_id'] !== $tripId) {
+            Helpers::setFlash('error', 'Incident not found on this trip.');
+            Helpers::redirect('/trips/' . $tripId);
+        }
+
+        $updated = $incidentModel->markResolved($incidentId, $resolutionNotes);
 
         if (!$updated) {
             Helpers::setFlash('error', 'Incident not found or already resolved.');
@@ -428,7 +454,6 @@ class TripController
         );
 
         // If no more unresolved incidents, revert trip_status to in_progress
-        $tripModel = new TripModel();
         if (!$incidentModel->hasUnresolvedByTrip($tripId)) {
             $tripModel->revertFromIncident($tripId);
             Helpers::setFlash('success', 'Incident resolved. Trip status restored to In Progress.');

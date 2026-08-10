@@ -3,7 +3,7 @@
         <h2>Edit User — <?= Helpers::e($user['first_name'] . ' ' . $user['last_name']) ?></h2>
         <p>
             <?= $user['employee_id'] ? Helpers::e($user['employee_id']) . ' — ' : '' ?>
-            <?= ucfirst($user['role']) ?> — <?= Helpers::e($user['company_code']) ?>
+            <?= Helpers::e(ROLE_LABELS[$user['role']] ?? ucfirst($user['role'])) ?> — <?= Helpers::e($user['company_code']) ?>
             <?= $user['department_name'] ? ' ' . Helpers::e($user['department_name']) : '' ?>
         </p>
     </div>
@@ -63,9 +63,9 @@
         <div class="form-group">
             <label class="form-label">Role <span class="required">*</span></label>
             <select class="form-select" name="role" id="roleSelect" required onchange="handleRoleChange()">
-                <?php foreach (['admin', 'employee', 'driver'] as $r): ?>
-                <option value="<?= $r ?>" <?= $user['role'] === $r ? 'selected' : '' ?>>
-                    <?= ucfirst($r) ?>
+                <?php foreach ((ROLE_ASSIGNABLE[Auth::role()] ?? []) as $r): ?>
+                <option value="<?= Helpers::e($r) ?>" <?= $user['role'] === $r ? 'selected' : '' ?>>
+                    <?= Helpers::e(ROLE_LABELS[$r] ?? ucfirst($r)) ?>
                 </option>
                 <?php endforeach; ?>
             </select>
@@ -84,7 +84,7 @@
         </div>
     </div>
     <div class="form-group" id="deptGroup"
-         <?= $user['role'] === 'driver' ? 'style="display:none"' : '' ?>>
+         <?= in_array($user['role'], [ROLE_DRIVER, ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN], true) ? 'style="display:none"' : '' ?>>
         <label class="form-label">Department</label>
         <select class="form-select" name="department_id" id="departmentSelect"
                 data-all-depts="<?= Helpers::e(json_encode($departments)) ?>">
@@ -129,8 +129,9 @@ function filterDepartments(companyId, selectedDeptId) {
 }
 
 function handleRoleChange() {
-    var role = document.getElementById('roleSelect').value;
-    document.getElementById('deptGroup').style.display = (role === 'driver') ? 'none' : '';
+    var role   = document.getElementById('roleSelect').value;
+    var noDept = ['driver', 'super_admin', 'fleet_admin'];
+    document.getElementById('deptGroup').style.display = (noDept.indexOf(role) !== -1) ? 'none' : '';
 }
 
 // Pre-populate departments for the current company on page load

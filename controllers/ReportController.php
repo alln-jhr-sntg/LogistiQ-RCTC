@@ -12,7 +12,7 @@ class ReportController
     // Redirect /reports to the first report
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
         Helpers::redirect('/reports/trip-history');
     }
 
@@ -21,9 +21,8 @@ class ReportController
     // GET /reports/trip-history
     public function tripHistory(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
-        $role    = Auth::role();
         $filters = array_filter([
             'date_from'   => $_GET['date_from']                          ?? '',
             'date_to'     => $_GET['date_to']                            ?? '',
@@ -32,21 +31,14 @@ class ReportController
             'vehicle_id'  => (int) ($_GET['vehicle_id']  ?? 0) ?: null,
         ], fn($v) => $v !== '' && $v !== null);
 
-        $deptIds = [];
-        if ($role === ROLE_ADMIN) {
-            $accessModel = new AdminDepartmentAccessModel();
-            $deptIds     = array_column(
-                $accessModel->getByAdmin((int) Auth::id()), 'department_id'
-            );
-        }
-
+        // Every company's trips are visible here — transparency is intentional.
         $tripModel    = new TripModel();
         $vehicleModel = new VehicleModel();
         $userModel    = new UserModel();
 
         $this->render('trip_history', [
             'page_title' => 'Trip History',
-            'trips'      => $tripModel->findForReport($filters, $deptIds),
+            'trips'      => $tripModel->findForReport($filters),
             'vehicles'   => $vehicleModel->findAll(),
             'drivers'    => $userModel->findByRole(ROLE_DRIVER),
             'filters'    => array_merge([
@@ -64,7 +56,7 @@ class ReportController
     // GET /reports/maintenance-due
     public function maintenanceDue(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $vehicleModel = new VehicleModel();
         $vehicles     = $vehicleModel->findForMaintenanceReport();
@@ -99,7 +91,7 @@ class ReportController
     // GET /reports/vehicle-utilization
     public function vehicleUtilization(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $dateFrom = $_GET['date_from'] ?? '';
         $dateTo   = $_GET['date_to']   ?? '';
@@ -128,7 +120,7 @@ class ReportController
 
     public function export(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
         Helpers::setFlash('info', 'Export will be available in a future update.');
         $ref    = $_SERVER['HTTP_REFERER'] ?? '';
         parse_str(parse_url($ref, PHP_URL_QUERY) ?? '', $params);

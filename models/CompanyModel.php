@@ -54,4 +54,17 @@ class CompanyModel extends BaseModel
             [':id' => $id]
         );
     }
+
+    /**
+     * Find a single company by its company_code (e.g. 'REMIX').
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findByCode(string $code): ?array
+    {
+        return $this->fetchOne(
+            'SELECT * FROM companies WHERE company_code = :code LIMIT 1',
+            [':code' => $code]
+        );
+    }
 }

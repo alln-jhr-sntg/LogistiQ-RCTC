@@ -43,9 +43,9 @@
             <label class="form-label">Role <span class="required">*</span></label>
             <select class="form-select" name="role" id="roleSelect" required onchange="handleRoleChange()">
                 <option value="">— Select Role —</option>
-                <option value="admin">Admin</option>
-                <option value="employee">Employee</option>
-                <option value="driver">Driver</option>
+                <?php foreach ((ROLE_ASSIGNABLE[Auth::role()] ?? []) as $r): ?>
+                <option value="<?= Helpers::e($r) ?>"><?= Helpers::e(ROLE_LABELS[$r] ?? ucfirst($r)) ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
         <div class="form-group">
@@ -94,6 +94,7 @@ function filterDepartments(companyId, selectedDeptId) {
 function handleRoleChange() {
     var role     = document.getElementById('roleSelect').value;
     var deptGrp  = document.getElementById('deptGroup');
-    deptGrp.style.display = (role === 'driver') ? 'none' : '';
+    var noDept   = ['driver', 'super_admin', 'fleet_admin'];
+    deptGrp.style.display = (noDept.indexOf(role) !== -1) ? 'none' : '';
 }
 </script>

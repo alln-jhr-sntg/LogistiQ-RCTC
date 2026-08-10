@@ -1,6 +1,7 @@
 <?php
 $roleBadge = [
     'super_admin' => ['class' => 'badge-in-progress', 'label' => 'Super Admin'],
+    'fleet_admin' => ['class' => 'badge-in-progress', 'label' => 'Fleet Admin'],
     'admin'       => ['class' => 'badge-approved',    'label' => 'Admin'],
     'employee'    => ['class' => 'badge-pending',     'label' => 'Employee'],
     'driver'      => ['class' => 'badge-maintenance', 'label' => 'Driver'],
@@ -19,6 +20,7 @@ $roleBadge = [
         <select class="filter-select" name="role" onchange="this.form.submit()">
             <option value="" <?= $roleFilter === '' ? 'selected' : '' ?>>All Roles</option>
             <option value="super_admin" <?= $roleFilter === 'super_admin' ? 'selected' : '' ?>>Super Admin</option>
+            <option value="fleet_admin" <?= $roleFilter === 'fleet_admin' ? 'selected' : '' ?>>Fleet Admin</option>
             <option value="admin"       <?= $roleFilter === 'admin'       ? 'selected' : '' ?>>Admin</option>
             <option value="employee"    <?= $roleFilter === 'employee'    ? 'selected' : '' ?>>Employee</option>
             <option value="driver"      <?= $roleFilter === 'driver'      ? 'selected' : '' ?>>Driver</option>

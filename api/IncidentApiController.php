@@ -82,11 +82,12 @@ class IncidentApiController extends BaseApiController
             ['trip_id' => $tripId, 'incident_type' => $incidentType, 'source' => 'android']
         );
 
-        // Notify super_admins and admins
+        // Notify super_admins, fleet_admins, and admins
         $userModel   = new UserModel();
         $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
         $admins      = array_column($userModel->findByRole(ROLE_ADMIN),       'user_id');
-        $recipients  = array_unique(array_merge($superAdmins, $admins));
+        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins, $admins));
 
         if (!empty($recipients)) {
             $notifModel = new NotificationModel();

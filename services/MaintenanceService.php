@@ -87,11 +87,12 @@ class MaintenanceService
                 . 'currently at ' . number_format($currentOdometer, 0) . ' km.';
         }
 
-        // ── 5. Notify all super_admins and admins ───────────────
+        // ── 5. Notify all super_admins, fleet_admins, and admins ─
         $userModel   = new UserModel();
         $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
         $admins      = array_column($userModel->findByRole(ROLE_ADMIN), 'user_id');
-        $recipients  = array_unique(array_merge($superAdmins, $admins));
+        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins, $admins));
 
         if (!empty($recipients)) {
             $notifModel->createForUsers($recipients, [

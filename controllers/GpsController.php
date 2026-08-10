@@ -28,7 +28,7 @@ class GpsController
     // Points are ordered newest-first (latest position = points[0]).
     public function feed(int $tripId): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $tripModel = new TripModel();
         $trip      = $tripModel->findById($tripId);
@@ -40,19 +40,8 @@ class GpsController
             exit;
         }
 
-        // Admin dept scoping — same rule as trips index and reports
-        if (Auth::role() === ROLE_ADMIN) {
-            $accessModel = new AdminDepartmentAccessModel();
-            $deptIds     = array_map('intval', array_column(
-                $accessModel->getByAdmin((int) Auth::id()), 'department_id'
-            ));
-            if (!in_array((int) $trip['department_id'], $deptIds, true)) {
-                header('Content-Type: application/json');
-                http_response_code(403);
-                echo json_encode(['error' => 'Forbidden']);
-                exit;
-            }
-        }
+        // No company scoping — the live map feed is a read-only view, and
+        // admin/fleet_admin/super_admin may all view any company's trips.
 
         $gpsModel = new GpsTrackingLogModel();
         $points   = $gpsModel->getLatestByTrip($tripId, 50);

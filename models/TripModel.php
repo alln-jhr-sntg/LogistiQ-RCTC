@@ -50,6 +50,7 @@ class TripModel extends BaseModel
                     req.last_name      AS requester_last_name,
                     d.department_name,
                     d.department_id,
+                    c.company_id,
                     c.company_name,
                     c.company_code
              FROM   trips        t
@@ -142,32 +143,6 @@ class TripModel extends BaseModel
     }
 
     /**
-     * Return trips scoped to the departments an admin has access to.
-     * If $deptIds is empty, returns nothing — not all records.
-     *
-     * @param int[] $deptIds
-     * @return array<int, array<string, mixed>>
-     */
-    public function findForAdmin(array $deptIds, string $status = ''): array
-    {
-        if (empty($deptIds)) {
-            return [];
-        }
-
-        $placeholders = implode(',', array_fill(0, count($deptIds), '?'));
-        $sql          = $this->baseSelect()
-            . " WHERE d.department_id IN ($placeholders)";
-        $params       = array_values($deptIds);
-
-        if ($status !== '') {
-            $sql    .= ' AND t.trip_status = ?';
-            $params[] = $status;
-        }
-
-        return $this->fetchAll($sql . ' ORDER BY t.created_at DESC', $params);
-    }
-
-    /**
      * Return trips for a specific employee — reservations they requested.
      * Employees can only see trips tied to their own reservations.
      *
@@ -190,22 +165,26 @@ class TripModel extends BaseModel
      * Return trips for the Trip History report with optional filters.
      * Uses positional ? params built dynamically — order matters.
      *
-     * @param array<string, mixed> $filters  Keys: date_from, date_to,
-     *                                       trip_status, driver_id, vehicle_id
-     * @param int[]                $deptIds  Non-empty = admin scoping.
-     *                                       Empty = super_admin (no scope).
+     * @param array<string, mixed> $filters     Keys: date_from, date_to,
+     *                                          trip_status, driver_id, vehicle_id
+     * @param int[]|null            $companyIds null = no company scoping (every
+     *                                          company's trips). An empty array
+     *                                          fails closed and returns nothing
+     *                                          — it never silently means "all".
      * @return array<int, array<string, mixed>>
      */
-    public function findForReport(array $filters = [], array $deptIds = []): array
+    public function findForReport(array $filters = [], ?array $companyIds = null): array
     {
         $where  = [];
         $params = [];
 
-        // Admin dept scoping
-        if (!empty($deptIds)) {
-            $placeholders = implode(',', array_fill(0, count($deptIds), '?'));
-            $where[]  = "d.department_id IN ($placeholders)";
-            $params   = array_merge($params, array_values($deptIds));
+        if ($companyIds !== null) {
+            if (empty($companyIds)) {
+                return [];
+            }
+            $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
+            $where[]  = "c.company_id IN ($placeholders)";
+            $params   = array_merge($params, array_values($companyIds));
         }
 
         if (!empty($filters['date_from'])) {

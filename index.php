@@ -31,6 +31,7 @@ $routes = [
 
     // Dashboard
     ['GET', '/dashboard/super_admin', 'DashboardController', 'superAdmin'],
+    ['GET', '/dashboard/fleet_admin', 'DashboardController', 'fleetAdmin'],
     ['GET', '/dashboard/admin',       'DashboardController', 'admin'],
     ['GET', '/dashboard/employee',    'DashboardController', 'employee'],
     ['GET', '/dashboard/driver',      'DashboardController', 'driver'],
@@ -89,9 +90,6 @@ $routes = [
 
     // Companies — static before {id}
     ['GET',  '/companies',                      'CompanyController', 'index'],
-    ['GET',  '/companies/access',               'CompanyController', 'access'],
-    ['POST', '/companies/access',               'CompanyController', 'grantAccess'],
-    ['POST', '/companies/access/{id}/revoke',   'CompanyController', 'revokeAccess'],
     ['GET',  '/companies/{id}/departments',     'CompanyController', 'departments'],
     ['POST', '/companies/{id}/departments',     'CompanyController', 'storeDepartment'],
 

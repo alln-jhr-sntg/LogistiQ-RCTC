@@ -7,7 +7,7 @@
  *
  * Step 7:  create()                          — transaction + code generation
  * Step 8:  countByProjectAndPurpose()        — TripLimitService check
- * Step 9:  findForEmployee(), findForAdmin(), findAll(), findById(),
+ * Step 9:  findForEmployee(), findAll(), findById(),
  *          updateStatus(), cancel()          — list + detail + edit + cancel
  * Step 10: updateReview()                    — approve / reject
  */
@@ -188,6 +188,7 @@ class ReservationModel extends BaseModel
                     req.last_name         AS requester_last_name,
                     req.employee_id       AS requester_employee_id,
                     d.department_name,
+                    c.company_id,
                     c.company_name,
                     c.company_code,
                     p.purpose_name,
@@ -245,34 +246,10 @@ class ReservationModel extends BaseModel
     }
 
     /**
-     * Reservations for an admin — scoped to departments they can access.
-     * The $deptIds array comes from AdminDepartmentAccessModel::getByAdmin().
-     * If empty (admin has no grants), returns nothing — not all records.
-     *
-     * @param int[]  $deptIds
-     * @return array<int, array<string, mixed>>
-     */
-    public function findForAdmin(array $deptIds, string $status = ''): array
-    {
-        if (empty($deptIds)) {
-            return [];
-        }
-
-        $placeholders = implode(',', array_fill(0, count($deptIds), '?'));
-        $sql          = $this->baseSelect()
-            . " WHERE r.department_id IN ($placeholders)";
-        $params       = array_values($deptIds);
-
-        if ($status !== '') {
-            $sql    .= ' AND r.status = ?';
-            $params[] = $status;
-        }
-
-        return $this->fetchAll($sql . ' ORDER BY r.created_at DESC', $params);
-    }
-
-    /**
-     * All reservations — super_admin only, no scoping.
+     * All reservations, no scoping. Used for the shared admin/fleet_admin/
+     * super_admin list view — cross-company visibility is intentional
+     * (transparency, per spec). Acting on a record outside your own company
+     * is blocked separately, at the point of action.
      *
      * @return array<int, array<string, mixed>>
      */

@@ -7,12 +7,20 @@
  *
  * Used in:
  *   Step 6a  — CompanyController departments list + create
- *   Step 6b  — AdminDepartmentAccessModel grant form
  *   Step 6g  — UserController employee dropdown
  *   Step 9   — ReservationController department scoping
  */
 class DepartmentModel extends BaseModel
 {
+    /** Find a department by primary key. */
+    public function findById(int $id): ?array
+    {
+        return $this->fetchOne(
+            'SELECT * FROM departments WHERE department_id = :id LIMIT 1',
+            [':id' => $id]
+        );
+    }
+
     /**
      * Return all active departments for a given company, with a count
      * of active users assigned to each department.
