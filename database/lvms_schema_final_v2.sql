@@ -84,7 +84,7 @@ CREATE TABLE departments (
 
 -- ============================================================
 -- 4. USERS
--- Roles: super_admin | admin | employee | driver
+-- Roles: super_admin | fleet_admin | admin | employee | driver
 -- For drivers: company_id = hiring company (record only)
 --              department_id = NULL
 -- For super_admin: department_id = NULL
@@ -93,7 +93,7 @@ CREATE TABLE users (
     user_id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id      INT UNSIGNED NOT NULL,
     department_id   INT UNSIGNED,
-    role            ENUM('super_admin','admin','employee','driver') NOT NULL,
+    role            ENUM('super_admin','fleet_admin','admin','employee','driver') NOT NULL,
     employee_id     VARCHAR(50)  UNIQUE,
     first_name      VARCHAR(50)  NOT NULL,
     last_name       VARCHAR(50)  NOT NULL,
@@ -115,25 +115,7 @@ ALTER TABLE system_settings
 
 
 -- ============================================================
--- 5. ADMIN DEPARTMENT ACCESS
--- Cross-company admin flexibility.
--- Super Admins bypass this table in app logic.
--- ============================================================
-CREATE TABLE admin_department_access (
-    access_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    admin_user_id   INT UNSIGNED NOT NULL,
-    department_id   INT UNSIGNED NOT NULL,
-    granted_by      INT UNSIGNED NOT NULL,
-    granted_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ada_admin   FOREIGN KEY (admin_user_id) REFERENCES users(user_id),
-    CONSTRAINT fk_ada_dept    FOREIGN KEY (department_id) REFERENCES departments(department_id),
-    CONSTRAINT fk_ada_granter FOREIGN KEY (granted_by)   REFERENCES users(user_id),
-    CONSTRAINT uq_ada         UNIQUE (admin_user_id, department_id)
-) ENGINE=InnoDB;
-
-
--- ============================================================
--- 6. DRIVER PROFILES
+-- 5. DRIVER PROFILES
 -- ============================================================
 CREATE TABLE driver_profiles (
     driver_profile_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -151,7 +133,7 @@ CREATE TABLE driver_profiles (
 
 
 -- ============================================================
--- 7. VEHICLE CATEGORIES
+-- 6. VEHICLE CATEGORIES
 -- ============================================================
 CREATE TABLE vehicle_categories (
     category_id     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -165,7 +147,7 @@ CREATE TABLE vehicle_categories (
 
 
 -- ============================================================
--- 8. VEHICLES
+-- 7. VEHICLES
 -- Shared fleet — no company_id.
 -- gross_weight_kg = GVWR for LTO weight coding compliance.
 -- preferred_purpose_ids = CSV of trip_purpose_ids this vehicle
@@ -196,7 +178,7 @@ CREATE TABLE vehicles (
 
 
 -- ============================================================
--- 9. VEHICLE MAINTENANCE
+-- 8. VEHICLE MAINTENANCE
 -- Standard interval: every 5,000 km
 -- next_service_km = odometer_at_service + 5000
 -- ============================================================
@@ -220,7 +202,7 @@ CREATE TABLE vehicle_maintenance (
 
 
 -- ============================================================
--- 10. PROJECTS
+-- 9. PROJECTS
 -- ============================================================
 CREATE TABLE projects (
     project_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -242,7 +224,7 @@ CREATE TABLE projects (
 
 
 -- ============================================================
--- 11. TRIP PURPOSES
+-- 10. TRIP PURPOSES
 -- preferred_category_ids removed — purpose-fit scoring moved
 -- to vehicles.preferred_purpose_ids (vehicle-level granularity).
 -- ============================================================
@@ -259,7 +241,7 @@ CREATE TABLE trip_purposes (
 
 
 -- ============================================================
--- 12. RESERVATIONS
+-- 11. RESERVATIONS
 -- ============================================================
 CREATE TABLE reservations (
     reservation_id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -285,6 +267,7 @@ CREATE TABLE reservations (
     status                    ENUM(
                                   'pending',
                                   'approved',
+                                  'gatepass_pending',
                                   'rejected',
                                   'cancelled',
                                   'in_progress',
@@ -307,6 +290,24 @@ CREATE TABLE reservations (
     CONSTRAINT fk_res_canceller  FOREIGN KEY (cancelled_by)        REFERENCES users(user_id),
     CONSTRAINT fk_res_ai_vehicle FOREIGN KEY (ai_recommended_vehicle_id) REFERENCES vehicles(vehicle_id),
     CONSTRAINT chk_res_dates     CHECK (return_datetime > departure_datetime)
+) ENGINE=InnoDB;
+
+
+-- ============================================================
+-- 12. GATEPASSES
+-- ============================================================
+CREATE TABLE gatepasses (
+    gatepass_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reservation_id   INT UNSIGNED NOT NULL UNIQUE,
+    gatepass_code    VARCHAR(30)  NOT NULL UNIQUE COMMENT 'e.g. GP-2026-00001',
+    status           ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+    reviewed_by      INT UNSIGNED NULL,
+    reviewed_at      TIMESTAMP NULL,
+    rejection_reason TEXT NULL,
+    created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_gatepass_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id),
+    CONSTRAINT fk_gatepass_reviewer    FOREIGN KEY (reviewed_by)    REFERENCES users(user_id)
 ) ENGINE=InnoDB;
 
 
@@ -341,18 +342,21 @@ CREATE TABLE trips (
     reservation_id      INT UNSIGNED NOT NULL UNIQUE,
     vehicle_id          INT UNSIGNED NOT NULL,
     driver_id           INT UNSIGNED NOT NULL,
+    cancelled_by        INT UNSIGNED,
     odometer_start_km   DECIMAL(10,2),
     odometer_end_km     DECIMAL(10,2),
     actual_departure    DATETIME,
     actual_return       DATETIME,
-    trip_status         ENUM('pending_start','in_progress','completed','incident') NOT NULL DEFAULT 'pending_start',
+    trip_status         ENUM('pending_start','in_progress','completed','incident','cancelled') NOT NULL DEFAULT 'pending_start',
     employee_notes      TEXT,
     admin_notes         TEXT,
+    cancellation_reason TEXT,
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_trip_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id),
     CONSTRAINT fk_trip_vehicle     FOREIGN KEY (vehicle_id)     REFERENCES vehicles(vehicle_id),
-    CONSTRAINT fk_trip_driver      FOREIGN KEY (driver_id)      REFERENCES users(user_id)
+    CONSTRAINT fk_trip_driver      FOREIGN KEY (driver_id)      REFERENCES users(user_id),
+    CONSTRAINT fk_trip_canceller   FOREIGN KEY (cancelled_by)   REFERENCES users(user_id)
 ) ENGINE=InnoDB;
 
 

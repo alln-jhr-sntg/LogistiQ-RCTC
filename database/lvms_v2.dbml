@@ -1,19 +1,5 @@
 // Database: lvms
 
-Table admin_department_access {
-  access_id "int(10) unsigned" [pk, increment]
-  admin_user_id "int(10) unsigned" [not null]
-  department_id "int(10) unsigned" [not null]
-  granted_by "int(10) unsigned" [not null]
-  granted_at timestamp [not null, default: `current_timestamp()`]
-
-  Indexes {
-    (admin_user_id, department_id) [unique, name: "uq_ada"]
-    department_id [name: "fk_ada_dept"]
-    granted_by [name: "fk_ada_granter"]
-  }
-}
-
 Table ai_recommendation_logs {
   log_id "int(10) unsigned" [pk, increment]
   reservation_id "int(10) unsigned" [not null]
@@ -94,6 +80,22 @@ Table driver_profiles {
   }
 }
 
+Table gatepasses {
+  gatepass_id "int(10) unsigned" [pk, increment]
+  reservation_id "int(10) unsigned" [unique, not null]
+  gatepass_code varchar(30) [unique, not null, note: 'e.g. GP-2026-00001']
+  status enum('pending', 'approved', 'rejected') [not null, default: 'pending']
+  reviewed_by "int(10) unsigned" [default: NULL]
+  reviewed_at timestamp [default: NULL]
+  rejection_reason text [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    reviewed_by [name: "fk_gatepass_reviewer"]
+  }
+}
+
 Table gps_tracking_logs {
   log_id "bigint(20) unsigned" [pk, increment]
   trip_id "int(10) unsigned" [not null]
@@ -167,7 +169,7 @@ Table reservations {
   cargo_description varchar(255) [default: NULL]
   departure_datetime datetime [not null]
   return_datetime datetime [not null]
-  status enum('pending', 'approved', 'rejected', 'cancelled', 'in_progress', 'completed') [not null, default: 'pending']
+  status enum('pending', 'approved', 'gatepass_pending', 'rejected', 'cancelled', 'in_progress', 'completed') [not null, default: 'pending']
   reviewed_at timestamp [default: NULL]
   rejection_reason text [default: NULL]
   cancellation_reason text [default: NULL]
@@ -209,19 +211,22 @@ Table trips {
   reservation_id "int(10) unsigned" [unique, not null]
   vehicle_id "int(10) unsigned" [not null]
   driver_id "int(10) unsigned" [not null]
+  cancelled_by "int(10) unsigned" [default: NULL]
   odometer_start_km "decimal(10,2)" [default: NULL]
   odometer_end_km "decimal(10,2)" [default: NULL]
   actual_departure datetime [default: NULL]
   actual_return datetime [default: NULL]
-  trip_status enum('pending_start', 'in_progress', 'completed', 'incident') [not null, default: 'pending_start']
+  trip_status enum('pending_start', 'in_progress', 'completed', 'incident', 'cancelled') [not null, default: 'pending_start']
   employee_notes text [default: NULL]
   admin_notes text [default: NULL]
+  cancellation_reason text [default: NULL]
   created_at timestamp [not null, default: `current_timestamp()`]
   updated_at timestamp [not null, default: `current_timestamp()`]
 
   Indexes {
     vehicle_id [name: "fk_trip_vehicle"]
     driver_id [name: "fk_trip_driver"]
+    cancelled_by [name: "fk_trip_canceller"]
     trip_status [name: "idx_trip_status"]
   }
 }
@@ -262,7 +267,7 @@ Table users {
   user_id "int(10) unsigned" [pk, increment]
   company_id "int(10) unsigned" [not null]
   department_id "int(10) unsigned" [default: NULL]
-  role enum('super_admin', 'admin', 'employee', 'driver') [not null]
+  role enum('super_admin', 'fleet_admin', 'admin', 'employee', 'driver') [not null]
   employee_id varchar(50) [unique, default: NULL]
   first_name varchar(50) [not null]
   last_name varchar(50) [not null]
@@ -339,10 +344,6 @@ Table vehicle_maintenance {
 
 // Relationships / Foreign Keys
 
-Ref: admin_department_access.admin_user_id > users.user_id
-Ref: admin_department_access.department_id > departments.department_id
-Ref: admin_department_access.granted_by > users.user_id
-
 Ref: ai_recommendation_logs.reservation_id > reservations.reservation_id
 Ref: ai_recommendation_logs.vehicle_id > vehicles.vehicle_id
 
@@ -351,6 +352,9 @@ Ref: audit_logs.user_id > users.user_id
 Ref: departments.company_id > companies.company_id
 
 Ref: driver_profiles.user_id - users.user_id
+
+Ref: gatepasses.reservation_id - reservations.reservation_id
+Ref: gatepasses.reviewed_by > users.user_id
 
 Ref: gps_tracking_logs.trip_id > trips.trip_id
 
@@ -371,6 +375,7 @@ Ref: reservations.assigned_vehicle_id > vehicles.vehicle_id
 
 Ref: system_settings.updated_by > users.user_id
 
+Ref: trips.cancelled_by > users.user_id
 Ref: trips.driver_id > users.user_id
 Ref: trips.reservation_id - reservations.reservation_id
 Ref: trips.vehicle_id > vehicles.vehicle_id
