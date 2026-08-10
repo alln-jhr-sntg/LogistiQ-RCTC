@@ -1,0 +1,387 @@
+// Database: lvms
+
+Table admin_department_access {
+  access_id "int(10) unsigned" [pk, increment]
+  admin_user_id "int(10) unsigned" [not null]
+  department_id "int(10) unsigned" [not null]
+  granted_by "int(10) unsigned" [not null]
+  granted_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    (admin_user_id, department_id) [unique, name: "uq_ada"]
+    department_id [name: "fk_ada_dept"]
+    granted_by [name: "fk_ada_granter"]
+  }
+}
+
+Table ai_recommendation_logs {
+  log_id "int(10) unsigned" [pk, increment]
+  reservation_id "int(10) unsigned" [not null]
+  vehicle_id "int(10) unsigned" [not null]
+  score "decimal(5,2)" [not null]
+  capacity_score "decimal(5,2)" [default: NULL]
+  cargo_score "decimal(5,2)" [default: NULL]
+  availability_score "decimal(5,2)" [default: NULL]
+  purpose_fit_score "decimal(5,2)" [default: NULL]
+  maintenance_score "decimal(5,2)" [default: NULL]
+  disqualified "tinyint(1)" [not null, default: 0]
+  disqualify_reason varchar(255) [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    reservation_id [name: "fk_ai_reservation"]
+    vehicle_id [name: "fk_ai_vehicle"]
+  }
+}
+
+Table audit_logs {
+  audit_id "bigint(20) unsigned" [pk, increment]
+  user_id "int(10) unsigned" [default: NULL]
+  action varchar(100) [not null]
+  table_name varchar(100) [default: NULL]
+  record_id "int(10) unsigned" [default: NULL]
+  old_values longtext [default: NULL]
+  new_values longtext [default: NULL]
+  ip_address varchar(45) [default: NULL]
+  user_agent varchar(255) [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    user_id [name: "idx_audit_user"]
+    (table_name, record_id) [name: "idx_audit_table"]
+  }
+}
+
+Table companies {
+  company_id "int(10) unsigned" [pk, increment]
+  company_name varchar(100) [not null]
+  company_code varchar(20) [unique, not null]
+  address varchar(255) [default: NULL]
+  contact_number varchar(20) [default: NULL]
+  is_active "tinyint(1)" [not null, default: 1]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+}
+
+Table departments {
+  department_id "int(10) unsigned" [pk, increment]
+  company_id "int(10) unsigned" [not null]
+  department_name varchar(100) [not null]
+  description varchar(255) [default: NULL]
+  is_active "tinyint(1)" [not null, default: 1]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    company_id [name: "fk_dept_company"]
+  }
+}
+
+Table driver_profiles {
+  driver_profile_id "int(10) unsigned" [pk, increment]
+  user_id "int(10) unsigned" [unique, not null]
+  license_number varchar(50) [not null]
+  license_type varchar(20) [not null]
+  license_expiry date [not null]
+  license_photo varchar(255) [default: NULL]
+  restriction_codes varchar(50) [default: NULL]
+  status enum('available', 'on_trip', 'off_duty', 'on_leave') [not null, default: 'available']
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    status [name: "idx_driver_status"]
+  }
+}
+
+Table gps_tracking_logs {
+  log_id "bigint(20) unsigned" [pk, increment]
+  trip_id "int(10) unsigned" [not null]
+  latitude "decimal(10,8)" [not null]
+  longitude "decimal(11,8)" [not null]
+  speed_kph "decimal(6,2)" [default: NULL]
+  heading_degrees "smallint(5) unsigned" [default: NULL]
+  accuracy_meters "decimal(8,2)" [default: NULL]
+  logged_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    (trip_id, logged_at) [name: "idx_gps_trip_time"]
+  }
+}
+
+Table notifications {
+  notification_id "int(10) unsigned" [pk, increment]
+  user_id "int(10) unsigned" [not null]
+  title varchar(150) [not null]
+  message text [not null]
+  type enum('reservation', 'trip', 'maintenance', 'system', 'incident') [not null, default: 'system']
+  reference_id "int(10) unsigned" [default: NULL]
+  reference_type varchar(50) [default: NULL]
+  is_read "tinyint(1)" [not null, default: 0]
+  created_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    (user_id, is_read) [name: "idx_notif_user_read"]
+  }
+}
+
+Table projects {
+  project_id "int(10) unsigned" [pk, increment]
+  company_id "int(10) unsigned" [not null]
+  created_by "int(10) unsigned" [not null]
+  project_name varchar(150) [not null]
+  project_code varchar(50) [default: NULL]
+  location varchar(255) [default: NULL]
+  location_lat "decimal(10,8)" [default: NULL]
+  location_lng "decimal(11,8)" [default: NULL]
+  start_date date [default: NULL]
+  end_date date [default: NULL]
+  is_active "tinyint(1)" [not null, default: 1]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    company_id [name: "fk_project_company"]
+    created_by [name: "fk_project_creator"]
+  }
+}
+
+Table reservations {
+  reservation_id "int(10) unsigned" [pk, increment]
+  reservation_code varchar(30) [unique, not null]
+  requested_by "int(10) unsigned" [not null]
+  department_id "int(10) unsigned" [not null]
+  purpose_id "int(10) unsigned" [not null]
+  project_id "int(10) unsigned" [default: NULL]
+  assigned_vehicle_id "int(10) unsigned" [default: NULL]
+  assigned_driver_id "int(10) unsigned" [default: NULL]
+  reviewed_by "int(10) unsigned" [default: NULL]
+  cancelled_by "int(10) unsigned" [default: NULL]
+  ai_recommended_vehicle_id "int(10) unsigned" [default: NULL]
+  destination varchar(255) [not null]
+  destination_lat "decimal(10,8)" [default: NULL]
+  destination_lng "decimal(11,8)" [default: NULL]
+  trip_details text [default: NULL]
+  passenger_count "tinyint(3) unsigned" [not null]
+  cargo_weight_kg "decimal(10,2)" [not null, default: 0.00]
+  cargo_description varchar(255) [default: NULL]
+  departure_datetime datetime [not null]
+  return_datetime datetime [not null]
+  status enum('pending', 'approved', 'rejected', 'cancelled', 'in_progress', 'completed') [not null, default: 'pending']
+  reviewed_at timestamp [default: NULL]
+  rejection_reason text [default: NULL]
+  cancellation_reason text [default: NULL]
+  ai_recommendation_score "decimal(5,2)" [default: NULL]
+  ai_recommendation_notes text [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    purpose_id [name: "fk_res_purpose"]
+    project_id [name: "fk_res_project"]
+    assigned_vehicle_id [name: "fk_res_vehicle"]
+    assigned_driver_id [name: "fk_res_driver"]
+    reviewed_by [name: "fk_res_reviewer"]
+    cancelled_by [name: "fk_res_canceller"]
+    ai_recommended_vehicle_id [name: "fk_res_ai_vehicle"]
+    status [name: "idx_res_status"]
+    departure_datetime [name: "idx_res_departure"]
+    requested_by [name: "idx_res_requested_by"]
+    department_id [name: "idx_res_department"]
+  }
+}
+
+Table system_settings {
+  setting_id "int(10) unsigned" [pk, increment]
+  setting_key varchar(100) [unique, not null]
+  setting_value text [not null]
+  description varchar(255) [default: NULL]
+  updated_by "int(10) unsigned" [default: NULL]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    updated_by [name: "fk_settings_updater"]
+  }
+}
+
+Table trips {
+  trip_id "int(10) unsigned" [pk, increment]
+  reservation_id "int(10) unsigned" [unique, not null]
+  vehicle_id "int(10) unsigned" [not null]
+  driver_id "int(10) unsigned" [not null]
+  odometer_start_km "decimal(10,2)" [default: NULL]
+  odometer_end_km "decimal(10,2)" [default: NULL]
+  actual_departure datetime [default: NULL]
+  actual_return datetime [default: NULL]
+  trip_status enum('pending_start', 'in_progress', 'completed', 'incident') [not null, default: 'pending_start']
+  employee_notes text [default: NULL]
+  admin_notes text [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    vehicle_id [name: "fk_trip_vehicle"]
+    driver_id [name: "fk_trip_driver"]
+    trip_status [name: "idx_trip_status"]
+  }
+}
+
+Table trip_incidents {
+  incident_id "int(10) unsigned" [pk, increment]
+  trip_id "int(10) unsigned" [not null]
+  reported_by "int(10) unsigned" [not null]
+  incident_type enum('accident', 'breakdown', 'traffic_delay', 'other') [not null]
+  description text [not null]
+  latitude "decimal(10,8)" [default: NULL]
+  longitude "decimal(11,8)" [default: NULL]
+  occurred_at datetime [not null]
+  resolved "tinyint(1)" [not null, default: 0]
+  resolution_notes text [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    trip_id [name: "fk_incident_trip"]
+    reported_by [name: "fk_incident_reporter"]
+  }
+}
+
+Table trip_purposes {
+  purpose_id "int(10) unsigned" [pk, increment]
+  purpose_name varchar(100) [unique, not null]
+  description varchar(255) [default: NULL]
+  requires_project "tinyint(1)" [not null, default: 0]
+  max_per_project "tinyint(3) unsigned" [default: NULL]
+  is_active "tinyint(1)" [not null, default: 1]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+  preferred_category_ids varchar(255) [default: NULL, note: 'CSV of vehicle_category_ids. NULL = no preference (neutral 0.5 score).']
+}
+
+Table users {
+  user_id "int(10) unsigned" [pk, increment]
+  company_id "int(10) unsigned" [not null]
+  department_id "int(10) unsigned" [default: NULL]
+  role enum('super_admin', 'admin', 'employee', 'driver') [not null]
+  employee_id varchar(50) [unique, default: NULL]
+  first_name varchar(50) [not null]
+  last_name varchar(50) [not null]
+  email varchar(100) [unique, not null]
+  password_hash varchar(255) [not null]
+  phone_number varchar(20) [default: NULL]
+  profile_photo varchar(255) [default: NULL]
+  is_active "tinyint(1)" [not null, default: 1]
+  last_login_at timestamp [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+  api_token varchar(64) [default: NULL]
+
+  Indexes {
+    company_id [name: "fk_user_company"]
+    department_id [name: "fk_user_department"]
+  }
+}
+
+Table vehicles {
+  vehicle_id "int(10) unsigned" [pk, increment]
+  category_id "int(10) unsigned" [not null]
+  plate_number varchar(20) [unique, not null]
+  brand varchar(50) [not null]
+  model varchar(50) [not null]
+  year_model "year(4)" [not null]
+  color varchar(30) [default: NULL]
+  fuel_type enum('gasoline', 'diesel', 'electric', 'hybrid') [not null, default: 'diesel']
+  passenger_capacity "tinyint(3) unsigned" [not null]
+  cargo_capacity_kg "decimal(10,2)" [not null, default: 0.00]
+  current_odometer_km "decimal(10,2)" [not null, default: 0.00]
+  gross_weight_kg "decimal(8,2)" [not null, default: 0.00]
+  status enum('available', 'reserved', 'on_trip', 'under_maintenance', 'retired') [not null, default: 'available']
+  remarks text [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    category_id [name: "fk_vehicle_category"]
+    status [name: "idx_vehicle_status"]
+  }
+}
+
+Table vehicle_categories {
+  category_id "int(10) unsigned" [pk, increment]
+  category_name varchar(50) [unique, not null]
+  description varchar(255) [default: NULL]
+  max_passengers "tinyint(3) unsigned" [not null, default: 1]
+  max_cargo_kg "decimal(10,2)" [not null, default: 0.00]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+}
+
+Table vehicle_maintenance {
+  maintenance_id "int(10) unsigned" [pk, increment]
+  vehicle_id "int(10) unsigned" [not null]
+  recorded_by "int(10) unsigned" [not null]
+  maintenance_type varchar(100) [not null]
+  description text [default: NULL]
+  odometer_at_service "decimal(10,2)" [default: NULL]
+  service_date date [not null]
+  next_service_date date [default: NULL]
+  next_service_km "decimal(10,2)" [default: NULL]
+  cost "decimal(10,2)" [default: NULL]
+  performed_by varchar(100) [default: NULL]
+  created_at timestamp [not null, default: `current_timestamp()`]
+  updated_at timestamp [not null, default: `current_timestamp()`]
+
+  Indexes {
+    recorded_by [name: "fk_maint_recorder"]
+    (vehicle_id, next_service_date) [name: "idx_maint_next_svc"]
+  }
+}
+
+// Relationships / Foreign Keys
+
+Ref: admin_department_access.admin_user_id > users.user_id
+Ref: admin_department_access.department_id > departments.department_id
+Ref: admin_department_access.granted_by > users.user_id
+
+Ref: ai_recommendation_logs.reservation_id > reservations.reservation_id
+Ref: ai_recommendation_logs.vehicle_id > vehicles.vehicle_id
+
+Ref: audit_logs.user_id > users.user_id
+
+Ref: departments.company_id > companies.company_id
+
+Ref: driver_profiles.user_id - users.user_id
+
+Ref: gps_tracking_logs.trip_id > trips.trip_id
+
+Ref: notifications.user_id > users.user_id
+
+Ref: projects.company_id > companies.company_id
+Ref: projects.created_by > users.user_id
+
+Ref: reservations.ai_recommended_vehicle_id > vehicles.vehicle_id
+Ref: reservations.cancelled_by > users.user_id
+Ref: reservations.department_id > departments.department_id
+Ref: reservations.assigned_driver_id > users.user_id
+Ref: reservations.project_id > projects.project_id
+Ref: reservations.purpose_id > trip_purposes.purpose_id
+Ref: reservations.requested_by > users.user_id
+Ref: reservations.reviewed_by > users.user_id
+Ref: reservations.assigned_vehicle_id > vehicles.vehicle_id
+
+Ref: system_settings.updated_by > users.user_id
+
+Ref: trips.driver_id > users.user_id
+Ref: trips.reservation_id - reservations.reservation_id
+Ref: trips.vehicle_id > vehicles.vehicle_id
+
+Ref: trip_incidents.reported_by > users.user_id
+Ref: trip_incidents.trip_id > trips.trip_id
+
+Ref: users.company_id > companies.company_id
+Ref: users.department_id > departments.department_id
+
+Ref: vehicles.category_id > vehicle_categories.category_id
+
+Ref: vehicle_maintenance.recorded_by > users.user_id
+Ref: vehicle_maintenance.vehicle_id > vehicles.vehicle_id
