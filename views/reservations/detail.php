@@ -305,19 +305,19 @@ $role = Auth::role();
         <div class="detail-card" style="padding:0;overflow:hidden;">
             <div id="detailMap" style="height:220px;width:100%;"></div>
         </div>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
-        var dLat = <?= (float) $reservation['destination_lat'] ?>;
-        var dLng = <?= (float) $reservation['destination_lng'] ?>;
-        var dMap = L.map('detailMap', { zoomControl: true, scrollWheelZoom: false })
-                    .setView([dLat, dLng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(dMap);
-        L.marker([dLat, dLng]).addTo(dMap)
-            .bindPopup('<?= addslashes(Helpers::e($reservation['destination'])) ?>')
-            .openPopup();
+        window.lvmsLocationPicker = {
+            mapId:       'detailMap',
+            editable:    false,
+            lat:         <?= (float) $reservation['destination_lat'] ?>,
+            lng:         <?= (float) $reservation['destination_lng'] ?>,
+            markerTitle: <?= json_encode($reservation['destination']) ?>,
+        };
+        </script>
+        <script src="<?= APP_BASE ?>/public/js/location_picker.js"></script>
+        <script
+            src="https://maps.googleapis.com/maps/api/js?key=<?= GOOGLE_MAPS_API_KEY ?>&callback=initLocationPicker"
+            loading="async" defer>
         </script>
         <?php endif; ?>
     </div>

@@ -43,7 +43,7 @@
     </div>
     <div class="form-group">
         <label class="form-label">Destination <span class="required">*</span></label>
-        <input type="text" class="form-input" name="destination"
+        <input type="text" class="form-input" name="destination" id="destination"
                value="<?= Helpers::e($reservation['destination']) ?>" required>
     </div>
 
@@ -104,8 +104,6 @@
 </div>
 </form>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 function handlePurposeChange() {
     var sel = document.getElementById('purposeSelect');
@@ -115,31 +113,21 @@ function handlePurposeChange() {
     if (!req) document.getElementById('projectSelect').value = '';
 }
 
-// Initialise map — centre on existing pin if coordinates saved, else Metro Manila
-var existingLat = <?= $reservation['destination_lat'] ? (float)$reservation['destination_lat'] : 'null' ?>;
-var existingLng = <?= $reservation['destination_lng'] ? (float)$reservation['destination_lng'] : 'null' ?>;
-var center = (existingLat && existingLng) ? [existingLat, existingLng] : [14.6804, 121.0281];
-var zoom   = (existingLat && existingLng) ? 14 : 11;
-
-var map    = L.map('destinationMap').setView(center, zoom);
-var marker = null;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-// Show existing pin
-if (existingLat && existingLng) {
-    marker = L.marker([existingLat, existingLng]).addTo(map)
-        .bindPopup('Current destination').openPopup();
-}
-
-map.on('click', function(e) {
-    var lat = e.latlng.lat.toFixed(8);
-    var lng = e.latlng.lng.toFixed(8);
-    document.getElementById('destLat').value = lat;
-    document.getElementById('destLng').value = lng;
-    if (marker) marker.remove();
-    marker = L.marker([lat, lng]).addTo(map)
-        .bindPopup('Destination').openPopup();
-});
+window.lvmsLocationPicker = {
+    mapId:          'destinationMap',
+    latInputId:     'destLat',
+    lngInputId:     'destLng',
+    addressInputId: 'destination',
+    lat:            <?= $reservation['destination_lat'] ? (float)$reservation['destination_lat'] : 'null' ?>,
+    lng:            <?= $reservation['destination_lng'] ? (float)$reservation['destination_lng'] : 'null' ?>,
+    editable:       true,
+    defaultCenter:  { lat: <?= json_encode($warehouse_lat) ?>, lng: <?= json_encode($warehouse_lng) ?> },
+    defaultZoom:    11,
+    markerTitle:    'Destination',
+};
+</script>
+<script src="<?= APP_BASE ?>/public/js/location_picker.js"></script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=<?= GOOGLE_MAPS_API_KEY ?>&callback=initLocationPicker"
+    loading="async" defer>
 </script>

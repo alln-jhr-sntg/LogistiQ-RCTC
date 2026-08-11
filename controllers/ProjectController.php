@@ -82,10 +82,14 @@ class ProjectController
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
+        $settingModel = new SystemSettingModel();
+
         $this->render('create_edit', [
-            'page_title' => 'New Project',
-            'project'    => null,
-            'companies'  => $this->assignableCompanies(),
+            'page_title'    => 'New Project',
+            'project'       => null,
+            'companies'     => $this->assignableCompanies(),
+            'warehouse_lat' => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
+            'warehouse_lng' => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
         ]);
     }
 
@@ -154,10 +158,14 @@ class ProjectController
 
         $this->requireProjectCompanyScope((int) $project['company_id']);
 
+        $settingModel = new SystemSettingModel();
+
         $this->render('create_edit', [
-            'page_title' => 'Edit Project — ' . $project['project_name'],
-            'project'    => $project,
-            'companies'  => $this->assignableCompanies(),
+            'page_title'    => 'Edit Project — ' . $project['project_name'],
+            'project'       => $project,
+            'companies'     => $this->assignableCompanies(),
+            'warehouse_lat' => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
+            'warehouse_lng' => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
         ]);
     }
 

@@ -49,6 +49,10 @@ class ReservationController
         $projectModel = new ProjectModel();
         $purposes     = $purposeModel->findActive();
 
+        $settingModel  = new SystemSettingModel();
+        $warehouseLat  = (float) ($settingModel->getByKey('warehouse_lat') ?? '0');
+        $warehouseLng  = (float) ($settingModel->getByKey('warehouse_lng') ?? '0');
+
         // Accounts with no department (super_admin, fleet_admin — never
         // assigned one, see views/users/create.php) have no single home
         // company to scope the project list to. Let them pick a company
@@ -64,6 +68,8 @@ class ReservationController
                 'companies'       => $companyModel->findAll(),
                 'departments'     => $deptModel->findAllWithCompany(),
                 'needsDeptPicker' => true,
+                'warehouse_lat'   => $warehouseLat,
+                'warehouse_lng'   => $warehouseLng,
             ]);
             return;
         }
@@ -77,6 +83,8 @@ class ReservationController
             'purposes'        => $purposes,
             'projects'        => $projects,
             'needsDeptPicker' => false,
+            'warehouse_lat'   => $warehouseLat,
+            'warehouse_lng'   => $warehouseLng,
         ]);
     }
 
@@ -339,11 +347,15 @@ class ReservationController
         // role, since a reservation's company never changes after creation.
         $companyId = (int) $reservation['company_id'];
 
+        $settingModel = new SystemSettingModel();
+
         $this->render('edit', [
-            'page_title'  => 'Edit ' . $reservation['reservation_code'],
-            'reservation' => $reservation,
-            'purposes'    => $purposeModel->findActive(),
-            'projects'    => $projectModel->findActiveByCompany($companyId),
+            'page_title'    => 'Edit ' . $reservation['reservation_code'],
+            'reservation'   => $reservation,
+            'purposes'      => $purposeModel->findActive(),
+            'projects'      => $projectModel->findActiveByCompany($companyId),
+            'warehouse_lat' => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
+            'warehouse_lng' => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
         ]);
     }
 

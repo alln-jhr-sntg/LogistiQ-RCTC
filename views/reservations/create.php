@@ -114,8 +114,25 @@
 </div>
 </form>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+window.lvmsLocationPicker = {
+    mapId:          'destinationMap',
+    latInputId:     'destLat',
+    lngInputId:     'destLng',
+    addressInputId: 'destinationInput',
+    lat:            null,
+    lng:            null,
+    editable:       true,
+    defaultCenter:  { lat: <?= json_encode($warehouse_lat) ?>, lng: <?= json_encode($warehouse_lng) ?> },
+    defaultZoom:    11,
+    markerTitle:    'Destination',
+};
+</script>
+<script src="<?= APP_BASE ?>/public/js/location_picker.js"></script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=<?= GOOGLE_MAPS_API_KEY ?>&callback=initLocationPicker"
+    loading="async" defer>
+</script>
 <script>
 <?php if ($needsDeptPicker): ?>
 // Company → Department / Project cascade, for accounts with no home
@@ -198,29 +215,7 @@ document.getElementById('projectSelect').addEventListener('change', function() {
         document.getElementById('destinationInput').value = proj.location;
     }
     if (proj.lat && proj.lng) {
-        document.getElementById('destLat').value = proj.lat;
-        document.getElementById('destLng').value = proj.lng;
-        if (marker) marker.remove();
-        marker = L.marker([proj.lat, proj.lng]).addTo(map)
-            .bindPopup('Project Location').openPopup();
-        map.setView([proj.lat, proj.lng], 14);
+        setLocationPickerPosition(parseFloat(proj.lat), parseFloat(proj.lng), 14);
     }
-});
-
-// Leaflet destination map
-var map    = L.map('destinationMap').setView([14.6804, 121.0281], 11);
-var marker = null;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-map.on('click', function(e) {
-    var lat = e.latlng.lat.toFixed(8);
-    var lng = e.latlng.lng.toFixed(8);
-    document.getElementById('destLat').value = lat;
-    document.getElementById('destLng').value = lng;
-    if (marker) marker.remove();
-    marker = L.marker([lat, lng]).addTo(map)
-        .bindPopup('Destination').openPopup();
 });
 </script>

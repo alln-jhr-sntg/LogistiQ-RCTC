@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <!-- ── Current Trip ─────────────────────────────────────── -->
 <div class="section-title" style="margin-bottom:12px;">Current Trip</div>
 
@@ -85,24 +83,6 @@
     </div>
 </div>
 
-<!-- ── Live Map ───────────────────────────────────────────── -->
-<div class="section-title" style="margin-bottom:12px;">Your Current Location</div>
-
-<!-- GPS status strip -->
-<div style="display:flex;align-items:center;gap:20px;margin-bottom:10px;padding:10px 16px;background:var(--clr-surface);border:1px solid var(--clr-border);border-radius:var(--radius-md);font-size:13px;">
-    <span style="display:flex;align-items:center;gap:6px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:var(--clr-success);display:inline-block;box-shadow:0 0 0 3px rgba(39,118,74,.2);"></span>
-        <strong style="color:var(--clr-success);">GPS Active</strong>
-    </span>
-    <span style="color:var(--clr-text-3);">Last ping: <span id="lastPing" style="color:var(--clr-text-2);font-weight:500;">10:42 AM</span></span>
-    <span style="color:var(--clr-text-3);">Speed: <span style="color:var(--clr-text-2);font-weight:500;">62 km/h</span></span>
-    <span style="color:var(--clr-text-3);">Heading: <span style="color:var(--clr-text-2);font-weight:500;">185° S</span></span>
-</div>
-
-<div class="card" style="overflow:hidden;margin-bottom:32px;">
-    <div id="driverMap" style="height:380px;"></div>
-</div>
-
 <!-- ── Odometer Modal ────────────────────────────────────── -->
 <div id="odometerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:var(--clr-surface);border-radius:var(--radius-lg);padding:28px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);">
@@ -128,7 +108,6 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 function openOdometerModal() {
     document.getElementById('odometerModal').style.display = 'flex';
@@ -164,33 +143,4 @@ function setOdometer() {
 document.getElementById('odometerModal').addEventListener('click', function(e) {
     if (e.target === this) closeOdometerModal();
 });
-
-// GPS ping simulation
-var times = ['10:44 AM','10:46 AM','10:48 AM','10:50 AM'];
-var i = 0;
-setInterval(function() {
-    if (times[i]) { document.getElementById('lastPing').textContent = times[i]; i++; }
-}, 8000);
-
-// Map
-(function () {
-    var warehouse   = [14.680456, 121.028051];
-    var vehiclePos  = [14.5820, 121.0450];
-    var destination = [14.2, 121.15];
-    var trail = [[14.680456,121.028051],[14.6580,121.0290],[14.6380,121.0320],[14.6120,121.0380],[14.5950,121.0420],[14.5820,121.0450]];
-
-    var map = L.map('driverMap').setView([14.580, 121.045], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
-
-    var whIcon = L.divIcon({ html: '<div style="background:#1a3a2a;color:#e8a245;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.3);">🏭</div>', className: '', iconSize:[30,30], iconAnchor:[15,15] });
-    L.marker(warehouse, { icon: whIcon }).addTo(map).bindPopup('<strong>Warehouse</strong><br>Trip origin');
-
-    var vehIcon = L.divIcon({ html: '<div style="background:#2d6045;color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.4);border:3px solid #e8a245;">🚐</div>', className: '', iconSize:[38,38], iconAnchor:[19,19] });
-    L.marker(vehiclePos, { icon: vehIcon }).addTo(map).bindPopup('<strong>Your position</strong><br>ABC-1234 Toyota Hi-Ace<br>Speed: 62 km/h').openPopup();
-
-    var destIcon = L.divIcon({ html: '<div style="background:#c0392b;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);">📍</div>', className: '', iconSize:[30,30], iconAnchor:[15,15] });
-    L.marker(destination, { icon: destIcon }).addTo(map).bindPopup('<strong>Laguna Construction Site</strong><br>Current trip destination');
-
-    L.polyline(trail, { color: '#2d6045', weight: 3, opacity: 0.7, dashArray: '6 4' }).addTo(map);
-})();
 </script>

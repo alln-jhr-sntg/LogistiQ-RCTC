@@ -1,5 +1,4 @@
 <div class="page-header"><div class="page-header-left"><h2><?= isset($project) && $project ? 'Edit Project' : 'New Project' ?></h2></div><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">← Back</a></div>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <form method="POST" action="<?= isset($project) && $project ? Helpers::url('/projects/' . $project['project_id'] . '/edit') : Helpers::url('/projects/create') ?>"><div class="form-card">
 <div class="form-section-title">Project Details</div>
 <div class="form-row">
@@ -20,7 +19,7 @@
     <div class="form-group"><label class="form-label">End Date</label><input type="date" class="form-input" name="end_date" value="<?= Helpers::e($project['end_date'] ?? '') ?>"></div>
 </div>
 <div class="form-section-title">Project Site Location</div>
-<div class="form-group"><label class="form-label">Location Name</label><input type="text" class="form-input" name="location" value="<?= Helpers::e($project['location'] ?? '') ?>" placeholder="e.g. Ortigas, Pasig City"><p class="form-hint">Type the name then pin the exact location on the map below.</p></div>
+<div class="form-group"><label class="form-label">Location Name</label><input type="text" class="form-input" name="location" id="locationInput" value="<?= Helpers::e($project['location'] ?? '') ?>" placeholder="e.g. Ortigas, Pasig City"><p class="form-hint">Type the name then pin the exact location on the map below — or click the map and we'll suggest an address.</p></div>
 <div class="form-row">
     <div class="form-group"><label class="form-label">Site Latitude</label><input type="text" class="form-input" name="location_lat" id="siteLat" value="<?= Helpers::e($project['location_lat'] ?? '') ?>" placeholder="Click map to set" readonly style="background:var(--clr-surface-2);"></div>
     <div class="form-group"><label class="form-label">Site Longitude</label><input type="text" class="form-input" name="location_lng" id="siteLng" value="<?= Helpers::e($project['location_lng'] ?? '') ?>" placeholder="Click map to set" readonly style="background:var(--clr-surface-2);"></div>
@@ -29,22 +28,24 @@
 <div class="form-group"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--clr-text-2);cursor:pointer;"><input type="checkbox" name="is_active" value="1" <?= ($project['is_active'] ?? 1) ? 'checked' : '' ?>> Project is active</label></div>
 <div class="form-actions"><button type="submit" class="btn btn-solid"><?= isset($project) && $project ? 'Save Changes' : 'Create Project' ?></button><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">Cancel</a></div>
 </div></form>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(function(){
-    var warehouse=[14.680456,121.028051];
-    var existingLat=<?= !empty($project['location_lat']) ? (float)$project['location_lat'] : 'null' ?>;
-    var existingLng=<?= !empty($project['location_lng']) ? (float)$project['location_lng'] : 'null' ?>;
-    var center = (existingLat && existingLng) ? [existingLat, existingLng] : warehouse;
-    var map=L.map('projectMap').setView(center,11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
-    var whIcon=L.divIcon({html:'<div style="background:#1a3a2a;color:#e8a245;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;">🏭</div>',className:'',iconSize:[30,30],iconAnchor:[15,15]});
-    L.marker(warehouse,{icon:whIcon,interactive:false}).addTo(map).bindTooltip('Warehouse');
-    var siteMarker=null;
-    var siteIcon=L.divIcon({html:'<div style="background:#1565a0;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;">🏗️</div>',className:'',iconSize:[32,32],iconAnchor:[16,16]});
-    function setCoords(lat,lng){document.getElementById('siteLat').value=lat.toFixed(8);document.getElementById('siteLng').value=lng.toFixed(8);}
-    function placeMarker(latlng){if(siteMarker){siteMarker.setLatLng(latlng);}else{siteMarker=L.marker(latlng,{icon:siteIcon,draggable:true}).addTo(map);siteMarker.on('dragend',function(e){var p=e.target.getLatLng();setCoords(p.lat,p.lng);});}setCoords(latlng.lat,latlng.lng);}
-    if(existingLat && existingLng){placeMarker(L.latLng(existingLat,existingLng));}
-    map.on('click',function(e){placeMarker(e.latlng);});
-})();
+window.lvmsLocationPicker = {
+    mapId:          'projectMap',
+    latInputId:     'siteLat',
+    lngInputId:     'siteLng',
+    addressInputId: 'locationInput',
+    lat:            <?= !empty($project['location_lat']) ? (float)$project['location_lat'] : 'null' ?>,
+    lng:            <?= !empty($project['location_lng']) ? (float)$project['location_lng'] : 'null' ?>,
+    editable:       true,
+    defaultCenter:  { lat: <?= json_encode($warehouse_lat) ?>, lng: <?= json_encode($warehouse_lng) ?> },
+    defaultZoom:    11,
+    markerTitle:    'Project Site',
+    warehouseLat:   <?= json_encode($warehouse_lat) ?>,
+    warehouseLng:   <?= json_encode($warehouse_lng) ?>,
+};
+</script>
+<script src="<?= APP_BASE ?>/public/js/location_picker.js"></script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=<?= GOOGLE_MAPS_API_KEY ?>&callback=initLocationPicker"
+    loading="async" defer>
 </script>
