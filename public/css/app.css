@@ -136,7 +136,7 @@ button {
 .auth-logo-mark {
   width: 40px;
   height: 40px;
-  background: var(--clr-accent);
+  background: var(--clr-primary);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -147,7 +147,7 @@ button {
 .auth-logo-mark svg {
   width: 22px;
   height: 22px;
-  fill: var(--clr-primary);
+  fill: var(--clr-bg);
 }
 
 .auth-logo-text {
