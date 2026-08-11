@@ -14,6 +14,7 @@
  *   in_progress   → completed     TripController::complete() / TripApiController
  *   in_progress   → incident      TripController::reportIncident() / IncidentApiController
  *   incident      → in_progress   TripController::resolveIncident()
+ *   incident      → cancelled     TripController::cancelTrip() — terminal, no further transitions
  *
  * Used in:
  *   Step 11 — TripController (start, complete, notes, incident, index, detail)
@@ -298,15 +299,20 @@ class TripModel extends BaseModel
     /**
      * Set trip_status = 'incident'.
      * Called by TripController::reportIncident() when an unresolved incident is filed.
-     * Guard: only transitions from in_progress, not from completed.
+     * Guard: only transitions from 'in_progress' or 'incident' itself (a
+     * second incident on an already-incident trip is a harmless no-op).
+     * A pending_start trip must never pass through here — it has no
+     * odometer_start_km / actual_departure yet, and resolveIncident()
+     * would later revert it straight to 'in_progress' without either ever
+     * having been set.
      */
     public function updateToIncident(int $id): void
     {
         $this->execute(
-            'UPDATE trips
-             SET    trip_status = \'incident\'
+            "UPDATE trips
+             SET    trip_status = 'incident'
              WHERE  trip_id     = :id
-               AND  trip_status != \'completed\'',
+               AND  trip_status IN ('in_progress', 'incident')",
             [':id' => $id]
         );
     }
@@ -323,6 +329,39 @@ class TripModel extends BaseModel
              WHERE  trip_id     = :id
                AND  trip_status = \'incident\'',
             [':id' => $id]
+        );
+    }
+
+    /**
+     * Transition a trip to 'cancelled'. Terminal — a cancelled trip is
+     * never reopened. Called by TripController::cancelTrip() when a trip
+     * cannot continue (e.g. an unresolved incident makes the trip unsafe
+     * or impossible to finish).
+     * Sets cancellation_reason, cancelled_by, and actual_return = NOW()
+     * (no odometer_end_km — no closing reading is taken on a cancel, so
+     * the vehicle's odometer is left untouched and the maintenance-due
+     * check is skipped).
+     * Guard: only transitions from a non-terminal status.
+     */
+    public function cancel(int $id, string $reason, int $cancelledBy): void
+    {
+        // TRIP_TERMINAL_STATUSES is a fixed internal constant, never user
+        // input — safe to interpolate into the IN (...) list below.
+        $terminal = "'" . implode("','", TRIP_TERMINAL_STATUSES) . "'";
+
+        $this->execute(
+            "UPDATE trips
+             SET    trip_status         = 'cancelled',
+                    cancellation_reason = :reason,
+                    cancelled_by        = :cancelled_by,
+                    actual_return       = NOW()
+             WHERE  trip_id             = :id
+               AND  trip_status NOT IN ($terminal)",
+            [
+                ':reason'       => $reason,
+                ':cancelled_by' => $cancelledBy,
+                ':id'           => $id,
+            ]
         );
     }
 }

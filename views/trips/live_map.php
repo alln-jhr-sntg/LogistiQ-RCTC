@@ -4,6 +4,7 @@ $badgeClass  = match($trip['trip_status']) {
     'in_progress' => 'badge-in-progress',
     'completed'   => 'badge-completed',
     'incident'    => 'badge-rejected',
+    'cancelled'   => 'badge-cancelled',
     default       => 'badge-pending',
 };
 ?>

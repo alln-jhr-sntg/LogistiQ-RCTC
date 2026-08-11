@@ -6,13 +6,16 @@ $isEmployee = Auth::isEmployee();
 $isPendingStart = $trip['trip_status'] === 'pending_start';
 $isInProgress   = $trip['trip_status'] === 'in_progress';
 $isIncident     = $trip['trip_status'] === 'incident';
-$isCompleted    = $trip['trip_status'] === 'completed';
+$isCancelled    = $trip['trip_status'] === 'cancelled';
+$isTerminal     = in_array($trip['trip_status'], TRIP_TERMINAL_STATUSES, true);
+$isTracking     = in_array($trip['trip_status'], TRIP_TRACKING_STATUSES, true);
 
 $badgeClass = match($trip['trip_status']) {
     'pending_start' => 'badge-pending',
     'in_progress'   => 'badge-in-progress',
     'completed'     => 'badge-completed',
     'incident'      => 'badge-rejected',
+    'cancelled'     => 'badge-cancelled',
     default         => 'badge-pending',
 };
 $statusLabel = match($trip['trip_status']) {
@@ -20,6 +23,7 @@ $statusLabel = match($trip['trip_status']) {
     'in_progress'   => 'In Progress',
     'completed'     => 'Completed',
     'incident'      => 'Incident',
+    'cancelled'     => 'Cancelled',
     default         => ucfirst($trip['trip_status']),
 };
 
@@ -45,9 +49,15 @@ $backUrl = $isSameSite
     </div>
     <div class="page-header-actions">
         <a href="<?= $backUrl ?>" class="btn btn-outline">← Back</a>
-        <?php if ($isAdmin && $isInProgress): ?>
+        <?php if ($isAdmin && $isTracking): ?>
             <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/map') ?>"
                class="btn btn-solid">Live Map</a>
+        <?php endif; ?>
+        <?php if ($isAdmin && $isIncident): ?>
+            <button type="button" class="btn btn-danger"
+                    onclick="document.getElementById('cancelTripModal').style.display='flex';">
+                Cancel Trip
+            </button>
         <?php endif; ?>
     </div>
 </div>
@@ -196,7 +206,7 @@ $backUrl = $isSameSite
     </div>
     <?php endif; ?>
 
-    <?php if ($isInProgress || $isIncident): ?>
+    <?php if ($isInProgress): ?>
     <div class="detail-card">
         <div class="detail-card-title">Complete Trip</div>
         <p style="font-size:14px; color:var(--clr-text-2); margin-bottom:16px;">
@@ -222,6 +232,16 @@ $backUrl = $isSameSite
     </div>
     <?php endif; ?>
 
+    <?php if ($isCancelled): ?>
+    <div class="detail-card">
+        <div class="detail-card-title">Cancellation</div>
+        <div class="detail-field">
+            <div class="detail-field-label">Reason</div>
+            <div class="detail-field-value"><?= nl2br(Helpers::e($trip['cancellation_reason'] ?? '')) ?></div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Admin Notes -->
     <div class="detail-card">
         <div class="detail-card-title">Admin Notes</div>
@@ -229,10 +249,10 @@ $backUrl = $isSameSite
             <p style="font-size:14px; color:var(--clr-text); margin-bottom:12px;">
                 <?= nl2br(Helpers::e($trip['admin_notes'])) ?>
             </p>
-        <?php elseif ($isCompleted): ?>
+        <?php elseif ($isTerminal): ?>
             <p class="td-muted" style="font-size:14px;">No notes written.</p>
         <?php endif; ?>
-        <?php if (!$isCompleted): ?>
+        <?php if (!$isTerminal): ?>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/notes') ?>">
             <textarea class="form-textarea" name="admin_notes"
                       placeholder="Add or update admin note…"><?= Helpers::e($trip['admin_notes'] ?? '') ?></textarea>
@@ -245,7 +265,7 @@ $backUrl = $isSameSite
 
     <!-- Employee Notes: always visible to the employee; visible to admin only when
          notes exist (something to read) or trip is done (confirm empty state) -->
-    <?php if ($isEmployee || ($isAdmin && ($trip['employee_notes'] || $isCompleted))): ?>
+    <?php if ($isEmployee || ($isAdmin && ($trip['employee_notes'] || $isTerminal))): ?>
     <div class="detail-card">
         <div class="detail-card-title"><?= $isEmployee ? 'My Notes' : 'Employee Notes' ?></div>
         <?php if ($trip['employee_notes']): ?>
@@ -257,10 +277,10 @@ $backUrl = $isSameSite
                 Submitted by <?= Helpers::e($trip['requester_first_name'] . ' ' . $trip['requester_last_name']) ?>
             </p>
             <?php endif; ?>
-        <?php elseif ($isCompleted): ?>
+        <?php elseif ($isTerminal): ?>
             <p class="td-muted" style="font-size:14px;">No notes written.</p>
         <?php endif; ?>
-        <?php if ($isEmployee && !$isCompleted): ?>
+        <?php if ($isEmployee && !$isTerminal): ?>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/notes') ?>">
             <textarea class="form-textarea" name="employee_notes"
                       placeholder="Add a note about this trip…"><?= Helpers::e($trip['employee_notes'] ?? '') ?></textarea>
@@ -309,7 +329,7 @@ $backUrl = $isSameSite
             <strong>Resolution:</strong> <?= Helpers::e($inc['resolution_notes']) ?>
         </p>
         <?php endif; ?>
-        <?php if ($isAdmin && !$inc['resolved'] && !$isCompleted): ?>
+        <?php if ($isAdmin && !$inc['resolved'] && !$isTerminal): ?>
         <form method="POST"
               action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/incident/' . (int) $inc['incident_id'] . '/resolve') ?>"
               style="margin-top:10px;">
@@ -326,7 +346,7 @@ $backUrl = $isSameSite
 <p class="td-muted" style="font-size:14px; margin:8px 0 16px;">No incidents on this trip.</p>
 <?php endif; ?>
 
-<?php if ($isAdmin && !$isCompleted): ?>
+<?php if ($isAdmin && ($isInProgress || $isIncident)): ?>
 <div class="form-card form-card--mt">
     <div class="form-section-title">Report Incident</div>
     <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/incident') ?>">
@@ -360,3 +380,45 @@ $backUrl = $isSameSite
 <?php endif; ?>
 
 <?php endif; /* isAdmin || isEmployee */ ?>
+
+<?php if ($isAdmin && $isIncident): ?>
+<!-- Cancel Trip Modal -->
+<div id="cancelTripModal" class="modal-overlay">
+    <div class="modal-card modal-card-wide">
+        <div class="modal-header">
+            <h3>Cancel Trip</h3>
+            <button type="button" class="modal-close"
+                    onclick="document.getElementById('cancelTripModal').style.display='none';">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <form method="POST"
+              action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/cancel') ?>">
+            <div class="form-group">
+                <label class="form-label">Reason for Cancellation <span class="required">*</span></label>
+                <textarea class="form-textarea" name="cancellation_reason" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Vehicle Condition <span class="required">*</span></label>
+                <select class="form-select" name="vehicle_condition" required>
+                    <option value="">— Select —</option>
+                    <option value="under_maintenance">Vehicle needs inspection/repair</option>
+                    <option value="available">Vehicle is operational</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                <button type="button" class="btn btn-outline"
+                        onclick="document.getElementById('cancelTripModal').style.display='none';">
+                    Keep Trip
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('cancelTripModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+<?php endif; ?>

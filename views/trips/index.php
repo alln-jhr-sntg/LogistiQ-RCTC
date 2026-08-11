@@ -18,6 +18,7 @@ $statuses = [
     'in_progress'   => 'In Progress',
     'completed'     => 'Completed',
     'incident'      => 'Incident',
+    'cancelled'     => 'Cancelled',
 ];
 ?>
 <div class="tab-bar">
@@ -60,6 +61,7 @@ $statuses = [
                         'in_progress'   => 'badge-in-progress',
                         'completed'     => 'badge-completed',
                         'incident'      => 'badge-rejected',
+                        'cancelled'     => 'badge-cancelled',
                         default         => 'badge-pending',
                     };
                     $statusLabel = match($trip['trip_status']) {
@@ -67,6 +69,7 @@ $statuses = [
                         'in_progress'   => 'In Progress',
                         'completed'     => 'Completed',
                         'incident'      => 'Incident',
+                        'cancelled'     => 'Cancelled',
                         default         => ucfirst($trip['trip_status']),
                     };
                 ?>
@@ -88,7 +91,7 @@ $statuses = [
                     <td><div class="td-actions">
                         <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id']) ?>"
                            class="btn btn-outline btn-sm">View</a>
-                        <?php if ($isAdmin && $trip['trip_status'] === 'in_progress'): ?>
+                        <?php if ($isAdmin && in_array($trip['trip_status'], TRIP_TRACKING_STATUSES, true)): ?>
                             <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/map') ?>"
                                class="btn btn-solid btn-sm">Live Map</a>
                         <?php endif; ?>

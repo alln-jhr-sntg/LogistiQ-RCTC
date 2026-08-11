@@ -113,4 +113,23 @@ class TripIncidentModel extends BaseModel
         );
         return (int) ($row['cnt'] ?? 0) > 0;
     }
+
+    /**
+     * Mark every unresolved incident on a trip as resolved, all with the
+     * same resolution notes. Called by TripController::cancelTrip() so a
+     * cancellation reason closes out every open incident at once, rather
+     * than leaving them unresolved on a trip that will never revisit them.
+     * Returns the number of incidents resolved.
+     */
+    public function resolveAllUnresolvedByTrip(int $tripId, string $resolutionNotes): int
+    {
+        return $this->execute(
+            'UPDATE trip_incidents
+             SET    resolved          = 1,
+                    resolution_notes  = :notes
+             WHERE  trip_id           = :trip_id
+               AND  resolved          = 0',
+            [':notes' => $resolutionNotes, ':trip_id' => $tripId]
+        );
+    }
 }

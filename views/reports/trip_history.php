@@ -26,7 +26,7 @@
                placeholder="To">
         <select class="filter-select" name="trip_status">
             <option value="">All Statuses</option>
-            <?php foreach (['pending_start','in_progress','completed','incident'] as $s): ?>
+            <?php foreach (['pending_start','in_progress','completed','incident','cancelled'] as $s): ?>
             <option value="<?= $s ?>" <?= $filters['trip_status'] === $s ? 'selected' : '' ?>>
                 <?= ucwords(str_replace('_', ' ', $s)) ?>
             </option>
@@ -80,6 +80,7 @@
                 'in_progress'   => 'badge-in-progress',
                 'completed'     => 'badge-completed',
                 'incident'      => 'badge-rejected',
+                'cancelled'     => 'badge-cancelled',
                 default         => 'badge-pending',
             };
             $statusLabel = match($trip['trip_status']) {
@@ -87,6 +88,7 @@
                 'in_progress'   => 'In Progress',
                 'completed'     => 'Completed',
                 'incident'      => 'Incident',
+                'cancelled'     => 'Cancelled',
                 default         => ucfirst($trip['trip_status']),
             };
             $distance = ($trip['odometer_start_km'] !== null && $trip['odometer_end_km'] !== null)

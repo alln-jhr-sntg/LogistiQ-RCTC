@@ -68,6 +68,7 @@ $routes = [
     ['GET',  '/trips/{id}/map',         'TripController', 'liveMap'],
     ['POST', '/trips/{id}/start',       'TripController', 'start'],
     ['POST', '/trips/{id}/complete',    'TripController', 'complete'],
+    ['POST', '/trips/{id}/cancel',      'TripController', 'cancelTrip'],
     ['POST', '/trips/{id}/notes',       'TripController', 'notes'],
     ['GET',  '/trips/{id}/active',      'TripController', 'active'],
     ['POST', '/trips/{id}/incident',              'TripController', 'reportIncident'],

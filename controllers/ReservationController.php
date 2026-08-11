@@ -47,16 +47,36 @@ class ReservationController
 
         $purposeModel = new TripPurposeModel();
         $projectModel = new ProjectModel();
+        $purposes     = $purposeModel->findActive();
+
+        // Accounts with no department (super_admin, fleet_admin — never
+        // assigned one, see views/users/create.php) have no single home
+        // company to scope the project list to. Let them pick a company
+        // and department explicitly instead of hard-failing in store().
+        if (Auth::departmentId() === null) {
+            $companyModel = new CompanyModel();
+            $deptModel    = new DepartmentModel();
+
+            $this->render('create', [
+                'page_title'      => 'New Reservation',
+                'purposes'        => $purposes,
+                'projects'        => $projectModel->findActiveWithCompany(),
+                'companies'       => $companyModel->findAll(),
+                'departments'     => $deptModel->findAllWithCompany(),
+                'needsDeptPicker' => true,
+            ]);
+            return;
+        }
 
         // Projects scoped to the employee's company
         $companyId = (int) Auth::companyId();
         $projects  = $projectModel->findActiveByCompany($companyId);
-        $purposes  = $purposeModel->findActive();
 
         $this->render('create', [
-            'page_title' => 'New Reservation',
-            'purposes'   => $purposes,
-            'projects'   => $projects,
+            'page_title'      => 'New Reservation',
+            'purposes'        => $purposes,
+            'projects'        => $projects,
+            'needsDeptPicker' => false,
         ]);
     }
 
@@ -65,12 +85,21 @@ class ReservationController
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
-        $deptId    = Auth::departmentId();
-        if (!$deptId) {
-            Helpers::setFlash('error',
-                'Your account has no department assigned. '
-                . 'Contact your admin before creating a reservation.');
-            Helpers::redirect('/reservations');
+        $deptId = Auth::departmentId();
+
+        if ($deptId === null) {
+            // Accounts with no department pick a company + department
+            // explicitly via the dropdown shown on the create form (see
+            // create()). No company-ownership check on the choice — these
+            // are the same global-scope accounts that have no restricted
+            // "home" company to begin with.
+            $deptId    = (int) ($_POST['department_id'] ?? 0);
+            $deptModel = new DepartmentModel();
+
+            if ($deptId === 0 || !$deptModel->findById($deptId)) {
+                Helpers::setFlash('error', 'Select a company and department for this reservation.');
+                Helpers::redirect('/reservations/create');
+            }
         }
 
         $purposeId  = (int)   ($_POST['purpose_id']         ?? 0);
@@ -177,8 +206,10 @@ class ReservationController
             Helpers::redirect('/reservations');
         }
 
-        $canEdit = $role === ROLE_EMPLOYEE
-            && $reservation['status'] === 'pending'
+        // Mirrors editReservation()/updateReservation() exactly: any role
+        // reaching this method may edit their own pending reservation —
+        // there's no role-based split there, unlike $canCancel below.
+        $canEdit = $reservation['status'] === 'pending'
             && (int) $reservation['requested_by'] === (int) Auth::id();
 
         $canCancel = false;
@@ -299,7 +330,14 @@ class ReservationController
 
         $purposeModel = new TripPurposeModel();
         $projectModel = new ProjectModel();
-        $companyId    = (int) Auth::companyId();
+
+        // Scope the project list to the reservation's own company, not the
+        // editor's session company — those differ for a super_admin/
+        // fleet_admin editing a reservation they filed under a department
+        // outside their home company (see create()'s company/department
+        // picker). This is also strictly more correct for every other
+        // role, since a reservation's company never changes after creation.
+        $companyId = (int) $reservation['company_id'];
 
         $this->render('edit', [
             'page_title'  => 'Edit ' . $reservation['reservation_code'],

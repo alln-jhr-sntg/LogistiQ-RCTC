@@ -18,6 +18,14 @@ require_once __DIR__ . '/BaseApiController.php';
  *   "accuracy_meters":  8.5          (optional)
  * }
  * Success 201: {"status": "ok"}
+ * Error   409: {"error": "trip_not_active", "trip_status": "<status>"}
+ *              — trip exists and belongs to this driver, but its status
+ *              isn't one of TRIP_TRACKING_STATUSES ('in_progress' or
+ *              'incident' — tracking deliberately continues through an
+ *              incident, since location matters most during an accident).
+ *              Nothing is inserted. The Android service should stop
+ *              itself on this response; 'completed' and 'cancelled' are
+ *              terminal (do not retry), 'pending_start' may still start.
  */
 class GpsApiController extends BaseApiController
 {
@@ -46,8 +54,14 @@ class GpsApiController extends BaseApiController
             $this->error(403, 'Forbidden');
         }
 
-        if ($trip['trip_status'] !== 'in_progress') {
-            $this->error(409, 'GPS tracking is only active for in-progress trips');
+        // Machine-readable so the Android service can stop itself and
+        // tell the driver which terminal (or otherwise inactive) state
+        // the trip landed in. Tracking continues through 'incident'.
+        if (!in_array($trip['trip_status'], TRIP_TRACKING_STATUSES, true)) {
+            $this->json([
+                'error'       => 'trip_not_active',
+                'trip_status' => $trip['trip_status'],
+            ], 409);
         }
 
         $gpsModel = new GpsTrackingLogModel();

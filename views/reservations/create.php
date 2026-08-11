@@ -5,6 +5,28 @@
 
 <form method="POST" action="<?= Helpers::url('/reservations/create') ?>">
 <div class="form-card">
+    <?php if ($needsDeptPicker): ?>
+    <div class="form-section-title">Filed Under</div>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Company <span class="required">*</span></label>
+            <select class="form-select" id="companySelect" required onchange="handleCompanyChange()">
+                <option value="">— Select —</option>
+                <?php foreach ($companies as $co): ?>
+                <option value="<?= (int) $co['company_id'] ?>"><?= Helpers::e($co['company_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Department <span class="required">*</span></label>
+            <select class="form-select" name="department_id" id="departmentSelect"
+                    data-all-depts="<?= Helpers::e(json_encode($departments)) ?>" required>
+                <option value="">— Select Company First —</option>
+            </select>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="form-section-title">Trip Details</div>
     <div class="form-row">
         <div class="form-group">
@@ -22,13 +44,19 @@
         </div>
         <div class="form-group" id="projectGroup" style="display:none;">
             <label class="form-label">Project <span class="required">*</span></label>
-            <select class="form-select" name="project_id" id="projectSelect">
+            <select class="form-select" name="project_id" id="projectSelect"
+                    <?php if ($needsDeptPicker): ?>data-all-projects="<?= Helpers::e(json_encode($projects)) ?>"<?php endif; ?>>
                 <option value="">— Select Project —</option>
+                <?php if (!$needsDeptPicker): ?>
                 <?php foreach ($projects as $pr): ?>
                 <option value="<?= (int) $pr['project_id'] ?>"><?= Helpers::e($pr['project_name']) ?></option>
                 <?php endforeach; ?>
+                <?php endif; ?>
             </select>
             <p class="form-hint" id="maxHint" style="display:none;"></p>
+            <?php if ($needsDeptPicker): ?>
+            <p class="form-hint">Select a company above to populate this list.</p>
+            <?php endif; ?>
         </div>
     </div>
     <div class="form-group">
@@ -89,6 +117,46 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+<?php if ($needsDeptPicker): ?>
+// Company → Department / Project cascade, for accounts with no home
+// department (super_admin, fleet_admin). Same client-side filtering
+// pattern as views/users/create.php's company → department select.
+var allDepts    = JSON.parse(document.getElementById('departmentSelect').dataset.allDepts    || '[]');
+var allProjects = JSON.parse(document.getElementById('projectSelect').dataset.allProjects || '[]');
+
+function filterDepartments(companyId) {
+    var select = document.getElementById('departmentSelect');
+    select.innerHTML = '<option value="">— Select Department —</option>';
+    allDepts
+        .filter(function(d) { return parseInt(d.company_id) === companyId; })
+        .forEach(function(d) {
+            var opt = document.createElement('option');
+            opt.value = d.department_id;
+            opt.text  = d.department_name;
+            select.add(opt);
+        });
+}
+
+function filterProjectsByCompany(companyId) {
+    var select = document.getElementById('projectSelect');
+    select.innerHTML = '<option value="">— Select Project —</option>';
+    allProjects
+        .filter(function(p) { return parseInt(p.company_id) === companyId; })
+        .forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.project_id;
+            opt.text  = p.project_name;
+            select.add(opt);
+        });
+}
+
+function handleCompanyChange() {
+    var companyId = parseInt(document.getElementById('companySelect').value) || 0;
+    filterDepartments(companyId);
+    filterProjectsByCompany(companyId);
+}
+<?php endif; ?>
+
 // Project location lookup — prefill destination when a project is selected
 var projectData = <?= json_encode(array_combine(
     array_column($projects, 'project_id'),

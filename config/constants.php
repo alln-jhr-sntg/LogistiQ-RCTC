@@ -42,6 +42,16 @@ const TRIP_COMPLETED     = 'completed';
 const TRIP_INCIDENT      = 'incident';
 const TRIP_CANCELLED     = 'cancelled';
 
+// Statuses a trip cannot leave. Guards read this instead of comparing
+// to 'completed' by hand, so adding a future terminal status is one edit.
+const TRIP_TERMINAL_STATUSES = ['completed', 'cancelled'];
+
+// Statuses during which GPS pings are accepted and the Live Map is shown.
+// Tracking deliberately continues through 'incident' — an accident is
+// exactly when the vehicle's location matters most — and only stops once
+// the trip reaches a terminal status.
+const TRIP_TRACKING_STATUSES = ['in_progress', 'incident'];
+
 const VEH_AVAILABLE   = 'available';
 const VEH_RESERVED    = 'reserved';
 const VEH_ON_TRIP     = 'on_trip';

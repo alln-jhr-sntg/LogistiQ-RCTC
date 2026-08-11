@@ -70,6 +70,23 @@ class ProjectModel extends BaseModel
     }
 
     /**
+     * Return all active projects across every company, ordered by name.
+     * Used by ReservationController::create() for accounts with no home
+     * department (super_admin, fleet_admin) — they pick a company first,
+     * and the project dropdown is filtered to match client-side.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findActiveWithCompany(): array
+    {
+        return $this->fetchAll(
+            'SELECT * FROM projects
+             WHERE  is_active = 1
+             ORDER  BY project_name ASC'
+        );
+    }
+
+    /**
      * Insert a new project. Returns the new project_id.
      *
      * @param array<string, mixed> $data

@@ -122,8 +122,8 @@ class TripApiController extends BaseApiController
             $this->error(403, 'Forbidden');
         }
 
-        if ($trip['trip_status'] === 'completed') {
-            $this->error(409, 'Trip is already completed');
+        if (in_array($trip['trip_status'], TRIP_TERMINAL_STATUSES, true)) {
+            $this->error(409, 'Trip is already ' . $trip['trip_status']);
         }
 
         if ($trip['trip_status'] === 'pending_start') {

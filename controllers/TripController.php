@@ -10,12 +10,14 @@
  * Role matrix:
  *   index()          — super_admin, fleet_admin, admin, driver, employee
  *   detail()         — super_admin, fleet_admin, admin, driver, employee
- *   start()          — super_admin, fleet_admin, admin (web override)
- *   complete()       — super_admin, fleet_admin, admin (web override)
+ *   start()          — super_admin, fleet_admin (web override)
+ *   complete()       — super_admin, fleet_admin (web override)
  *   notes()          — super_admin, fleet_admin, admin (admin_notes),
  *                      employee (employee_notes via reservation detail)
  *   reportIncident() — super_admin, fleet_admin, admin (Decision 5)
  *   resolveIncident()— super_admin, fleet_admin, admin
+ *   cancelTrip()     — super_admin, fleet_admin — terminal exit for a
+ *                      trip that cannot continue (only from 'incident')
  *
  * Admin may act only on trips belonging to their own company; super_admin
  * and fleet_admin act across every company (shared fleet).
@@ -178,13 +180,18 @@ class TripController
 
         Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
-        if ($trip['trip_status'] === 'completed') {
-            Helpers::setFlash('error', 'This trip is already completed.');
+        if (in_array($trip['trip_status'], TRIP_TERMINAL_STATUSES, true)) {
+            Helpers::setFlash('error', 'This trip is already ' . $trip['trip_status'] . '.');
             Helpers::redirect('/trips/' . $id);
         }
 
         if ($trip['trip_status'] === 'pending_start') {
             Helpers::setFlash('error', 'Trip has not been started yet.');
+            Helpers::redirect('/trips/' . $id);
+        }
+
+        if ((new TripIncidentModel())->hasUnresolvedByTrip($id)) {
+            Helpers::setFlash('error', 'Resolve or cancel the open incident before completing this trip.');
             Helpers::redirect('/trips/' . $id);
         }
 
@@ -257,8 +264,8 @@ class TripController
 
         Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
-        if ($trip['trip_status'] === 'completed') {
-            Helpers::setFlash('error', 'Notes cannot be added to a completed trip.');
+        if (in_array($trip['trip_status'], TRIP_TERMINAL_STATUSES, true)) {
+            Helpers::setFlash('error', 'Notes cannot be added to a ' . $trip['trip_status'] . ' trip.');
             Helpers::redirect('/trips/' . $id);
         }
 
@@ -299,8 +306,14 @@ class TripController
 
         Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
 
-        if ($trip['trip_status'] === 'completed') {
-            Helpers::setFlash('error', 'Cannot report an incident on a completed trip.');
+        // Only a trip that has actually started can have an incident — a
+        // pending_start trip has no odometer_start_km / actual_departure
+        // yet, and reportIncident()'s side effect of flipping trip_status
+        // to 'incident' followed by resolveIncident() reverting it to
+        // 'in_progress' would produce an in-progress trip that was never
+        // started, silently corrupting those two columns.
+        if (!in_array($trip['trip_status'], ['in_progress', 'incident'], true)) {
+            Helpers::setFlash('error', 'Incidents can only be reported on a trip that has been started.');
             Helpers::redirect('/trips/' . $id);
         }
 
@@ -462,5 +475,97 @@ class TripController
         }
 
         Helpers::redirect('/trips/' . $tripId);
+    }
+
+    // ── Cancel trip — terminal exit for a trip that cannot continue ────
+
+    // POST /trips/{id}/cancel
+    // Only reachable from trip_status = 'incident'. Releases the vehicle
+    // and driver, cancels the reservation, and resolves any incidents
+    // still open on the trip — closing every part of the lifecycle that
+    // would otherwise be left stuck.
+    public function cancelTrip(int $id): void
+    {
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
+
+        $reason           = trim($_POST['cancellation_reason'] ?? '');
+        $vehicleCondition = $_POST['vehicle_condition'] ?? '';
+
+        $tripModel = new TripModel();
+        $trip      = $tripModel->findById($id);
+
+        if (!$trip) {
+            Helpers::setFlash('error', 'Trip not found.');
+            Helpers::redirect('/trips');
+        }
+
+        Auth::requireCompanyScope((int) $trip['company_id'], '/trips/' . $id);
+
+        if ($trip['trip_status'] !== 'incident') {
+            Helpers::setFlash('error', 'Only a trip with an open incident can be cancelled.');
+            Helpers::redirect('/trips/' . $id);
+        }
+
+        if ($reason === '') {
+            Helpers::setFlash('error', 'A cancellation reason is required.');
+            Helpers::redirect('/trips/' . $id);
+        }
+
+        // Whitelist — never pass a raw POST value into VehicleModel::updateStatus().
+        $allowedConditions = [VEH_MAINTENANCE, VEH_AVAILABLE];
+        if (!in_array($vehicleCondition, $allowedConditions, true)) {
+            Helpers::setFlash('error', 'Select the vehicle\'s condition before cancelling.');
+            Helpers::redirect('/trips/' . $id);
+        }
+
+        $tripModel->cancel($id, $reason, (int) Auth::id());
+
+        $incidentModel = new TripIncidentModel();
+        $incidentModel->resolveAllUnresolvedByTrip($id, $reason);
+
+        $resModel = new ReservationModel();
+        $resModel->cancel((int) $trip['reservation_id'], (int) Auth::id(), $reason);
+
+        $vehicleModel = new VehicleModel();
+        $vehicleModel->updateStatus((int) $trip['vehicle_id'], $vehicleCondition);
+
+        $driverModel = new DriverProfileModel();
+        $driverModel->updateStatus((int) $trip['driver_id'], DRV_AVAILABLE);
+
+        $auditModel = new AuditLogModel();
+        $auditModel->log(
+            (int) Auth::id(),
+            'CANCELLED_TRIP',
+            'trips',
+            $id,
+            ['trip_status' => 'incident'],
+            ['trip_status'         => 'cancelled',
+             'cancellation_reason' => $reason,
+             'vehicle_status'      => $vehicleCondition]
+        );
+
+        // Notify super_admins, fleet_admins, and the reservation requester
+        $userModel   = new UserModel();
+        $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
+        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins));
+
+        if ((int) $trip['requested_by'] !== (int) Auth::id()) {
+            $recipients[] = (int) $trip['requested_by'];
+            $recipients   = array_unique($recipients);
+        }
+
+        $notifModel = new NotificationModel();
+        $notifModel->createForUsers($recipients, [
+            'title'          => 'Trip Cancelled — ' . $trip['reservation_code'],
+            'message'        => $trip['reservation_code'] . ' to '
+                . $trip['destination'] . ' was cancelled: ' . $reason,
+            'type'           => 'trip',
+            'reference_id'   => $id,
+            'reference_type' => 'trip',
+        ]);
+
+        Helpers::setFlash('success', 'Trip cancelled.');
+        Helpers::redirect('/trips/' . $id);
     }
 }
