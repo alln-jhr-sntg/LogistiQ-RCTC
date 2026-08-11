@@ -186,8 +186,13 @@ class ReservationController
             && (int) $reservation['requested_by'] === (int) Auth::id()) {
             $canCancel = true;
         }
-        if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN], true)
+        if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN], true)
             && in_array($reservation['status'], ['pending', 'approved'])) {
+            $canCancel = true;
+        }
+        if ($role === ROLE_ADMIN
+            && in_array($reservation['status'], ['pending', 'approved'])
+            && (int) $reservation['requested_by'] === (int) Auth::id()) {
             $canCancel = true;
         }
 
@@ -231,8 +236,15 @@ class ReservationController
                 Helpers::setFlash('error', 'You cannot cancel this reservation.');
                 Helpers::redirect('/reservations/' . $id);
             }
+        } elseif ($role === ROLE_ADMIN) {
+            // Admins can only cancel reservations they requested themselves
+            if (!in_array($reservation['status'], ['pending', 'approved']) ||
+                (int) $reservation['requested_by'] !== (int) Auth::id()) {
+                Helpers::setFlash('error', 'You cannot cancel this reservation.');
+                Helpers::redirect('/reservations/' . $id);
+            }
         } else {
-            // Admins/super_admins can cancel pending or approved
+            // Fleet_admin/super_admin can cancel any pending or approved reservation
             if (!in_array($reservation['status'], ['pending', 'approved'])) {
                 Helpers::setFlash('error', 'Only pending or approved reservations can be cancelled.');
                 Helpers::redirect('/reservations/' . $id);
@@ -272,10 +284,9 @@ class ReservationController
 
         Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations/' . $id);
 
-        // Only the requester can edit their own pending reservation
-        if (Auth::role() === ROLE_EMPLOYEE &&
-            ($reservation['status'] !== 'pending' ||
-             (int) $reservation['requested_by'] !== (int) Auth::id())) {
+        // Only the requester can edit their own pending reservation — applies to all roles
+        if ($reservation['status'] !== 'pending' ||
+            (int) $reservation['requested_by'] !== (int) Auth::id()) {
             Helpers::setFlash('error', 'This reservation cannot be edited.');
             Helpers::redirect('/reservations/' . $id);
         }
@@ -330,6 +341,13 @@ class ReservationController
         }
 
         Auth::requireCompanyScope((int) $old['company_id'], '/reservations/' . $id);
+
+        // Only the requester can edit their own pending reservation — applies to all roles
+        if ($old['status'] !== 'pending' ||
+            (int) $old['requested_by'] !== (int) Auth::id()) {
+            Helpers::setFlash('error', 'This reservation cannot be edited.');
+            Helpers::redirect('/reservations/' . $id);
+        }
 
         $affected = $resModel->updateByEmployee($id, (int) Auth::id(), [
             'purpose_id'         => $purposeId,

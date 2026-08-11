@@ -21,7 +21,7 @@ $role = Auth::role();
         <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/edit') ?>"
            class="btn btn-outline">Edit</a>
         <?php endif; ?>
-        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN]) && $reservation['status'] === 'pending'): ?>
+        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN]) && $reservation['status'] === 'pending'): ?>
         <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/review') ?>"
            class="btn btn-solid">Review</a>
         <?php endif; ?>
@@ -167,7 +167,7 @@ $role = Auth::role();
         <?php endif; ?>
 
         <!-- AI recommendation panel — shows after review is run -->
-        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_ADMIN])): ?>
+        <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN])): ?>
         <div class="detail-card" style="margin-bottom:20px;">
             <div class="detail-card-title">Vehicle Recommendation</div>
             <?php if ($reservation['ai_recommended_vehicle_id']): ?>
