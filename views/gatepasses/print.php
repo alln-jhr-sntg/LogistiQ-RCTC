@@ -1,3 +1,16 @@
+<?php
+// Long free-text fields (destination, project name) get cut to a fixed
+// character count with a trailing ellipsis so a single value can't blow
+// out the fixed-width printed layout.
+function gpTruncate(string $value, int $limit = 70): string
+{
+    $value = trim($value);
+    if (mb_strlen($value) <= $limit) {
+        return $value;
+    }
+    return mb_substr($value, 0, $limit) . '…';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,9 +175,15 @@
 
     <div class="gp-section-title">Trip</div>
     <div class="gp-grid">
+        <?php if (!empty($gatepass['project_name'])): ?>
+        <div style="grid-column: 1 / -1;">
+            <div class="gp-field-label">Project</div>
+            <div class="gp-field-value"><?= Helpers::e(gpTruncate($gatepass['project_name'])) ?></div>
+        </div>
+        <?php endif; ?>
         <div style="grid-column: 1 / -1;">
             <div class="gp-field-label">Destination</div>
-            <div class="gp-field-value"><?= Helpers::e($gatepass['destination']) ?></div>
+            <div class="gp-field-value"><?= Helpers::e(gpTruncate($gatepass['destination'])) ?></div>
         </div>
         <div>
             <div class="gp-field-label">Departure</div>

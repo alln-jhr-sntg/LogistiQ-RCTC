@@ -121,8 +121,9 @@ class GatepassModel extends BaseModel
      * departments -> companies, same as ReservationModel::baseSelect().
      *
      * Includes everything the printable gatepass document needs:
-     * reservation code, destination, schedule, load, purpose, vehicle,
-     * driver name + license number, requester, and reviewer.
+     * reservation code, destination, schedule, load, purpose, project
+     * (nullable), vehicle, driver name + license number, requester,
+     * and reviewer.
      */
     private function baseSelect(): string
     {
@@ -145,6 +146,7 @@ class GatepassModel extends BaseModel
                     c.company_name,
                     c.company_code,
                     p.purpose_name,
+                    pr.project_name,
                     v.plate_number,
                     v.brand                AS vehicle_brand,
                     v.model                AS vehicle_model,
@@ -161,6 +163,7 @@ class GatepassModel extends BaseModel
              JOIN   departments   d   ON d.department_id   = r.department_id
              JOIN   companies     c   ON c.company_id      = d.company_id
              JOIN   trip_purposes p   ON p.purpose_id      = r.purpose_id
+             LEFT JOIN projects        pr ON pr.project_id = r.project_id
              LEFT JOIN vehicles        v  ON v.vehicle_id  = r.assigned_vehicle_id
              LEFT JOIN users           drv ON drv.user_id  = r.assigned_driver_id
              LEFT JOIN driver_profiles dp  ON dp.user_id   = r.assigned_driver_id
