@@ -106,7 +106,7 @@ class TripController
     // with 'pending_start' at approval time.
     public function start(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $odometerStart = (float) ($_POST['odometer_start_km'] ?? 0);
 
@@ -164,7 +164,7 @@ class TripController
     // POST /trips/{id}/complete
     public function complete(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
         $odometerEnd = (float) ($_POST['odometer_end_km'] ?? 0);
 
