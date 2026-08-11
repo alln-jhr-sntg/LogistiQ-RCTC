@@ -829,24 +829,24 @@ button {
 }
 
 .action-icon--green {
-  background: var(--clr-success);
-  color: var(--clr-success-bg);
+  background: var(--clr-success-bg);
+  color: var(--clr-success);
 }
 .action-icon--amber {
-  background: var(--clr-warning);
-  color: var(--clr-warning-bg);
+  background: var(--clr-warning-bg);
+  color: var(--clr-warning);
 }
 .action-icon--purple {
-  background: #eeeeff;
-  color: #5050c0;
+  background: var(--clr-info-bg);
+  color: var(--clr-info);
 }
 .action-icon--gray {
   background: var(--clr-surface-2);
   color: var(--clr-text-2);
 }
 .action-icon--red {
-  background: var(--clr-error);
-  color: var(--clr-error-bg);
+  background: var(--clr-error-bg);
+  color: var(--clr-error);
 }
 
 .action-label {
