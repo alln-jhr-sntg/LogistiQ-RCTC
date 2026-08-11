@@ -3,11 +3,13 @@
 /**
  * TripModel
  *
- * Wraps the `trips` table. A trip row is created when a reservation is
- * approved (trip_status = 'pending_start'), then transitioned to
- * 'in_progress' when started and 'completed' when finished.
+ * Wraps the `trips` table. A trip row is created once a reservation's
+ * gatepass has been approved (trip_status = 'pending_start'), then
+ * transitioned to 'in_progress' when started and 'completed' when
+ * finished. No trip may exist before its gatepass is approved.
  *
  * Status transitions (who drives them):
+ *   (none)        → pending_start GatepassController::approve() — the only create() call site
  *   pending_start → in_progress   TripController::start() / TripApiController
  *   in_progress   → completed     TripController::complete() / TripApiController
  *   in_progress   → incident      TripController::reportIncident() / IncidentApiController
@@ -16,6 +18,7 @@
  * Used in:
  *   Step 11 — TripController (start, complete, notes, incident, index, detail)
  *   Step 15 — TripApiController (Android driver API)
+ *   Step 18 — GatepassController (create, the only place a trip is inserted)
  */
 class TripModel extends BaseModel
 {
@@ -66,8 +69,12 @@ class TripModel extends BaseModel
     /**
      * Insert a new trip row. Returns the new trip_id.
      *
-     * Called from ReservationController::approve() with trip_status = 'pending_start'.
-     * Called from TripController::start() if somehow no pre-created row exists.
+     * Called from exactly ONE place: GatepassController::approve(), with
+     * trip_status = 'pending_start', once a super_admin has approved the
+     * reservation's gatepass. TripController::start() does NOT create a
+     * trip if one is missing — it looks one up via findByReservation()
+     * and bails with a flash error, since a missing trip means the
+     * gatepass step hasn't happened yet.
      *
      * @param array<string, mixed> $data
      */

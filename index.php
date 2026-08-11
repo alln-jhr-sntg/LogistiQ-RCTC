@@ -55,6 +55,13 @@ $routes = [
     ['POST', '/reservations/{id}/reject',        'ReservationController', 'reject'],
     ['POST', '/reservations/{id}/cancel',        'ReservationController', 'cancel'],
 
+    // Gatepasses — static before {id}
+    ['GET',  '/gatepasses',              'GatepassController', 'index'],
+    ['GET',  '/gatepasses/{id}/review',  'GatepassController', 'review'],
+    ['POST', '/gatepasses/{id}/approve', 'GatepassController', 'approve'],
+    ['POST', '/gatepasses/{id}/reject',  'GatepassController', 'reject'],
+    ['GET',  '/gatepasses/{id}/print',   'GatepassController', 'printView'],
+
     // Trips
     ['GET',  '/trips',                  'TripController', 'index'],
     ['GET',  '/trips/{id}',             'TripController', 'detail'],

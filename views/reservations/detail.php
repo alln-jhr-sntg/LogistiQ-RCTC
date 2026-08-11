@@ -1,11 +1,12 @@
 <?php
 $statusBadge = [
-    'pending'     => ['class' => 'badge-pending',   'label' => 'Pending'],
-    'approved'    => ['class' => 'badge-approved',  'label' => 'Approved'],
-    'rejected'    => ['class' => 'badge-cancelled', 'label' => 'Rejected'],
-    'cancelled'   => ['class' => 'badge-cancelled', 'label' => 'Cancelled'],
-    'in_progress' => ['class' => 'badge-on-trip',   'label' => 'In Progress'],
-    'completed'   => ['class' => 'badge-available', 'label' => 'Completed'],
+    'pending'          => ['class' => 'badge-pending',   'label' => 'Pending'],
+    'approved'         => ['class' => 'badge-approved',  'label' => 'Approved'],
+    'gatepass_pending' => ['class' => 'badge-pending',   'label' => 'Gatepass'],
+    'rejected'         => ['class' => 'badge-cancelled', 'label' => 'Rejected'],
+    'cancelled'        => ['class' => 'badge-cancelled', 'label' => 'Cancelled'],
+    'in_progress'      => ['class' => 'badge-on-trip',   'label' => 'In Progress'],
+    'completed'        => ['class' => 'badge-available', 'label' => 'Completed'],
 ];
 $sb   = $statusBadge[$reservation['status']] ?? ['class' => 'badge-pending', 'label' => $reservation['status']];
 $role = Auth::role();
@@ -118,7 +119,7 @@ $role = Auth::role();
             </div>
         </div>
 
-        <?php if (in_array($reservation['status'], ['approved', 'in_progress', 'completed'])): ?>
+        <?php if (in_array($reservation['status'], ['gatepass_pending', 'approved', 'in_progress', 'completed'])): ?>
         <div class="detail-card" style="margin-bottom:20px;">
             <div class="detail-card-title">Assignment</div>
             <div class="detail-field">
@@ -145,6 +146,56 @@ $role = Auth::role();
                         : '—' ?>
                 </div>
             </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($gatepass)): ?>
+        <?php
+            $gpBadge = [
+                'pending'  => ['class' => 'badge-pending',   'label' => 'Pending Review'],
+                'approved' => ['class' => 'badge-approved',  'label' => 'Approved'],
+                'rejected' => ['class' => 'badge-cancelled', 'label' => 'Rejected'],
+            ];
+            $gb = $gpBadge[$gatepass['status']] ?? ['class' => 'badge-pending', 'label' => $gatepass['status']];
+        ?>
+        <div class="detail-card" style="margin-bottom:20px;">
+            <div class="detail-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Gate Pass</span>
+                <?php if ($gatepass['status'] === 'approved'): ?>
+                <a href="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/print') ?>"
+                   target="_blank"
+                   style="font-size:12px;font-weight:500;color:var(--clr-primary);">
+                    Print →
+                </a>
+                <?php endif; ?>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Code</div>
+                <div class="detail-field-value"><?= Helpers::e($gatepass['gatepass_code']) ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Status</div>
+                <div class="detail-field-value">
+                    <span class="badge <?= $gb['class'] ?>"><?= $gb['label'] ?></span>
+                </div>
+            </div>
+            <?php if ($gatepass['reviewer_first_name']): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Reviewed By</div>
+                <div class="detail-field-value">
+                    <?= Helpers::e($gatepass['reviewer_first_name'] . ' ' . $gatepass['reviewer_last_name']) ?>
+                    <?php if ($gatepass['reviewed_at']): ?>
+                    <span class="td-muted">— <?= date('M d, Y g:i A', strtotime($gatepass['reviewed_at'])) ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            <?php if ($gatepass['status'] === 'rejected' && $gatepass['rejection_reason']): ?>
+            <div class="detail-field">
+                <div class="detail-field-label">Rejection Reason</div>
+                <div class="detail-field-value"><?= Helpers::e($gatepass['rejection_reason']) ?></div>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

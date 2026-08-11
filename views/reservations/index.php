@@ -1,20 +1,22 @@
 <?php
 $statusBadge = [
-    'pending'     => ['class' => 'badge-pending',    'label' => 'Pending'],
-    'approved'    => ['class' => 'badge-approved',   'label' => 'Approved'],
-    'rejected'    => ['class' => 'badge-cancelled',  'label' => 'Rejected'],
-    'cancelled'   => ['class' => 'badge-cancelled',  'label' => 'Cancelled'],
-    'in_progress' => ['class' => 'badge-on-trip',    'label' => 'In Progress'],
-    'completed'   => ['class' => 'badge-available',  'label' => 'Completed'],
+    'pending'          => ['class' => 'badge-pending',    'label' => 'Pending'],
+    'approved'         => ['class' => 'badge-approved',   'label' => 'Approved'],
+    'gatepass_pending' => ['class' => 'badge-pending',    'label' => 'Gatepass'],
+    'rejected'         => ['class' => 'badge-cancelled',  'label' => 'Rejected'],
+    'cancelled'        => ['class' => 'badge-cancelled',  'label' => 'Cancelled'],
+    'in_progress'      => ['class' => 'badge-on-trip',    'label' => 'In Progress'],
+    'completed'        => ['class' => 'badge-available',  'label' => 'Completed'],
 ];
 $tabs = [
-    ''            => 'All',
-    'pending'     => 'Pending',
-    'approved'    => 'Approved',
-    'in_progress' => 'In Progress',
-    'completed'   => 'Completed',
-    'rejected'    => 'Rejected',
-    'cancelled'   => 'Cancelled',
+    ''                 => 'All',
+    'pending'          => 'Pending',
+    'approved'         => 'Approved',
+    'gatepass_pending' => 'Gatepass',
+    'in_progress'      => 'In Progress',
+    'completed'        => 'Completed',
+    'rejected'         => 'Rejected',
+    'cancelled'        => 'Cancelled',
 ];
 $role = Auth::role();
 ?>

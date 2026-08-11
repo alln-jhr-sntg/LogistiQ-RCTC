@@ -131,12 +131,18 @@ class ReservationModel extends BaseModel
      * Approve a reservation — set status, vehicle, driver, reviewer.
      * Driver status is NOT updated here; that happens in TripController::start()
      * per the plan (Pre-Step Decision, Step 10 note).
+     *
+     * Status goes to 'gatepass_pending', not 'approved' — a gatepass must
+     * be created (GatepassModel::create(), called right after this from
+     * ReservationController::approve()) and then reviewed by a super_admin
+     * before the reservation becomes 'approved' and a trip is created.
+     * See GatepassController::approve().
      */
     public function approve(int $id, array $data): void
     {
         $this->execute(
             'UPDATE reservations
-             SET    status              = \'approved\',
+             SET    status              = \'gatepass_pending\',
                     assigned_vehicle_id = :vehicle_id,
                     assigned_driver_id  = :driver_id,
                     reviewed_by         = :reviewed_by,

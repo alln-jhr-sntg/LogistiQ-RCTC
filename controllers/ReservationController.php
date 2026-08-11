@@ -196,11 +196,17 @@ class ReservationController
             $canCancel = true;
         }
 
+        // Gate Pass card — only exists once a gatepass has been created
+        // (reservation status gatepass_pending or later).
+        $gpModel  = new GatepassModel();
+        $gatepass = $gpModel->findByReservation($id);
+
         $this->render('detail', [
             'page_title'   => $reservation['reservation_code'],
             'reservation'  => $reservation,
             'canEdit'      => $canEdit,
             'canCancel'    => $canCancel,
+            'gatepass'     => $gatepass,
         ]);
     }
 
@@ -468,7 +474,10 @@ class ReservationController
 
         Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
-        // Approve the reservation
+        // Approve the reservation — status goes to 'gatepass_pending', not
+        // 'approved'. A trip is NOT created here anymore; that now happens
+        // in GatepassController::approve() once a super_admin clears the
+        // gatepass this call creates below.
         $resModel->approve($id, [
             'vehicle_id'  => $vehicleId,
             'driver_id'   => $driverId,
@@ -479,13 +488,11 @@ class ReservationController
         $vehicleModel = new VehicleModel();
         $vehicleModel->updateStatus($vehicleId, 'reserved');
 
-        // Create the trip row — pending_start, ready for the driver to start via the app
-        $tripModel = new TripModel();
-        $tripModel->create([
-            'reservation_id' => $id,
-            'vehicle_id'     => $vehicleId,
-            'driver_id'      => $driverId,
-        ]);
+        // Create the gatepass — 'pending', awaiting super_admin review.
+        // TripModel::create() is intentionally NOT called here; it now
+        // happens exactly once, in GatepassController::approve().
+        $gpModel  = new GatepassModel();
+        $gatepassId = $gpModel->create($id);
 
         $auditModel = new AuditLogModel();
         $auditModel->log(
@@ -494,23 +501,31 @@ class ReservationController
             'reservations',
             $id,
             ['status' => 'pending'],
-            ['status' => 'approved',
+            ['status' => 'gatepass_pending',
              'assigned_vehicle_id' => $vehicleId,
              'assigned_driver_id'  => $driverId]
         );
 
-        $notifModel = new NotificationModel();
-        $notifModel->createForUsers([(int) $reservation['requested_by']], [
-            'title'          => 'Reservation Approved',
-            'message'        => $reservation['reservation_code'] . ' — '
-                . $reservation['destination'] . ' has been approved.',
-            'type'           => 'reservation',
-            'reference_id'   => $id,
-            'reference_type' => 'reservation',
-        ]);
+        // Notify super_admins — a gatepass now needs their review, not the requester.
+        try {
+            $userModel   = new UserModel();
+            $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+
+            $notifModel = new NotificationModel();
+            $notifModel->createForUsers($superAdmins, [
+                'title'          => 'Gatepass Pending Review',
+                'message'        => $reservation['reservation_code'] . ' — '
+                    . $reservation['destination'] . ' needs gatepass approval.',
+                'type'           => 'reservation',
+                'reference_id'   => $gatepassId,
+                'reference_type' => 'gatepass',
+            ]);
+        } catch (Throwable $e) {
+            error_log('[LVMS] Notification failed: ' . $e->getMessage());
+        }
 
         Helpers::setFlash('success',
-            'Reservation ' . $reservation['reservation_code'] . ' approved.');
+            'Reservation ' . $reservation['reservation_code'] . ' approved. Awaiting gatepass review.');
         Helpers::redirect('/reservations/' . $id);
     }
 
