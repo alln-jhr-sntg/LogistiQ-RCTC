@@ -244,6 +244,61 @@ class TripModel extends BaseModel
     }
 
     /**
+     * Count trips whose trip_status is in the given list.
+     * Used for dashboard stat cards (e.g. "Active Trips" = in_progress + incident)
+     * where only a count is needed — avoids the full baseSelect() joins.
+     *
+     * @param string[] $statuses
+     */
+    public function countByStatuses(array $statuses): int
+    {
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $row = $this->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM trips WHERE trip_status IN ($placeholders)",
+            $statuses
+        );
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Return all trips whose trip_status is in the given list, fully joined.
+     * Used by the fleet_admin dashboard's Active Trips table.
+     *
+     * @param string[] $statuses
+     * @return array<int, array<string, mixed>>
+     */
+    public function findByStatuses(array $statuses): array
+    {
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        return $this->fetchAll(
+            $this->baseSelect() . " WHERE t.trip_status IN ($placeholders) ORDER BY t.created_at DESC",
+            $statuses
+        );
+    }
+
+    /**
+     * Count trips belonging to a specific employee's own reservations,
+     * restricted to the given trip_status list. Used for the employee
+     * dashboard's Active Trips / Completed Trips stat cards — a plain
+     * COUNT, not the full baseSelect() joins.
+     *
+     * @param string[] $statuses
+     */
+    public function countForEmployeeByStatuses(int $userId, array $statuses): int
+    {
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $row = $this->fetchOne(
+            "SELECT COUNT(*) AS cnt
+             FROM   trips t
+             JOIN   reservations r ON r.reservation_id = t.reservation_id
+             WHERE  r.requested_by = ?
+               AND  t.trip_status IN ($placeholders)",
+            array_merge([$userId], $statuses)
+        );
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
      * Transition a pending_start trip to in_progress.
      * Called by TripController::start().
      * Sets odometer_start_km and actual_departure = NOW().

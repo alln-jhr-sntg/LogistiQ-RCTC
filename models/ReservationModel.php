@@ -273,6 +273,27 @@ class ReservationModel extends BaseModel
     }
 
     /**
+     * Reservations belonging to a single company (via department -> company),
+     * optionally filtered by status. Used by the admin dashboard, which —
+     * unlike the shared /reservations list — is scoped to the admin's own
+     * company_id rather than showing every company's requests.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findForCompany(int $companyId, string $status = ''): array
+    {
+        $sql    = $this->baseSelect() . ' WHERE c.company_id = :company_id';
+        $params = [':company_id' => $companyId];
+
+        if ($status !== '') {
+            $sql   .= ' AND r.status = :status';
+            $params[':status'] = $status;
+        }
+
+        return $this->fetchAll($sql . ' ORDER BY r.created_at DESC', $params);
+    }
+
+    /**
      * Employee self-edit — only succeeds when the reservation is still
      * pending AND belongs to this employee. Returns rowCount:
      *   1 = updated successfully

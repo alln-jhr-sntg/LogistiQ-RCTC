@@ -87,6 +87,26 @@ class ProjectModel extends BaseModel
     }
 
     /**
+     * The most recently created projects for a single company, newest first.
+     * Used by the admin dashboard's "Recent Project Requests" table — unlike
+     * findAll(), which sorts active projects first, this is strictly recency.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findRecentByCompany(int $companyId, int $limit = 5): array
+    {
+        return $this->fetchAll(
+            'SELECT   p.*, c.company_name, c.company_code
+             FROM     projects p
+             JOIN     companies c ON c.company_id = p.company_id
+             WHERE    p.company_id = :company_id
+             ORDER BY p.created_at DESC
+             LIMIT    :limit',
+            [':company_id' => $companyId, ':limit' => $limit]
+        );
+    }
+
+    /**
      * Insert a new project. Returns the new project_id.
      *
      * @param array<string, mixed> $data

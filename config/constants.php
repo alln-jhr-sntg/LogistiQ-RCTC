@@ -58,6 +58,11 @@ const VEH_ON_TRIP     = 'on_trip';
 const VEH_MAINTENANCE = 'under_maintenance';
 const VEH_RETIRED     = 'retired';
 
+// Vehicles currently tied to a reservation or an active trip — i.e. not
+// free to dispatch. Used by dashboard fleet-summary cards to report an
+// "assigned" bucket distinct from available/maintenance/retired.
+const VEH_ASSIGNED_STATUSES = [VEH_RESERVED, VEH_ON_TRIP];
+
 const DRV_AVAILABLE = 'available';
 const DRV_ON_TRIP   = 'on_trip';
 const DRV_OFF_DUTY  = 'off_duty';

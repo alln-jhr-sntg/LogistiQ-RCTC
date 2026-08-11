@@ -268,6 +268,55 @@ class VehicleModel extends BaseModel
     }
 
     /**
+     * Return vehicle counts grouped by status, e.g. ['available' => 12, 'on_trip' => 3].
+     * Statuses with zero vehicles are simply absent from the map — callers
+     * should read with ($counts['x'] ?? 0). A single GROUP BY query, used by
+     * the super_admin and fleet_admin dashboard fleet summary sections.
+     *
+     * @return array<string, int>
+     */
+    public function countByStatus(): array
+    {
+        $rows = $this->fetchAll('SELECT status, COUNT(*) AS cnt FROM vehicles GROUP BY status');
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['status']] = (int) $row['cnt'];
+        }
+        return $counts;
+    }
+
+    /**
+     * Return non-retired vehicles that are overdue or due soon for service,
+     * overdue first. Reuses findForMaintenanceReport()'s data and urgency
+     * ordering, filtered down to just the "needs attention" subset and
+     * tagged with maintenance_alert ('overdue' | 'due_soon') so callers
+     * don't have to re-derive the threshold logic.
+     * Used by the fleet_admin dashboard's Maintenance Due card + table.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findMaintenanceDue(): array
+    {
+        $due = [];
+        foreach ($this->findForMaintenanceReport() as $vehicle) {
+            $current = (float) $vehicle['current_odometer_km'];
+            $next    = $vehicle['next_service_km'] !== null ? (float) $vehicle['next_service_km'] : null;
+
+            if ($next === null) {
+                continue;
+            }
+            if ($current >= $next) {
+                $vehicle['maintenance_alert'] = 'overdue';
+                $due[] = $vehicle;
+            } elseif ($current >= $next - 500) {
+                $vehicle['maintenance_alert'] = 'due_soon';
+                $due[] = $vehicle;
+            }
+        }
+        return $due;
+    }
+
+    /**
      * Update only the current odometer. Called by TripController::complete()
      * after a trip ends to stamp the actual return odometer.
      */

@@ -206,4 +206,24 @@ class UserModel extends BaseModel
             [':hash' => $hash, ':id' => $id]
         );
     }
+
+    /** Count all active users. Used by the super_admin dashboard stat card. */
+    public function countAll(): int
+    {
+        $row = $this->fetchOne('SELECT COUNT(*) AS cnt FROM users WHERE is_active = 1');
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Count active users belonging to a single company.
+     * Used by the admin dashboard's "Company Employees" stat card.
+     */
+    public function countByCompany(int $companyId): int
+    {
+        $row = $this->fetchOne(
+            'SELECT COUNT(*) AS cnt FROM users WHERE company_id = :company_id AND is_active = 1',
+            [':company_id' => $companyId]
+        );
+        return (int) ($row['cnt'] ?? 0);
+    }
 }
