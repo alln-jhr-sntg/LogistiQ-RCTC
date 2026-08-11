@@ -8,8 +8,8 @@ $icons = [
 ];
 
 $colors = [
-    'reservation' => 'action-icon--green',
-    'trip'        => 'action-icon--amber',
+    'reservation' => 'action-icon--amber',
+    'trip'        => 'action-icon--green',
     'maintenance' => 'action-icon--purple',
     'incident'    => 'action-icon--red',
     'system'      => 'action-icon--gray',

@@ -41,7 +41,7 @@ INSERT INTO system_settings (setting_key, setting_value, description) VALUES
     ('warehouse_address',    'Insert Warehouse Address Here',        'Fixed dispatch/return point for all trips'),
     ('warehouse_lat',        '0.00000000',                           'Warehouse GPS latitude'),
     ('warehouse_lng',        '0.00000000',                           'Warehouse GPS longitude'),
-    ('system_name',          'Logistics Vehicle Management System',  'Application display name'),
+    ('system_name',          'MoveOps',                              'Application display name'),
     ('company_name',         'Remix Construction and Trading Corporation', 'Primary company name'),
     ('reservation_prefix',   'RES',                                  'Prefix used for reservation codes'),
     ('maintenance_interval_km', '5000',                              'Standard vehicle maintenance interval in km');

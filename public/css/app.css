@@ -1,5 +1,6 @@
 /* ── Fonts ──────────────────────────────────────────────────── */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap");
+/* Inter (primary body font) is loaded via <link> in the layouts. */
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap");
 
 /* ── Reset & base ───────────────────────────────────────────── */
 *,
@@ -12,37 +13,44 @@
 
 :root {
   /* Brand */
-  --clr-primary: #1a3a2a;
-  --clr-primary-mid: #2d6045;
-  --clr-primary-lt: #3d8060;
+  --clr-primary: #d83a32;
+  --clr-primary-mid: #de5851;
+  --clr-primary-lt: #e47974;
+  --clr-secondary: #1f2937;
   --clr-accent: #e8a245;
   --clr-accent-lt: #f5c474;
 
   /* Surface */
-  --clr-bg: #f5f4f0;
+  --clr-bg: #f6f6f5;
   --clr-surface: #ffffff;
   --clr-surface-2: #f0eeea;
-  --clr-border: #dedad4;
+  --clr-border: #e5e7eb;
 
   /* Text */
-  --clr-text: #1c1c1a;
+  --clr-text: var(--clr-secondary);
   --clr-text-2: #5a5a55;
   --clr-text-3: #8a8a84;
 
   /* Status */
-  --clr-error: #c0392b;
-  --clr-error-bg: #fdf0ef;
-  --clr-success: #27764a;
-  --clr-success-bg: #edf7f1;
+  --clr-danger: #dc2626;
+  --clr-danger-bg: #fee2e2;
+  --clr-error: var(--clr-danger);
+  --clr-error-bg: var(--clr-danger-bg);
+  --clr-success: #16a34a;
+  --clr-success-bg: #dcfce7;
+  --clr-warning: #eab308;
+  --clr-warning-bg: #fef9c3;
+  --clr-info: #2563eb;
+  --clr-info-bg: #dbeafe;
 
   /* Spacing & shape */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-xl: 24px;
 
   /* Font */
-  --font-body: "DM Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
   --font-mono: "DM Mono", monospace;
 }
 
@@ -74,7 +82,7 @@ button {
 
 /* Left panel — brand */
 .auth-brand {
-  background: var(--clr-primary);
+  background: var(--clr-secondary);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -95,7 +103,7 @@ button {
     ),
     radial-gradient(
       ellipse 40% 40% at 80% 20%,
-      rgba(61, 128, 96, 0.35) 0%,
+      rgba(228, 121, 116, 0.35) 0%,
       transparent 60%
     );
   pointer-events: none;
@@ -236,13 +244,13 @@ button {
 .flash-error {
   background: var(--clr-error-bg);
   color: var(--clr-error);
-  border-color: rgba(192, 57, 43, 0.15);
+  border-color: rgba(220, 38, 38, 0.15);
 }
 
 .flash-success {
   background: var(--clr-success-bg);
   color: var(--clr-success);
-  border-color: rgba(39, 118, 74, 0.15);
+  border-color: rgba(22, 163, 74, 0.15);
 }
 
 /* Form fields */
@@ -261,8 +269,9 @@ button {
 
 .auth-form-inner .form-input {
   width: 100%;
+  height: 44px;
   padding: 11px 14px;
-  border: 1.5px solid var(--clr-border);
+  border: 1.5px solid #d1d5db;
   border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 15px;
@@ -276,7 +285,7 @@ button {
 
 .auth-form-inner .form-input:focus {
   border-color: var(--clr-primary-lt);
-  box-shadow: 0 0 0 3px rgba(61, 128, 96, 0.12);
+  box-shadow: 0 0 0 3px rgba(228, 121, 116, 0.12);
   background: #fff;
 }
 
@@ -347,7 +356,7 @@ button {
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--clr-primary);
+  background: var(--clr-secondary);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -406,7 +415,7 @@ button {
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 53px;
+  gap: 30px;
   padding: 15px 10px 13px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
@@ -438,8 +447,8 @@ button {
   overflow: hidden;
 }
 
-.sidebar-logo-text-yellow {
-  color: var(--clr-accent);
+.sidebar-logo-text-red {
+  color: var(--clr-primary);
 }
 
 .sidebar-menu-btn {
@@ -801,7 +810,7 @@ button {
 
 .action-card:hover {
   border-color: var(--clr-primary-lt);
-  box-shadow: 0 2px 12px rgba(26, 58, 42, 0.08);
+  box-shadow: 0 2px 12px rgba(216, 58, 50, 0.08);
 }
 
 .action-icon {
@@ -820,12 +829,12 @@ button {
 }
 
 .action-icon--green {
-  background: #e8f5ee;
-  color: var(--clr-primary-mid);
+  background: var(--clr-success);
+  color: var(--clr-success-bg);
 }
 .action-icon--amber {
-  background: #fef3e0;
-  color: #b07a1a;
+  background: var(--clr-warning);
+  color: var(--clr-warning-bg);
 }
 .action-icon--purple {
   background: #eeeeff;
@@ -834,6 +843,10 @@ button {
 .action-icon--gray {
   background: var(--clr-surface-2);
   color: var(--clr-text-2);
+}
+.action-icon--red {
+  background: var(--clr-error);
+  color: var(--clr-error-bg);
 }
 
 .action-label {
@@ -1019,9 +1032,9 @@ button {
 }
 
 .btn-outline {
-  background: transparent;
+  background: var(--clr-surface);
   color: var(--clr-text-2);
-  border-color: var(--clr-border);
+  border-color: #d1d5db;
 }
 .btn-outline:hover {
   border-color: var(--clr-primary-lt);
@@ -1029,12 +1042,13 @@ button {
 }
 
 .btn-danger {
-  background: var(--clr-error-bg);
-  color: var(--clr-error);
-  border-color: rgba(192, 57, 43, 0.2);
+  background: var(--clr-error);
+  color: var(--clr-bg);
+  border-color: var(--clr-danger);
 }
 .btn-danger:hover {
-  background: #f9e0de;
+  background: var(--clr-primary-lt);
+  border-color: var(--clr-primary-lt);
 }
 
 .btn-sm {
@@ -1067,12 +1081,12 @@ button {
 .badge-available {
   background: var(--clr-success-bg);
   color: var(--clr-success);
-  border: 1px solid rgba(39, 118, 74, 0.15);
+  border: 1px solid rgba(22, 163, 74, 0.15);
 }
 .badge-rejected {
   background: var(--clr-error-bg);
   color: var(--clr-error);
-  border: 1px solid rgba(192, 57, 43, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.15);
 }
 .badge-cancelled,
 .badge-retired {
@@ -1136,7 +1150,7 @@ table.data-table {
 }
 
 .data-table tr:hover td {
-  background: var(--clr-bg);
+  background: #fef2f2;
 }
 
 .data-table .td-muted {
@@ -1179,8 +1193,9 @@ table.data-table {
 
 .filter-input,
 .filter-select {
+  height: 44px;
   padding: 8px 12px;
-  border: 1.5px solid var(--clr-border);
+  border: 1.5px solid #d1d5db;
   border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 14px;
@@ -1287,7 +1302,7 @@ table.data-table {
 .form-textarea {
   width: 100%;
   padding: 9px 12px;
-  border: 1.5px solid var(--clr-border);
+  border: 1.5px solid #d1d5db;
   border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 14px;
@@ -1299,11 +1314,16 @@ table.data-table {
     box-shadow 0.15s;
 }
 
+.form-input,
+.form-select {
+  height: 44px;
+}
+
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
   border-color: var(--clr-primary-lt);
-  box-shadow: 0 0 0 3px rgba(61, 128, 96, 0.1);
+  box-shadow: 0 0 0 3px rgba(228, 121, 116, 0.1);
   background: #fff;
 }
 
@@ -1507,7 +1527,7 @@ table.data-table {
 }
 
 .modal-actions .btn.btn-danger {
-  box-shadow: 2px 2px 8px rgba(215, 10, 10, 0.18);
+  box-shadow: 2px 2px 8px rgba(220, 38, 38, 0.18);
 }
 
 .modal-header {
@@ -1561,7 +1581,7 @@ table.data-table {
 /* Rejection banner */
 .rejection-banner {
   background: var(--clr-error-bg);
-  border: 1px solid rgba(192, 57, 43, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.15);
   border-radius: var(--radius-lg);
   padding: 18px 22px;
   margin-top: 4px;

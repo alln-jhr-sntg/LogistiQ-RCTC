@@ -9,7 +9,10 @@ function nav_is_active(string $path): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= Helpers::e($page_title ?? 'LVMS') ?> — LVMS</title>
+    <title><?= Helpers::e($page_title ?? 'LVMS') ?> — MoveOps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_BASE ?>/public/css/app.css">
 </head>
 <body class="app-body">
@@ -20,7 +23,7 @@ function nav_is_active(string $path): string {
     <aside class="sidebar" id="sidebar">
 
         <div class="sidebar-header">
-            <span class="sidebar-logo-text">Logisti<span class=sidebar-logo-text-yellow>Q</span></span>
+            <span class="sidebar-logo-text">Move<span class=sidebar-logo-text-red>Ops</span></span>
             <button class="sidebar-menu-btn" id="sidebarOpen" aria-label="Open menu">
                 <span></span><span></span><span></span>
             </button>

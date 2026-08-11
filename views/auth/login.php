@@ -8,13 +8,13 @@
                 <div class="auth-logo-text">Remix Construction<br>and Trading Corp.</div>
             </div>
             <div class="auth-brand-headline">Logistics<br><strong>Management System</strong></div>
-            <p class="auth-brand-sub">Centralized fleet dispatching and trip monitoring for Remix, Ideal Home, and TenBuild operations.</p>
+            <p class="auth-brand-sub">Where movement meets operational excellence.</p>
         </div>
         <div class="auth-brand-bottom">
             <div class="auth-brand-stats">
                 <div><div class="auth-stat-label">Companies</div><div class="auth-stat-value">3</div></div>
                 <div><div class="auth-stat-label">Shared Fleet</div><div class="auth-stat-value">—</div></div>
-                <div><div class="auth-stat-label">System</div><div class="auth-stat-value">LogistiQ</div></div>
+                <div><div class="auth-stat-label">System</div><div class="auth-stat-value">MoveOps</div></div>
             </div>
         </div>
     </div>
@@ -43,7 +43,7 @@
                 employee@lvms.test &mdash; Employee<br>
                 driver@lvms.test &mdash; Driver
             </div>
-            <p class="auth-footer">LogistiQ &mdash; Internal Use Only<br>&copy; <?= date('Y') ?> Remix Construction and Trading Corporation</p>
+            <p class="auth-footer">&copy; <?= date('Y') ?> Remix Construction and Trading Corporation</p>
         </div>
     </div>
 </div>
