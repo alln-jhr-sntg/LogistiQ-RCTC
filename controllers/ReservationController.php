@@ -298,6 +298,21 @@ class ReservationController
 
         $resModel->cancel($id, (int) Auth::id(), $reason);
 
+        // Since Step 4, an 'approved' reservation always has a trip
+        // (created at gatepass approval, as 'pending_start') — cancelling
+        // the reservation must also close out that trip so it doesn't sit
+        // orphaned and keep the vehicle/driver locked up. Pending
+        // reservations have no trip yet, so that path is untouched.
+        if ($reservation['status'] === 'approved') {
+            $tripModel = new TripModel();
+            $trip      = $tripModel->findByReservation($id);
+
+            if ($trip) {
+                $tripModel->cancel((int) $trip['trip_id'], $reason, (int) Auth::id());
+                TripCancellationService::releaseAndNotify($trip, VEH_AVAILABLE);
+            }
+        }
+
         $auditModel = new AuditLogModel();
         $auditModel->log(
             (int) Auth::id(),

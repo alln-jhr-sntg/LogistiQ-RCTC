@@ -526,11 +526,7 @@ class TripController
         $resModel = new ReservationModel();
         $resModel->cancel((int) $trip['reservation_id'], (int) Auth::id(), $reason);
 
-        $vehicleModel = new VehicleModel();
-        $vehicleModel->updateStatus((int) $trip['vehicle_id'], $vehicleCondition);
-
-        $driverModel = new DriverProfileModel();
-        $driverModel->updateStatus((int) $trip['driver_id'], DRV_AVAILABLE);
+        TripCancellationService::releaseAndNotify($trip, $vehicleCondition);
 
         $auditModel = new AuditLogModel();
         $auditModel->log(
@@ -560,20 +556,6 @@ class TripController
             'title'          => 'Trip Cancelled — ' . $trip['reservation_code'],
             'message'        => $trip['reservation_code'] . ' to '
                 . $trip['destination'] . ' was cancelled: ' . $reason,
-            'type'           => 'trip',
-            'reference_id'   => $id,
-            'reference_type' => 'trip',
-        ]);
-
-        // Separately notify the driver — simpler, driver-facing wording
-        // (drivers_app.txt) rather than the admin/requester message above.
-        // This is also how a driver learns why GPS tracking stopped: the
-        // app's GPS service gets a 409 from the server the next time it
-        // tries to post a location for a trip that is no longer in_progress.
-        $notifModel->createForUsers([(int) $trip['driver_id']], [
-            'title'          => 'Trip Cancelled',
-            'message'        => 'Your assigned trip has been cancelled: '
-                . $trip['reservation_code'] . '.',
             'type'           => 'trip',
             'reference_id'   => $id,
             'reference_type' => 'trip',
