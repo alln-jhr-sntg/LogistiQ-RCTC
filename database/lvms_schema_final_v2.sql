@@ -215,11 +215,18 @@ CREATE TABLE projects (
     location_lng    DECIMAL(11,8),
     start_date      DATE,
     end_date        DATE,
-    is_active       TINYINT(1)   NOT NULL DEFAULT 1,
+    status           ENUM('pending','active','completed','rejected') NOT NULL DEFAULT 'pending',
+    requested_by     INT UNSIGNED,
+    reviewed_by      INT UNSIGNED,
+    reviewed_at      TIMESTAMP    NULL,
+    rejection_reason TEXT,
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_project_company FOREIGN KEY (company_id) REFERENCES companies(company_id),
-    CONSTRAINT fk_project_creator FOREIGN KEY (created_by) REFERENCES users(user_id)
+    CONSTRAINT fk_project_company    FOREIGN KEY (company_id)   REFERENCES companies(company_id),
+    CONSTRAINT fk_project_creator    FOREIGN KEY (created_by)   REFERENCES users(user_id),
+    CONSTRAINT fk_project_requester  FOREIGN KEY (requested_by) REFERENCES users(user_id),
+    CONSTRAINT fk_project_reviewer   FOREIGN KEY (reviewed_by)  REFERENCES users(user_id),
+    INDEX idx_project_status (company_id, status)
 ) ENGINE=InnoDB;
 
 

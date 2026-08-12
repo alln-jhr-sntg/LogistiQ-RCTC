@@ -138,13 +138,20 @@ Table projects {
   location_lng "decimal(11,8)" [default: NULL]
   start_date date [default: NULL]
   end_date date [default: NULL]
-  is_active "tinyint(1)" [not null, default: 1]
+  status enum('pending', 'active', 'completed', 'rejected') [not null, default: 'pending']
+  requested_by "int(10) unsigned" [default: NULL]
+  reviewed_by "int(10) unsigned" [default: NULL]
+  reviewed_at timestamp [default: NULL]
+  rejection_reason text [default: NULL]
   created_at timestamp [not null, default: `current_timestamp()`]
   updated_at timestamp [not null, default: `current_timestamp()`]
 
   Indexes {
     company_id [name: "fk_project_company"]
     created_by [name: "fk_project_creator"]
+    requested_by [name: "fk_project_requester"]
+    reviewed_by [name: "fk_project_reviewer"]
+    (company_id, status) [name: "idx_project_status"]
   }
 }
 
@@ -362,6 +369,8 @@ Ref: notifications.user_id > users.user_id
 
 Ref: projects.company_id > companies.company_id
 Ref: projects.created_by > users.user_id
+Ref: projects.requested_by > users.user_id
+Ref: projects.reviewed_by > users.user_id
 
 Ref: reservations.ai_recommended_vehicle_id > vehicles.vehicle_id
 Ref: reservations.cancelled_by > users.user_id
