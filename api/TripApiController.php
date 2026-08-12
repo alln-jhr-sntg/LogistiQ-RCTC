@@ -15,9 +15,12 @@ require_once __DIR__ . '/BaseApiController.php';
 class TripApiController extends BaseApiController
 {
     // GET /api/trips
-    // Returns trips for the authenticated driver with status
-    // 'pending_start' or 'in_progress'. These are the only trips
-    // the driver needs to act on in the app.
+    // Returns every trip for the authenticated driver — 'pending_start' and
+    // 'in_progress' trips are the ones the app expects the driver to act on
+    // (Home / Trips tabs), while 'completed' and 'cancelled' trips feed the
+    // History tabs. Terminal trips are capped to the most recent 50 so the
+    // payload doesn't grow unbounded as trip history accumulates; active
+    // trips are never capped. Rows already arrive newest-first.
     public function index(): void
     {
         $this->requireRole(ROLE_DRIVER);
@@ -25,27 +28,35 @@ class TripApiController extends BaseApiController
         $tripModel = new TripModel();
         $rows      = $tripModel->findForDriver($this->authUserId());
 
-        // Filter to actionable statuses and shape the response
-        $trips = [];
+        $trips         = [];
+        $terminalCount = 0;
         foreach ($rows as $row) {
-            if (!in_array($row['trip_status'], ['pending_start', 'in_progress'], true)) {
-                continue;
+            $isTerminal = in_array($row['trip_status'], TRIP_TERMINAL_STATUSES, true);
+            if ($isTerminal) {
+                if ($terminalCount >= 50) {
+                    continue;
+                }
+                $terminalCount++;
             }
             $trips[] = [
-                'trip_id'            => (int) $row['trip_id'],
-                'reservation_id'     => (int) $row['reservation_id'],
-                'reservation_code'   => $row['reservation_code'],
-                'destination'        => $row['destination'],
-                'departure_datetime' => $row['departure_datetime'],
-                'return_datetime'    => $row['return_datetime'],
-                'trip_status'        => $row['trip_status'],
-                'plate_number'       => $row['plate_number'],
-                'vehicle_brand'      => $row['vehicle_brand'],
-                'vehicle_model'      => $row['vehicle_model'],
-                'odometer_start_km' => $row['odometer_start_km'] !== null ? (float) $row['odometer_start_km'] : null,
-                'passenger_count'    => (int) $row['passenger_count'],
-                'cargo_weight_kg'    => (float) $row['cargo_weight_kg'],
-                'purpose_name'       => $row['purpose_name'],
+                'trip_id'             => (int) $row['trip_id'],
+                'reservation_id'      => (int) $row['reservation_id'],
+                'reservation_code'    => $row['reservation_code'],
+                'destination'         => $row['destination'],
+                'departure_datetime'  => $row['departure_datetime'],
+                'return_datetime'     => $row['return_datetime'],
+                'trip_status'         => $row['trip_status'],
+                'plate_number'        => $row['plate_number'],
+                'vehicle_brand'       => $row['vehicle_brand'],
+                'vehicle_model'       => $row['vehicle_model'],
+                'odometer_start_km'  => $row['odometer_start_km'] !== null ? (float) $row['odometer_start_km'] : null,
+                'passenger_count'     => (int) $row['passenger_count'],
+                'cargo_weight_kg'     => (float) $row['cargo_weight_kg'],
+                'purpose_name'        => $row['purpose_name'],
+                'odometer_end_km'     => $row['odometer_end_km'] !== null ? (float) $row['odometer_end_km'] : null,
+                'actual_departure'    => $row['actual_departure'],
+                'actual_return'       => $row['actual_return'],
+                'cancellation_reason' => $row['cancellation_reason'],
             ];
         }
 
