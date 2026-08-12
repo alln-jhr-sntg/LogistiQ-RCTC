@@ -7,7 +7,9 @@
  * active reservations allowed for a given purpose on a single project.
  *
  * Called from ReservationController::store() immediately before INSERT,
- * but only when the selected purpose has requires_project = 1.
+ * whenever a project was selected — the reservation form offers the
+ * project field for every purpose, not only those with
+ * requires_project = 1, so an optional project is capped just the same.
  *
  * Usage in controller:
  *   $error = TripLimitService::check($projectId, $purposeId);

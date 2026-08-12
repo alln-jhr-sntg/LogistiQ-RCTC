@@ -42,8 +42,8 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" id="projectGroup" style="display:none;">
-            <label class="form-label">Project <span class="required">*</span></label>
+        <div class="form-group" id="projectGroup">
+            <label class="form-label">Project <span class="required" id="projectRequiredMark" style="display:none;">*</span></label>
             <select class="form-select" name="project_id" id="projectSelect"
                     <?php if ($needsDeptPicker): ?>data-all-projects="<?= Helpers::e(json_encode($projects)) ?>"<?php endif; ?>>
                 <option value="">— Select Project —</option>
@@ -186,18 +186,24 @@ var projectData = <?= json_encode(array_combine(
     }, $projects)
 )) ?>;
 
-// Purpose → project field toggle
+// Purpose → project requirement toggle.
+// The project field stays visible for every purpose so a trip can always be
+// tagged to a project; only whether it is MANDATORY changes. The server
+// enforces the same rule in ReservationController::store().
 function handlePurposeChange() {
     var sel = document.getElementById('purposeSelect');
     var opt = sel.options[sel.selectedIndex];
     var req = opt.getAttribute('data-requires-project') === '1';
     var max = opt.getAttribute('data-max');
 
-    document.getElementById('projectGroup').style.display = req ? '' : 'none';
-    if (!req) document.getElementById('projectSelect').value = '';
+    document.getElementById('projectRequiredMark').style.display = req ? '' : 'none';
+    document.getElementById('projectSelect').required = req;
 
+    // Shown whenever a limit exists, not only when the project is mandatory:
+    // TripLimitService::check() runs for ANY purpose once a project is
+    // attached, so an optional project can hit the cap too.
     var hint = document.getElementById('maxHint');
-    if (req && max !== '') {
+    if (max !== '') {
         hint.textContent = 'Max ' + max + ' reservation(s) of this type per project.';
         hint.style.display = '';
     } else {
