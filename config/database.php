@@ -20,6 +20,11 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
             self::$instance = new PDO($dsn, $user, $pass, $options);
+            // MySQL's CURRENT_TIMESTAMP/NOW() otherwise evaluate in the
+            // server's default session timezone (UTC on Hostinger), which
+            // is 8 hours behind Asia/Manila for every TIMESTAMP column
+            // that relies on a DEFAULT CURRENT_TIMESTAMP (e.g. gps_tracking_logs.logged_at).
+            self::$instance->exec("SET time_zone = '+08:00'");
         }
         return self::$instance;
     }
