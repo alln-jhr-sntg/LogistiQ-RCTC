@@ -215,6 +215,7 @@ CREATE TABLE projects (
     location_lng    DECIMAL(11,8),
     start_date      DATE,
     end_date        DATE,
+    description      TEXT,
     status           ENUM('pending','active','completed','rejected') NOT NULL DEFAULT 'pending',
     requested_by     INT UNSIGNED,
     reviewed_by      INT UNSIGNED,

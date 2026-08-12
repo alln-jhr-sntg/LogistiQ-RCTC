@@ -52,6 +52,22 @@ const TRIP_TERMINAL_STATUSES = ['completed', 'cancelled'];
 // the trip reaches a terminal status.
 const TRIP_TRACKING_STATUSES = ['in_progress', 'incident'];
 
+const PROJ_PENDING   = 'pending';
+const PROJ_ACTIVE    = 'active';
+const PROJ_COMPLETED = 'completed';
+const PROJ_REJECTED  = 'rejected';
+
+// Statuses an admin may set directly on the project edit form. A project
+// finishes and a project reopens, so active <-> completed moves freely in
+// both directions.
+const PROJ_EDITABLE_STATUSES = [PROJ_ACTIVE, PROJ_COMPLETED];
+
+// Rows in these statuses refuse ANY status change through the edit form,
+// for every role including super_admin — approve() and reject() are the
+// only exits from pending, and rejected is terminal (the requester files
+// a new request rather than resubmitting in place).
+const PROJ_LOCKED_STATUSES = [PROJ_PENDING, PROJ_REJECTED];
+
 const VEH_AVAILABLE   = 'available';
 const VEH_RESERVED    = 'reserved';
 const VEH_ON_TRIP     = 'on_trip';

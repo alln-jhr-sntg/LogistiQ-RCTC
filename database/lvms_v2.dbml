@@ -138,6 +138,7 @@ Table projects {
   location_lng "decimal(11,8)" [default: NULL]
   start_date date [default: NULL]
   end_date date [default: NULL]
+  description text [default: NULL]
   status enum('pending', 'active', 'completed', 'rejected') [not null, default: 'pending']
   requested_by "int(10) unsigned" [default: NULL]
   reviewed_by "int(10) unsigned" [default: NULL]

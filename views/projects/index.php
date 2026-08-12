@@ -1,3 +1,14 @@
+<?php
+// 'completed' uses badge-cancelled because it is the only grey badge in
+// app.css — badge-completed exists but renders green, which would read as
+// "live" next to the green active badge.
+$statusBadge = [
+    PROJ_PENDING   => ['class' => 'badge-pending',   'label' => 'Pending'],
+    PROJ_ACTIVE    => ['class' => 'badge-available', 'label' => 'Active'],
+    PROJ_COMPLETED => ['class' => 'badge-cancelled', 'label' => 'Completed'],
+    PROJ_REJECTED  => ['class' => 'badge-rejected',  'label' => 'Rejected'],
+];
+?>
 <div class="page-header">
     <div class="page-header-left">
         <h2>Projects</h2>
@@ -63,11 +74,8 @@
                 ?>
             </td>
             <td>
-                <?php if ((int) $p['is_active'] === 1): ?>
-                    <span class="badge badge-available">Active</span>
-                <?php else: ?>
-                    <span class="badge badge-cancelled">Inactive</span>
-                <?php endif; ?>
+                <?php $badge = $statusBadge[$p['status']] ?? ['class' => 'badge-pending', 'label' => $p['status']]; ?>
+                <span class="badge <?= $badge['class'] ?>"><?= Helpers::e($badge['label']) ?></span>
             </td>
             <td>
                 <div class="td-actions">

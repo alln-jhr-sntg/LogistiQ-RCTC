@@ -1,3 +1,13 @@
+<?php
+// Same mapping as views/projects/index.php — 'completed' uses the grey
+// badge-cancelled because badge-completed renders green.
+$statusBadge = [
+    PROJ_PENDING   => ['class' => 'badge-pending',   'label' => 'Pending'],
+    PROJ_ACTIVE    => ['class' => 'badge-available', 'label' => 'Active'],
+    PROJ_COMPLETED => ['class' => 'badge-cancelled', 'label' => 'Completed'],
+    PROJ_REJECTED  => ['class' => 'badge-rejected',  'label' => 'Rejected'],
+];
+?>
 <div class="dashboard-grid">
 
     <div class="stat-card">
@@ -79,11 +89,8 @@
             </td>
             <td class="td-muted"><?= $p['location'] ? Helpers::e($p['location']) : '—' ?></td>
             <td>
-                <?php if ((int) $p['is_active'] === 1): ?>
-                    <span class="badge badge-available">Active</span>
-                <?php else: ?>
-                    <span class="badge badge-cancelled">Inactive</span>
-                <?php endif; ?>
+                <?php $badge = $statusBadge[$p['status']] ?? ['class' => 'badge-pending', 'label' => $p['status']]; ?>
+                <span class="badge <?= $badge['class'] ?>"><?= Helpers::e($badge['label']) ?></span>
             </td>
             <td class="td-muted"><?= date('M d, Y', strtotime($p['created_at'])) ?></td>
             <td>

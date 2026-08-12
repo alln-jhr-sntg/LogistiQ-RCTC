@@ -106,7 +106,14 @@ class ProjectController
         $lng       = $_POST['location_lng'] !== '' ? (float) $_POST['location_lng'] : null;
         $startDate = trim($_POST['start_date'] ?? '') ?: null;
         $endDate   = trim($_POST['end_date']   ?? '') ?: null;
-        $isActive  = isset($_POST['is_active']) ? 1 : 0;
+        $desc      = trim($_POST['description'] ?? '') ?: null;
+
+        // An admin creating a project directly already holds the authority a
+        // review would confer, so the default is 'active'. Only the statuses
+        // an admin may set by hand are accepted — pending and rejected belong
+        // to the request/review flow.
+        $posted = $_POST['status'] ?? '';
+        $status = in_array($posted, PROJ_EDITABLE_STATUSES, true) ? $posted : PROJ_ACTIVE;
 
         if ($name === '' || $companyId === 0) {
             Helpers::setFlash('error', 'Project name and company are required.');
@@ -126,7 +133,8 @@ class ProjectController
             'location_lng' => $lng,
             'start_date'   => $startDate,
             'end_date'     => $endDate,
-            'is_active'    => $isActive,
+            'description'  => $desc,
+            'status'       => $status,
         ]);
 
         $auditModel = new AuditLogModel();
@@ -182,7 +190,7 @@ class ProjectController
         $lng       = $_POST['location_lng'] !== '' ? (float) $_POST['location_lng'] : null;
         $startDate = trim($_POST['start_date'] ?? '') ?: null;
         $endDate   = trim($_POST['end_date']   ?? '') ?: null;
-        $isActive  = isset($_POST['is_active']) ? 1 : 0;
+        $desc      = trim($_POST['description'] ?? '') ?: null;
 
         if ($name === '' || $companyId === 0) {
             Helpers::setFlash('error', 'Project name and company are required.');
@@ -202,6 +210,18 @@ class ProjectController
         $this->requireProjectCompanyScope((int) $old['company_id']);
         $this->requireProjectCompanyScope($companyId);
 
+        // A pending or rejected project cannot change status here — for ANY
+        // role, super_admin included. approve() and reject() are the only
+        // exits from pending, and rejected is terminal. The posted value is
+        // discarded rather than validated, so a hand-crafted POST that skips
+        // the disabled select still cannot activate a request unreviewed.
+        $posted = $_POST['status'] ?? '';
+        if (in_array($old['status'], PROJ_LOCKED_STATUSES, true)) {
+            $status = $old['status'];
+        } else {
+            $status = in_array($posted, PROJ_EDITABLE_STATUSES, true) ? $posted : $old['status'];
+        }
+
         $projectModel->update($id, [
             'project_name' => $name,
             'project_code' => $code,
@@ -211,7 +231,8 @@ class ProjectController
             'location_lng' => $lng,
             'start_date'   => $startDate,
             'end_date'     => $endDate,
-            'is_active'    => $isActive,
+            'description'  => $desc,
+            'status'       => $status,
         ]);
 
         $auditModel = new AuditLogModel();
@@ -220,8 +241,8 @@ class ProjectController
             'PROJECT_UPDATED',
             'projects',
             $id,
-            ['project_name' => $old['project_name'], 'is_active' => $old['is_active']],
-            ['project_name' => $name, 'is_active' => $isActive]
+            ['project_name' => $old['project_name'], 'status' => $old['status']],
+            ['project_name' => $name, 'status' => $status]
         );
 
         Helpers::setFlash('success', 'Project "' . $name . '" updated.');
