@@ -56,7 +56,11 @@ class TripModel extends BaseModel
                     d.department_id,
                     c.company_id,
                     c.company_name,
-                    c.company_code
+                    c.company_code,
+                    gp.gatepass_code,
+                    gp.status          AS gatepass_status,
+                    gp.reviewed_at     AS gatepass_approved_at,
+                    CONCAT(gpr.first_name, \' \', gpr.last_name) AS gatepass_approver
              FROM   trips        t
              JOIN   reservations r   ON r.reservation_id  = t.reservation_id
              JOIN   vehicles     v   ON v.vehicle_id       = t.vehicle_id
@@ -64,7 +68,9 @@ class TripModel extends BaseModel
              JOIN   users        req ON req.user_id        = r.requested_by
              JOIN   departments  d   ON d.department_id    = r.department_id
              JOIN   companies    c   ON c.company_id       = d.company_id
-             JOIN   trip_purposes p  ON p.purpose_id       = r.purpose_id';
+             JOIN   trip_purposes p  ON p.purpose_id       = r.purpose_id
+             LEFT JOIN gatepasses gp  ON gp.reservation_id  = t.reservation_id
+             LEFT JOIN users      gpr ON gpr.user_id        = gp.reviewed_by';
     }
 
     /**

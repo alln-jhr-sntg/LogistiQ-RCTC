@@ -57,6 +57,13 @@ class TripApiController extends BaseApiController
                 'actual_departure'    => $row['actual_departure'],
                 'actual_return'       => $row['actual_return'],
                 'cancellation_reason' => $row['cancellation_reason'],
+                // Every trip implies an approved gatepass (trips are only
+                // created at gatepass approval), but these are still
+                // rendered null-safe on the Android side.
+                'gatepass_code'         => $row['gatepass_code'],
+                'gatepass_status'       => $row['gatepass_status'],
+                'gatepass_approver'     => $row['gatepass_approver'],
+                'gatepass_approved_at'  => $row['gatepass_approved_at'],
             ];
         }
 
