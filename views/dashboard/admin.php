@@ -10,11 +10,11 @@ $statusBadge = [
 ?>
 <div class="dashboard-grid">
 
-    <div class="stat-card">
+    <a class="stat-card" href="<?= APP_BASE ?>/index.php?url=projects&status=pending">
         <div class="stat-label">Pending Projects</div>
         <div class="stat-value"><?= (int) $stats['pending_projects'] ?></div>
         <div class="stat-sub">Awaiting review</div>
-    </div>
+    </a>
 
     <div class="stat-card stat-card--accent">
         <div class="stat-label">Pending Reservations</div>

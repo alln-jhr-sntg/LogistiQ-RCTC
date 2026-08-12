@@ -1337,6 +1337,18 @@ table.data-table {
   border-top: 1px solid var(--clr-border);
 }
 
+/* Google Maps container — picker on a form, read-only on a review page.
+   Used by: project request, project review. */
+.map-panel {
+  height: 320px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.map-panel--sm {
+  height: 220px;
+}
+
 /* Detail view */
 .detail-grid {
   display: grid;

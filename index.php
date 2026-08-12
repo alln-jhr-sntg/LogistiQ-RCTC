@@ -101,12 +101,17 @@ $routes = [
     ['GET',  '/companies/{id}/departments',     'CompanyController', 'departments'],
     ['POST', '/companies/{id}/departments',     'CompanyController', 'storeDepartment'],
 
-    // Projects
-    ['GET',  '/projects',           'ProjectController', 'index'],
-    ['GET',  '/projects/create',    'ProjectController', 'create'],
-    ['POST', '/projects/create',    'ProjectController', 'store'],
-    ['GET',  '/projects/{id}/edit', 'ProjectController', 'edit'],
-    ['POST', '/projects/{id}/edit', 'ProjectController', 'update'],
+    // Projects — static before {id}
+    ['GET',  '/projects',              'ProjectController', 'index'],
+    ['GET',  '/projects/create',       'ProjectController', 'create'],
+    ['POST', '/projects/create',       'ProjectController', 'store'],
+    ['GET',  '/projects/request',      'ProjectController', 'requestForm'],
+    ['POST', '/projects/request',      'ProjectController', 'submitRequest'],
+    ['GET',  '/projects/{id}/edit',    'ProjectController', 'edit'],
+    ['POST', '/projects/{id}/edit',    'ProjectController', 'update'],
+    ['GET',  '/projects/{id}/review',  'ProjectController', 'review'],
+    ['POST', '/projects/{id}/approve', 'ProjectController', 'approve'],
+    ['POST', '/projects/{id}/reject',  'ProjectController', 'reject'],
 
     // Reports
     ['GET',  '/reports',                            'ReportController', 'index'],

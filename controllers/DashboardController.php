@@ -112,10 +112,7 @@ class DashboardController
         $this->render('admin', [
             'page_title' => 'Dashboard',
             'stats' => [
-                // Projects have no approval workflow yet — is_active is set at
-                // creation with no pending/review status in between. Fixed at 0
-                // until that workflow is built; see the Review Projects action.
-                'pending_projects'      => 0,
+                'pending_projects'      => $projectModel->countPendingByCompany($companyId),
                 'pending_reservations'  => count($pendingReservations),
                 'approved_reservations' => count($approvedReservations),
                 'company_employees'     => $userModel->countByCompany($companyId),

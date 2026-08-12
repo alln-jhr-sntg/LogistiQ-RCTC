@@ -8,17 +8,33 @@ $statusBadge = [
     PROJ_COMPLETED => ['class' => 'badge-cancelled', 'label' => 'Completed'],
     PROJ_REJECTED  => ['class' => 'badge-rejected',  'label' => 'Rejected'],
 ];
+$statusTabs = [
+    ''             => 'All Statuses',
+    PROJ_PENDING   => 'Pending',
+    PROJ_ACTIVE    => 'Active',
+    PROJ_COMPLETED => 'Completed',
+    PROJ_REJECTED  => 'Rejected',
+];
 ?>
 <div class="page-header">
     <div class="page-header-left">
         <h2>Projects</h2>
-        <p>Active construction and development projects</p>
+        <p><?= $isEmployee
+            ? 'Projects at your company, plus your own requests'
+            : 'Active construction and development projects' ?></p>
     </div>
+    <?php if ($isEmployee): ?>
+    <a href="<?= Helpers::url('/projects/request') ?>" class="btn btn-solid">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Request Project
+    </a>
+    <?php else: ?>
     <a href="<?= Helpers::url('/projects/create') ?>" class="btn btn-solid">
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> New Project
     </a>
+    <?php endif; ?>
 </div>
 
+<?php if (!$isEmployee): ?>
 <form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="projects">
     <div class="filter-bar">
@@ -31,8 +47,16 @@ $statusBadge = [
             </option>
             <?php endforeach; ?>
         </select>
+        <select class="filter-select" name="status" onchange="this.form.submit()">
+            <?php foreach ($statusTabs as $key => $label): ?>
+            <option value="<?= Helpers::e($key) ?>" <?= $statusFilter === $key ? 'selected' : '' ?>>
+                <?= Helpers::e($label) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
     </div>
 </form>
+<?php endif; ?>
 
 <div class="card"><div class="table-wrap"><table class="data-table">
     <thead>
@@ -49,16 +73,27 @@ $statusBadge = [
     <?php if (empty($projects)): ?>
         <tr>
             <td colspan="6" class="td-muted" style="text-align:center;padding:24px;">
-                No projects yet.
+                No projects<?= $statusFilter !== '' ? ' with status "' . Helpers::e($statusFilter) . '"' : '' ?>.
             </td>
         </tr>
     <?php else: ?>
         <?php foreach ($projects as $p): ?>
+        <?php
+        $badge     = $statusBadge[$p['status']] ?? ['class' => 'badge-pending', 'label' => $p['status']];
+        // Review is offered only on a row awaiting a decision, and only to
+        // an actor who may act on that company. ProjectController::review(),
+        // approve() and reject() re-check this server-side.
+        $canReview = $p['status'] === PROJ_PENDING
+            && in_array((int) $p['company_id'], $reviewableCompanies, true);
+        ?>
         <tr>
             <td>
                 <strong><?= Helpers::e($p['project_name']) ?></strong>
                 <?php if ($p['project_code']): ?>
                 <br><span class="td-muted"><?= Helpers::e($p['project_code']) ?></span>
+                <?php endif; ?>
+                <?php if ($p['status'] === PROJ_REJECTED && $p['rejection_reason']): ?>
+                <br><span class="td-muted">Reason: <?= Helpers::e($p['rejection_reason']) ?></span>
                 <?php endif; ?>
             </td>
             <td class="td-muted"><?= Helpers::e($p['company_code']) ?></td>
@@ -74,13 +109,20 @@ $statusBadge = [
                 ?>
             </td>
             <td>
-                <?php $badge = $statusBadge[$p['status']] ?? ['class' => 'badge-pending', 'label' => $p['status']]; ?>
                 <span class="badge <?= $badge['class'] ?>"><?= Helpers::e($badge['label']) ?></span>
             </td>
             <td>
                 <div class="td-actions">
+                    <?php if ($canReview): ?>
+                    <a href="<?= Helpers::url('/projects/' . $p['project_id'] . '/review') ?>"
+                       class="btn btn-solid btn-sm">Review</a>
+                    <?php endif; ?>
+                    <?php if ($isEmployee): ?>
+                    <span class="td-muted">—</span>
+                    <?php else: ?>
                     <a href="<?= Helpers::url('/projects/' . $p['project_id'] . '/edit') ?>"
                        class="btn btn-outline btn-sm">Edit</a>
+                    <?php endif; ?>
                 </div>
             </td>
         </tr>

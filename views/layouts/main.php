@@ -128,6 +128,12 @@ function nav_is_active(string $path): string {
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M1 3h15v13H1V3zm15 4h4l3 3v6h-7V7zM5.5 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm13 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
                 <span class="nav-label">My Trips</span>
             </a>
+
+            <!-- Employee: read-only project list + request form -->
+            <a href="<?= Helpers::url('/projects') ?>" title="Projects" class="nav-item <?= nav_is_active('/projects') ?>">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.54 15.96.5 13.46.5c-1.29 0-2.35.54-3.16 1.38L10 2.18l-.3-.3C8.9 1.04 7.84.5 6.54.5 4.04.5 2 2.54 2 4.66c0 .46.11.9.18 1.34H0v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-9.3-3.49c.38-.43.92-.69 1.76-.69 1.34 0 2.04.7 2.04 1.84 0 .46-.28 1.15-.73 1.84H10.73c-.08-.23-.53-.73-.73-1.14.1-.66.32-1.43.7-1.85zM5.5 4.16c0-1.14.7-1.84 2.04-1.84.84 0 1.38.26 1.76.69.38.43.6 1.19.7 1.85-.2.41-.65.91-.73 1.14H6.23C5.78 5.31 5.5 4.62 5.5 4.16zM20 18H4v-2h16v2zm0-5H4V8h5.08L7 11h2l2-3h2l2 3h2l-2.08-3H20v5z"/></svg>
+                <span class="nav-label">Projects</span>
+            </a>
             <?php endif; ?>
 
             <?php if ($role === ROLE_DRIVER): ?>
