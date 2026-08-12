@@ -13,6 +13,8 @@
  *   PATCH /api/trips/{id}/start
  *   PATCH /api/trips/{id}/complete
  *   POST  /api/gps
+ *   GET   /api/notifications
+ *   PATCH /api/notifications/{id}/read
  *   POST  /api/incidents
  */
 
@@ -39,6 +41,8 @@ $routes = [
     ['PATCH', '/api/trips/{id}/start',    'TripApiController',     'start'],
     ['PATCH', '/api/trips/{id}/complete', 'TripApiController',     'complete'],
     ['POST',  '/api/gps',                 'GpsApiController',      'store'],
+    ['GET',   '/api/notifications',           'NotificationApiController', 'index'],
+    ['PATCH', '/api/notifications/{id}/read', 'NotificationApiController', 'markRead'],
     // Driver incident report. Future feature
     // ['POST',  '/api/incidents',           'IncidentApiController', 'store'],
 ];

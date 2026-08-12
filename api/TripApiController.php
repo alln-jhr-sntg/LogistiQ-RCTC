@@ -180,6 +180,21 @@ class TripApiController extends BaseApiController
             error_log('[LVMS API] MaintenanceService failed: ' . $e->getMessage());
         }
 
+        // Same try-catch pattern — a notification failure must never fail
+        // the trip-completion response.
+        try {
+            (new NotificationModel())->createForUsers([$this->authUserId()], [
+                'title'          => 'Trip Completed',
+                'message'        => 'Your trip has been successfully recorded: '
+                    . $trip['reservation_code'] . '.',
+                'type'           => 'trip',
+                'reference_id'   => $tripId,
+                'reference_type' => 'trip',
+            ]);
+        } catch (Throwable $e) {
+            error_log('[LVMS API] Notification failed: ' . $e->getMessage());
+        }
+
         $this->json([
             'status'  => 'ok',
             'trip_id' => $tripId,

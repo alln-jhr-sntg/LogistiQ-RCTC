@@ -98,6 +98,42 @@ class NotificationModel extends BaseModel
     }
 
     /**
+     * Return trip-type notifications for a driver, newest first.
+     * Used by NotificationApiController::index() — the type = 'trip' filter
+     * is the server-side enforcement that drivers only ever see
+     * trip-assigned, trip-cancelled, and trip-completed rows, never
+     * reservation, gatepass, user, company, settings, report, or
+     * maintenance notifications (see drivers_app.txt).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getForDriver(int $userId, int $limit = 50): array
+    {
+        return $this->fetchAll(
+            'SELECT * FROM notifications
+             WHERE  user_id = :user_id
+               AND  type    = \'trip\'
+             ORDER  BY created_at DESC
+             LIMIT  :limit',
+            [':user_id' => $userId, ':limit' => $limit]
+        );
+    }
+
+    /**
+     * Count unread trip-type notifications for a driver — feeds the
+     * Android app's bell badge. Same type = 'trip' scoping as getForDriver().
+     */
+    public function getUnreadCountForDriver(int $userId): int
+    {
+        $row = $this->fetchOne(
+            'SELECT COUNT(*) AS cnt FROM notifications
+             WHERE user_id = :user_id AND is_read = 0 AND type = \'trip\'',
+            [':user_id' => $userId]
+        );
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
      * Mark all unread notifications as read for a user.
      * Called when the user clicks "Mark All Read" on the notifications page.
      */

@@ -101,7 +101,7 @@ class GatepassController
         // start via the app. This is the ONLY place TripModel::create() is
         // called; no trip exists until this point.
         $tripModel = new TripModel();
-        $tripModel->create([
+        $tripId    = $tripModel->create([
             'reservation_id' => $reservationId,
             'vehicle_id'     => $vehicleId,
             'driver_id'      => $driverId,
@@ -117,11 +117,14 @@ class GatepassController
             ['status' => 'approved', 'reservation_id' => $reservationId]
         );
 
-        // Notify the assigned driver and the requester
+        // Notify the requester that the gatepass cleared, and the driver
+        // that a new trip is waiting. These are two different notifications
+        // — drivers must not see gatepass status (drivers_app.txt), only
+        // that a trip was assigned to them.
         try {
             $notifModel = new NotificationModel();
             $notifModel->createForUsers(
-                array_unique([$driverId, (int) $gatepass['requested_by']]),
+                [(int) $gatepass['requested_by']],
                 [
                     'title'          => 'Gatepass Approved',
                     'message'        => $gatepass['gatepass_code'] . ' — '
@@ -129,6 +132,18 @@ class GatepassController
                     'type'           => 'reservation',
                     'reference_id'   => $reservationId,
                     'reference_type' => 'reservation',
+                ]
+            );
+            $notifModel->createForUsers(
+                [$driverId],
+                [
+                    'title'          => 'New Trip Assigned',
+                    'message'        => 'You have been assigned a new trip: '
+                        . $gatepass['reservation_code'] . ', departing '
+                        . date('M j, Y g:i A', strtotime($gatepass['departure_datetime'])) . '.',
+                    'type'           => 'trip',
+                    'reference_id'   => $tripId,
+                    'reference_type' => 'trip',
                 ]
             );
         } catch (Throwable $e) {
