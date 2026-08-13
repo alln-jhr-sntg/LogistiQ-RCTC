@@ -280,10 +280,20 @@ class ReportController
      */
     private function streamCsv(string $filename, array $headers, array $rows, callable $rowMapper): never
     {
+        // config/app.php:14 leaves an output buffer active for the whole
+        // request; discard anything already in it so nothing prepends
+        // itself to the CSV and corrupts the file.
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $out = fopen('php://output', 'w');
+        // Excel on Windows misreads UTF-8 without a BOM and mangles
+        // characters like ñ and é — common in Philippine place names.
+        fwrite($out, "\xEF\xBB\xBF");
         fputcsv($out, ['Tip: select all cells (Ctrl+A), then press Alt, H, O, I to auto-fit these columns to their content.']);
         fputcsv($out, $headers);
         foreach ($rows as $row) {
