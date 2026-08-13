@@ -14,12 +14,19 @@ class NotificationController
     {
         Auth::requireLogin();
 
-        $notifModel    = new NotificationModel();
-        $notifications = $notifModel->getByUser((int) Auth::id());
+        $notifModel = new NotificationModel();
+        $userId     = (int) Auth::id();
+
+        $page       = max(1, (int) ($_GET['page'] ?? 1));
+        $total      = $notifModel->countByUser($userId);
+        $pagination = Helpers::paginate($total, $page, 10, 'url=notifications');
+
+        $notifications = $notifModel->getByUser($userId, $pagination['limit'], $pagination['offset']);
 
         $this->render('index', [
             'page_title'    => 'Notifications',
             'notifications' => $notifications,
+            'pagination'    => $pagination['html'],
         ]);
     }
 

@@ -74,3 +74,4 @@ $colors = [
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
+<?= $pagination ?>

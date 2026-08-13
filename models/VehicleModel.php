@@ -191,12 +191,15 @@ class VehicleModel extends BaseModel
      * has a next_service_km value set. Rows without next_service_km are skipped
      * so they don't replace a valid baseline row.
      *
+     * $limit/$offset (cast int, interpolated not bound — see findForReport()
+     * in TripModel for why) default to null = no LIMIT, so the existing
+     * findMaintenanceDue() dashboard caller keeps getting the full list.
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findForMaintenanceReport(): array
+    public function findForMaintenanceReport(?int $limit = null, ?int $offset = null): array
     {
-        return $this->fetchAll(
-            'SELECT v.*,
+        $sql = 'SELECT v.*,
                     vc.category_name,
                     vm.service_date        AS last_service_date,
                     vm.next_service_km,
@@ -222,8 +225,13 @@ class VehicleModel extends BaseModel
                      WHEN v.current_odometer_km >= vm.next_service_km - 500 THEN 1
                      ELSE                                                        2
                  END,
-                 (v.current_odometer_km - IFNULL(vm.next_service_km, 0)) DESC'
-        );
+                 (v.current_odometer_km - IFNULL(vm.next_service_km, 0)) DESC';
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql);
     }
 
     /**
@@ -232,9 +240,14 @@ class VehicleModel extends BaseModel
      * Uses LEFT JOIN so vehicles with zero trips in the range still appear.
      * Used by ReportController::vehicleUtilization().
      *
+     * $limit/$offset (cast int, interpolated not bound — see findForReport()
+     * in TripModel for why) default to null = no LIMIT (full result set —
+     * used by CSV export and to compute the report's stat cards, which must
+     * reflect the whole filtered fleet, not just the current page).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findForUtilizationReport(string $dateFrom = '', string $dateTo = ''): array
+    public function findForUtilizationReport(string $dateFrom = '', string $dateTo = '', ?int $limit = null, ?int $offset = null): array
     {
         // Build JOIN ON condition dynamically — positional params in JOIN ON
         // are processed left to right by PDO just like WHERE params.
@@ -250,8 +263,7 @@ class VehicleModel extends BaseModel
             $params[]       = $dateTo;
         }
 
-        return $this->fetchAll(
-            "SELECT v.vehicle_id, v.plate_number, v.brand, v.model, v.year_model,
+        $sql = "SELECT v.vehicle_id, v.plate_number, v.brand, v.model, v.year_model,
                     v.status, v.current_odometer_km,
                     vc.category_name,
                     COUNT(t.trip_id)                                       AS trip_count,
@@ -262,9 +274,13 @@ class VehicleModel extends BaseModel
              WHERE  v.status != 'retired'
              GROUP  BY v.vehicle_id, v.plate_number, v.brand, v.model,
                        v.year_model, v.status, v.current_odometer_km, vc.category_name
-             ORDER  BY total_km DESC, trip_count DESC",
-            $params
-        );
+             ORDER  BY total_km DESC, trip_count DESC";
+
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
     }
 
     /**

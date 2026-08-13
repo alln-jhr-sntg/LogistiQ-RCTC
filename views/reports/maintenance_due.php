@@ -105,3 +105,4 @@
     <?php endif; ?>
     </tbody>
 </table></div></div>
+<?= $pagination ?>

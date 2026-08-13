@@ -33,4 +33,70 @@ class Helpers
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
+
+    /**
+     * Build LIMIT/OFFSET values and page-link markup for a paginated list.
+     *
+     * $baseQuery is the query string to reuse on every page link — everything
+     * that should survive across pages (at minimum 'url', plus any active
+     * filters), built by the caller with e.g.
+     * http_build_query(['url' => 'reports/trip-history', ...$filters]).
+     * 'page' must not already be in it; this method appends it per link.
+     *
+     * @return array{limit:int, offset:int, page:int, total_pages:int, html:string}
+     */
+    public static function paginate(int $total, int $page, int $perPage, string $baseQuery): array
+    {
+        $perPage    = max(1, $perPage);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page       = max(1, min($page, $totalPages));
+        $offset     = ($page - 1) * $perPage;
+
+        $html = '';
+        if ($totalPages > 1) {
+            $link = fn(int $p): string => self::e(APP_BASE . '/index.php?' . $baseQuery . '&page=' . $p);
+
+            $html .= '<div class="pagination">';
+            $html .= '<div class="pagination-info">Page ' . $page . ' of ' . $totalPages
+                    . ' (' . number_format($total) . ' total)</div>';
+            $html .= '<div class="pagination-links">';
+            $html .= $page > 1
+                ? '<a href="' . $link($page - 1) . '">&laquo; Prev</a>'
+                : '<span class="disabled">&laquo; Prev</span>';
+
+            // First/last page plus a window around the current page, with an
+            // ellipsis for any gap — keeps the strip short no matter how many
+            // pages the underlying report grows to.
+            $shown = [];
+            for ($p = 1; $p <= $totalPages; $p++) {
+                if ($p === 1 || $p === $totalPages || abs($p - $page) <= 2) {
+                    $shown[] = $p;
+                }
+            }
+
+            $prev = null;
+            foreach ($shown as $p) {
+                if ($prev !== null && $p - $prev > 1) {
+                    $html .= '<span class="disabled">&hellip;</span>';
+                }
+                $html .= $p === $page
+                    ? '<span class="active">' . $p . '</span>'
+                    : '<a href="' . $link($p) . '">' . $p . '</a>';
+                $prev = $p;
+            }
+
+            $html .= $page < $totalPages
+                ? '<a href="' . $link($page + 1) . '">Next &raquo;</a>'
+                : '<span class="disabled">Next &raquo;</span>';
+            $html .= '</div></div>';
+        }
+
+        return [
+            'limit'       => $perPage,
+            'offset'      => $offset,
+            'page'        => $page,
+            'total_pages' => $totalPages,
+            'html'        => $html,
+        ];
+    }
 }

@@ -84,17 +84,40 @@ class NotificationModel extends BaseModel
      * Return notifications for a user, newest first.
      * Used by NotificationController::index().
      *
+     * $limit/$offset are cast to int and interpolated directly rather than
+     * bound — PDO::ATTR_EMULATE_PREPARES is off (config/database.php), and
+     * MySQL's native prepared-statement protocol does not reliably accept a
+     * bound param in LIMIT/OFFSET position. Safe here since both are
+     * hard-cast to int right before use, never raw user input.
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function getByUser(int $userId, int $limit = 50): array
+    public function getByUser(int $userId, int $limit = 50, int $offset = 0): array
     {
+        $limit  = max(0, $limit);
+        $offset = max(0, $offset);
+
         return $this->fetchAll(
-            'SELECT * FROM notifications
+            "SELECT * FROM notifications
              WHERE  user_id    = :user_id
              ORDER  BY created_at DESC
-             LIMIT  :limit',
-            [':user_id' => $userId, ':limit' => $limit]
+             LIMIT  $limit OFFSET $offset",
+            [':user_id' => $userId]
         );
+    }
+
+    /**
+     * Count all notifications for a user (read + unread) — used to compute
+     * total pages for NotificationController::index(). Distinct from
+     * getUnreadCount(), which the topbar badge uses.
+     */
+    public function countByUser(int $userId): int
+    {
+        $row = $this->fetchOne(
+            'SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = :user_id',
+            [':user_id' => $userId]
+        );
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**

@@ -1155,6 +1155,57 @@ table.data-table {
   align-items: center;
 }
 
+/* Pagination (reports tables + notifications list) */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--clr-text-3);
+}
+
+.pagination-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-links a,
+.pagination-links span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--clr-text-2);
+  text-decoration: none;
+}
+
+.pagination-links a:hover {
+  border-color: var(--clr-primary-lt);
+  color: var(--clr-primary);
+}
+
+.pagination-links span.active {
+  background: var(--clr-primary);
+  color: #fff;
+}
+
+.pagination-links span.disabled {
+  color: var(--clr-border);
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;

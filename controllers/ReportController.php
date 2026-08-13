@@ -36,9 +36,14 @@ class ReportController
         $vehicleModel = new VehicleModel();
         $userModel    = new UserModel();
 
+        $page       = max(1, (int) ($_GET['page'] ?? 1));
+        $total      = $tripModel->countForReport($filters);
+        $baseQuery  = http_build_query(array_merge(['url' => 'reports/trip-history'], $filters));
+        $pagination = Helpers::paginate($total, $page, 10, $baseQuery);
+
         $this->render('trip_history', [
             'page_title' => 'Trip History',
-            'trips'      => $tripModel->findForReport($filters),
+            'trips'      => $tripModel->findForReport($filters, null, $pagination['limit'], $pagination['offset']),
             'vehicles'   => $vehicleModel->findAll(),
             'drivers'    => $userModel->findByRole(ROLE_DRIVER),
             'filters'    => array_merge([
@@ -48,6 +53,7 @@ class ReportController
                 'driver_id'   => '',
                 'vehicle_id'  => '',
             ], $filters),
+            'pagination' => $pagination['html'],
         ]);
     }
 
@@ -59,10 +65,15 @@ class ReportController
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $vehicleModel = new VehicleModel();
-        $vehicles     = $vehicleModel->findForMaintenanceReport();
+
+        // Stat cards must reflect the whole fleet, not just the current
+        // page, so the unbounded list is fetched once and reused both for
+        // the counts below and as the pagination total — a second, cheap
+        // COUNT query would just recompute a number already in hand.
+        $allVehicles = $vehicleModel->findForMaintenanceReport();
 
         $overdue = $dueSoon = $ok = $noBaseline = 0;
-        foreach ($vehicles as $v) {
+        foreach ($allVehicles as $v) {
             $next = (float) ($v['next_service_km'] ?? 0);
             $curr = (float)  $v['current_odometer_km'];
             if ($next === 0.0) {
@@ -76,6 +87,10 @@ class ReportController
             }
         }
 
+        $page       = max(1, (int) ($_GET['page'] ?? 1));
+        $pagination = Helpers::paginate(count($allVehicles), $page, 10, 'url=reports/maintenance-due');
+        $vehicles   = $vehicleModel->findForMaintenanceReport($pagination['limit'], $pagination['offset']);
+
         $this->render('maintenance_due', [
             'page_title'    => 'Maintenance Due',
             'vehicles'      => $vehicles,
@@ -83,6 +98,7 @@ class ReportController
             'due_soon'      => $dueSoon,
             'ok'            => $ok,
             'no_baseline'   => $noBaseline,
+            'pagination'    => $pagination['html'],
         ]);
     }
 
@@ -97,12 +113,22 @@ class ReportController
         $dateTo   = $_GET['date_to']   ?? '';
 
         $vehicleModel = new VehicleModel();
-        $vehicles     = $vehicleModel->findForUtilizationReport($dateFrom, $dateTo);
 
-        $fleetCount = count($vehicles);
-        $totalTrips = (int) array_sum(array_column($vehicles, 'trip_count'));
-        $totalKm    = (float) array_sum(array_column($vehicles, 'total_km'));
+        // Stat cards must reflect the whole filtered fleet, not just the
+        // current page — same reasoning as maintenanceDue() above.
+        $allVehicles = $vehicleModel->findForUtilizationReport($dateFrom, $dateTo);
+
+        $fleetCount = count($allVehicles);
+        $totalTrips = (int) array_sum(array_column($allVehicles, 'trip_count'));
+        $totalKm    = (float) array_sum(array_column($allVehicles, 'total_km'));
         $avgTrips   = $fleetCount > 0 ? round($totalTrips / $fleetCount, 1) : 0;
+
+        $page         = max(1, (int) ($_GET['page'] ?? 1));
+        $queryFilters = array_filter(['date_from' => $dateFrom, 'date_to' => $dateTo], fn($v) => $v !== '');
+        $baseQuery    = http_build_query(array_merge(['url' => 'reports/vehicle-utilization'], $queryFilters));
+        $pagination   = Helpers::paginate($fleetCount, $page, 10, $baseQuery);
+
+        $vehicles = $vehicleModel->findForUtilizationReport($dateFrom, $dateTo, $pagination['limit'], $pagination['offset']);
 
         $this->render('vehicle_utilization', [
             'page_title'   => 'Vehicle Utilization',
@@ -113,6 +139,7 @@ class ReportController
             'total_trips'  => $totalTrips,
             'total_km'     => $totalKm,
             'avg_trips'    => $avgTrips,
+            'pagination'   => $pagination['html'],
         ]);
     }
 

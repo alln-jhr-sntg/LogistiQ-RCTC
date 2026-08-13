@@ -176,29 +176,28 @@ class TripModel extends BaseModel
     }
 
     /**
-     * Return trips for the Trip History report with optional filters.
+     * Shared WHERE-clause builder for the Trip History report — used by both
+     * findForReport() and countForReport() so the two never drift apart.
      * Uses positional ? params built dynamically — order matters.
      *
-     * @param array<string, mixed> $filters     Keys: date_from, date_to,
-     *                                          trip_status, driver_id, vehicle_id
-     * @param int[]|null            $companyIds null = no company scoping (every
-     *                                          company's trips). An empty array
-     *                                          fails closed and returns nothing
-     *                                          — it never silently means "all".
-     * @return array<int, array<string, mixed>>
+     * @param array<string, mixed> $filters    Keys: date_from, date_to,
+     *                                         trip_status, driver_id, vehicle_id
+     * @param int[]|null            $companyIds Assumed already non-empty —
+     *                                          callers check the "empty array
+     *                                          fails closed" case themselves,
+     *                                          since they return different
+     *                                          "nothing" values (0 vs []).
+     * @return array{0: string[], 1: array<int,mixed>}
      */
-    public function findForReport(array $filters = [], ?array $companyIds = null): array
+    private function reportConditions(array $filters, ?array $companyIds): array
     {
         $where  = [];
         $params = [];
 
         if ($companyIds !== null) {
-            if (empty($companyIds)) {
-                return [];
-            }
             $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
             $where[]  = "c.company_id IN ($placeholders)";
-            $params   = array_merge($params, array_values($companyIds));
+            $params   = array_values($companyIds);
         }
 
         if (!empty($filters['date_from'])) {
@@ -222,12 +221,79 @@ class TripModel extends BaseModel
             $params[] = (int) $filters['vehicle_id'];
         }
 
+        return [$where, $params];
+    }
+
+    /**
+     * Return trips for the Trip History report with optional filters.
+     * $limit/$offset are cast to int and interpolated directly (not bound) —
+     * PDO::ATTR_EMULATE_PREPARES is off (config/database.php), and MySQL's
+     * native prepared-statement protocol does not reliably accept a bound
+     * param in LIMIT/OFFSET position. Safe here since both are hard-cast to
+     * int right before use, never raw user input.
+     *
+     * @param array<string, mixed> $filters     Keys: date_from, date_to,
+     *                                          trip_status, driver_id, vehicle_id
+     * @param int[]|null            $companyIds null = no company scoping (every
+     *                                          company's trips). An empty array
+     *                                          fails closed and returns nothing
+     *                                          — it never silently means "all".
+     * @param int|null              $limit      null = no LIMIT (full result set —
+     *                                          used by CSV export).
+     * @return array<int, array<string, mixed>>
+     */
+    public function findForReport(array $filters = [], ?array $companyIds = null, ?int $limit = null, ?int $offset = null): array
+    {
+        if ($companyIds !== null && empty($companyIds)) {
+            return [];
+        }
+
+        [$where, $params] = $this->reportConditions($filters, $companyIds);
+
         $sql = $this->baseSelect();
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
+        $sql .= ' ORDER BY t.created_at DESC';
 
-        return $this->fetchAll($sql . ' ORDER BY t.created_at DESC', $params);
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count trips matching the Trip History report's filters — same WHERE
+     * as findForReport(), used to compute total pages without pulling the
+     * full joined result set.
+     *
+     * @param array<string, mixed> $filters
+     * @param int[]|null            $companyIds
+     */
+    public function countForReport(array $filters = [], ?array $companyIds = null): int
+    {
+        if ($companyIds !== null && empty($companyIds)) {
+            return 0;
+        }
+
+        [$where, $params] = $this->reportConditions($filters, $companyIds);
+
+        // Filters only ever reference t.* or (when company-scoped) c.company_id,
+        // so counting needs just the join path to companies — not the full
+        // baseSelect() column list.
+        $sql = 'SELECT COUNT(*) AS cnt FROM trips t';
+        if ($companyIds !== null) {
+            $sql .= ' JOIN reservations r ON r.reservation_id = t.reservation_id
+                      JOIN departments  d ON d.department_id  = r.department_id
+                      JOIN companies    c ON c.company_id     = d.company_id';
+        }
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**
