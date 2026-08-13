@@ -116,15 +116,145 @@ class ReportController
         ]);
     }
 
-    // ── Export stub (deferred) ────────────────────────────────────
+    // ── Export ───────────────────────────────────────────────────
+    // All three /reports/{report}/export routes point here (see index.php) —
+    // the report is disambiguated from $_GET['url'], which the router always
+    // populates the same way for GET and POST. Each export reads its filters
+    // from POST (mirrored as hidden fields on the report's export form, so
+    // it always matches whatever is currently applied on screen) and pulls
+    // the FULL filtered set from the model — no LIMIT/OFFSET — so the CSV
+    // is never truncated to the current page.
 
     public function export(): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
-        Helpers::setFlash('info', 'Export will be available in a future update.');
-        $ref    = $_SERVER['HTTP_REFERER'] ?? '';
-        parse_str(parse_url($ref, PHP_URL_QUERY) ?? '', $params);
-        $back   = $params['url'] ?? 'reports/trip-history';
-        Helpers::redirect('/' . ltrim($back, '/'));
+
+        $url = $_GET['url'] ?? '';
+
+        if (str_contains($url, 'trip-history')) {
+            $this->exportTripHistory();
+        } elseif (str_contains($url, 'maintenance-due')) {
+            $this->exportMaintenanceDue();
+        } elseif (str_contains($url, 'vehicle-utilization')) {
+            $this->exportVehicleUtilization();
+        } else {
+            Helpers::redirect('/reports/trip-history');
+        }
+    }
+
+    private function exportTripHistory(): void
+    {
+        $filters = array_filter([
+            'date_from'   => $_POST['date_from']                          ?? '',
+            'date_to'     => $_POST['date_to']                            ?? '',
+            'trip_status' => $_POST['trip_status']                        ?? '',
+            'driver_id'   => (int) ($_POST['driver_id']   ?? 0) ?: null,
+            'vehicle_id'  => (int) ($_POST['vehicle_id']  ?? 0) ?: null,
+        ], fn($v) => $v !== '' && $v !== null);
+
+        $trips = (new TripModel())->findForReport($filters);
+
+        $this->streamCsv(
+            'trip_history_' . date('Y-m-d') . '.csv',
+            ['Reservation', 'Purpose', 'Vehicle', 'Driver', 'Destination', 'Departure', 'Distance (km)', 'Status'],
+            $trips,
+            function (array $t): array {
+                $distance = ($t['odometer_start_km'] !== null && $t['odometer_end_km'] !== null)
+                    ? (string) ((float) $t['odometer_end_km'] - (float) $t['odometer_start_km'])
+                    : '';
+
+                return [
+                    $t['reservation_code'],
+                    $t['purpose_name'],
+                    trim($t['plate_number'] . ' — ' . $t['vehicle_brand'] . ' ' . $t['vehicle_model']),
+                    trim($t['driver_first_name'] . ' ' . $t['driver_last_name']),
+                    $t['destination'],
+                    $t['actual_departure'] ? date('Y-m-d H:i', strtotime($t['actual_departure'])) : '',
+                    $distance,
+                    ucwords(str_replace('_', ' ', $t['trip_status'])),
+                ];
+            }
+        );
+    }
+
+    private function exportMaintenanceDue(): void
+    {
+        $vehicles = (new VehicleModel())->findForMaintenanceReport();
+
+        $this->streamCsv(
+            'maintenance_due_' . date('Y-m-d') . '.csv',
+            ['Plate Number', 'Vehicle', 'Current Odometer (km)', 'Next Service (km)', 'Remaining (km)', 'Last Service', 'Alert'],
+            $vehicles,
+            function (array $v): array {
+                $curr = (float) $v['current_odometer_km'];
+                $next = $v['next_service_km'] !== null ? (float) $v['next_service_km'] : null;
+
+                if ($next === null) {
+                    $alert     = 'No Baseline';
+                    $remaining = '';
+                } elseif ($curr >= $next) {
+                    $alert     = 'Overdue';
+                    $remaining = (string) ($curr - $next) . ' over';
+                } elseif ($curr >= $next - 500) {
+                    $alert     = 'Due Soon';
+                    $remaining = (string) ($next - $curr);
+                } else {
+                    $alert     = 'OK';
+                    $remaining = (string) ($next - $curr);
+                }
+
+                return [
+                    $v['plate_number'],
+                    trim($v['brand'] . ' ' . $v['model'] . ' ' . $v['year_model']),
+                    (string) $curr,
+                    $next !== null ? (string) $next : '',
+                    $remaining,
+                    $v['last_service_date'] ? date('Y-m-d', strtotime($v['last_service_date'])) : '',
+                    $alert,
+                ];
+            }
+        );
+    }
+
+    private function exportVehicleUtilization(): void
+    {
+        $dateFrom = $_POST['date_from'] ?? '';
+        $dateTo   = $_POST['date_to']   ?? '';
+
+        $vehicles = (new VehicleModel())->findForUtilizationReport($dateFrom, $dateTo);
+
+        $this->streamCsv(
+            'vehicle_utilization_' . date('Y-m-d') . '.csv',
+            ['Plate Number', 'Vehicle', 'Category', 'Completed Trips', 'Distance (km)', 'Current Odometer (km)', 'Status'],
+            $vehicles,
+            fn(array $v): array => [
+                $v['plate_number'],
+                trim($v['brand'] . ' ' . $v['model'] . ' ' . $v['year_model']),
+                $v['category_name'],
+                (string) $v['trip_count'],
+                (string) $v['total_km'],
+                (string) $v['current_odometer_km'],
+                ucwords(str_replace('_', ' ', $v['status'])),
+            ]
+        );
+    }
+
+    /**
+     * Stream $rows as a CSV attachment named $filename. $rowMapper converts
+     * one model row into a flat array of CSV cell values, in $headers order.
+     * Terminates execution — never returns.
+     */
+    private function streamCsv(string $filename, array $headers, array $rows, callable $rowMapper): never
+    {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, $headers);
+        foreach ($rows as $row) {
+            fputcsv($out, $rowMapper($row));
+        }
+        fclose($out);
+        exit;
     }
 }
