@@ -55,6 +55,7 @@ $role = Auth::role();
             <th>Purpose</th>
             <th>Destination</th>
             <th>Departure</th>
+            <th>Return</th>
             <th>Status</th>
             <th>Actions</th>
         </tr>
@@ -62,7 +63,7 @@ $role = Auth::role();
     <tbody>
     <?php if (empty($reservations)): ?>
         <tr>
-            <td colspan="8" class="td-muted" style="text-align:center;padding:24px;">
+            <td colspan="9" class="td-muted" style="text-align:center;padding:24px;">
                 No reservations<?= $statusFilter !== '' ? ' with status "' . Helpers::e($statusFilter) . '"' : '' ?>.
             </td>
         </tr>
@@ -77,6 +78,7 @@ $role = Auth::role();
             <td class="td-muted"><?= Helpers::e($r['purpose_name']) ?></td>
             <td class="td-muted"><?= Helpers::e($r['destination']) ?></td>
             <td class="td-muted"><?= date('M d Y, g:i A', strtotime($r['departure_datetime'])) ?></td>
+            <td class="td-muted"><?= date('M d Y, g:i A', strtotime($r['return_datetime'])) ?></td>
             <td><span class="badge <?= $sb['class'] ?>"><?= $sb['label'] ?></span></td>
             <td>
                 <div class="td-actions">

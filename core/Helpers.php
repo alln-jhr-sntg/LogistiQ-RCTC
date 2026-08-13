@@ -14,6 +14,23 @@ class Helpers
         return APP_BASE . '/index.php?url=' . ltrim($path, '/');
     }
 
+    /**
+     * URL for a file under public/, with a filemtime-based cache-busting
+     * query string appended. app.css has no build step and Apache serves it
+     * with only Last-Modified/ETag (no explicit Cache-Control), so browsers
+     * can and do reuse a stale cached copy across normal navigations — a
+     * hard refresh doesn't reliably fix this either. Appending ?v=<mtime>
+     * changes the URL itself on every edit, which forces a fresh fetch
+     * regardless of what the browser cached.
+     */
+    public static function assetUrl(string $path): string
+    {
+        $path    = '/' . ltrim($path, '/');
+        $fsPath  = __DIR__ . '/../public' . $path;
+        $version = file_exists($fsPath) ? filemtime($fsPath) : time();
+        return APP_BASE . '/public' . $path . '?v=' . $version;
+    }
+
     public static function setFlash(string $type, string $message): void
     {
         $_SESSION['flash'] = ['type' => $type, 'message' => $message];

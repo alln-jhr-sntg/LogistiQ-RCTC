@@ -40,7 +40,8 @@ $statuses = [
                     <th>Vehicle</th>
                     <?php if (!$isDriver): ?><th>Driver</th><?php endif; ?>
                     <th>Destination</th>
-                    <th>Departure</th>
+                    <th>Actual Departure</th>
+                    <th>Actual Return</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -48,7 +49,7 @@ $statuses = [
             <tbody>
             <?php if (empty($trips)): ?>
                 <tr>
-                    <td colspan="<?= $isDriver ? 6 : 7 ?>" class="td-muted"
+                    <td colspan="<?= $isDriver ? 7 : 8 ?>" class="td-muted"
                         style="text-align:center; padding:24px;">
                         No trips found<?= $statusFilter !== '' ? ' with status "' . Helpers::e(str_replace('_', ' ', $statusFilter)) . '"' : '' ?>.
                     </td>
@@ -86,7 +87,16 @@ $statuses = [
                     <td><?= Helpers::e($trip['driver_first_name'] . ' ' . $trip['driver_last_name']) ?></td>
                     <?php endif; ?>
                     <td><?= Helpers::e($trip['destination']) ?></td>
-                    <td class="td-muted"><?= date('M d Y, g:i A', strtotime($trip['departure_datetime'])) ?></td>
+                    <td class="td-muted">
+                        <?= $trip['actual_departure']
+                            ? date('M d Y, g:i A', strtotime($trip['actual_departure']))
+                            : '—' ?>
+                    </td>
+                    <td class="td-muted">
+                        <?= $trip['actual_return']
+                            ? date('M d Y, g:i A', strtotime($trip['actual_return']))
+                            : '—' ?>
+                    </td>
                     <td><span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span></td>
                     <td><div class="td-actions">
                         <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id']) ?>"
@@ -103,3 +113,4 @@ $statuses = [
         </table>
     </div>
 </div>
+<?= $pagination ?>

@@ -141,9 +141,16 @@ class TripModel extends BaseModel
      * Return all trips — super_admin only.
      * Optional status filter.
      *
+     * $limit/$offset are cast to int and interpolated directly rather than
+     * bound — PDO::ATTR_EMULATE_PREPARES is off (config/database.php), and
+     * MySQL's native prepared-statement protocol does not reliably accept a
+     * bound param in LIMIT/OFFSET position. Safe here since both are
+     * hard-cast to int right before use, never raw user input. Default null
+     * = no LIMIT (full result set).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $status = ''): array
+    public function findAll(string $status = '', ?int $limit = null, ?int $offset = null): array
     {
         $sql    = $this->baseSelect();
         $params = [];
@@ -153,16 +160,41 @@ class TripModel extends BaseModel
             $params = [':status' => $status];
         }
 
-        return $this->fetchAll($sql . ' ORDER BY t.created_at DESC', $params);
+        $sql .= ' ORDER BY t.created_at DESC';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count all trips — same WHERE as findAll(), used to compute total pages.
+     */
+    public function countAll(string $status = ''): int
+    {
+        $sql    = 'SELECT COUNT(*) AS cnt FROM trips t';
+        $params = [];
+
+        if ($status !== '') {
+            $sql   .= ' WHERE t.trip_status = :status';
+            $params = [':status' => $status];
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**
      * Return trips for a specific employee — reservations they requested.
      * Employees can only see trips tied to their own reservations.
      *
+     * $limit/$offset — see findAll() above for why these are interpolated
+     * rather than bound. Default null = no LIMIT (full result set).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findForEmployee(int $userId, string $status = ''): array
+    public function findForEmployee(int $userId, string $status = '', ?int $limit = null, ?int $offset = null): array
     {
         $sql    = $this->baseSelect() . ' WHERE r.requested_by = :user_id';
         $params = [':user_id' => $userId];
@@ -172,7 +204,34 @@ class TripModel extends BaseModel
             $params[':status'] = $status;
         }
 
-        return $this->fetchAll($sql . ' ORDER BY t.created_at DESC', $params);
+        $sql .= ' ORDER BY t.created_at DESC';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count trips for a specific employee — same WHERE as findForEmployee(),
+     * used to compute total pages. Requires the reservations join since
+     * requested_by lives on reservations, not trips.
+     */
+    public function countForEmployee(int $userId, string $status = ''): int
+    {
+        $sql = 'SELECT COUNT(*) AS cnt
+                FROM   trips t
+                JOIN   reservations r ON r.reservation_id = t.reservation_id
+                WHERE  r.requested_by = :user_id';
+        $params = [':user_id' => $userId];
+
+        if ($status !== '') {
+            $sql   .= ' AND t.trip_status = :status';
+            $params[':status'] = $status;
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**
@@ -302,7 +361,7 @@ class TripModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findForDriver(int $driverId, string $status = ''): array
+    public function findForDriver(int $driverId, string $status = '', ?int $limit = null, ?int $offset = null): array
     {
         $sql    = $this->baseSelect() . ' WHERE t.driver_id = :driver_id';
         $params = [':driver_id' => $driverId];
@@ -312,7 +371,30 @@ class TripModel extends BaseModel
             $params[':status'] = $status;
         }
 
-        return $this->fetchAll($sql . ' ORDER BY t.created_at DESC', $params);
+        $sql .= ' ORDER BY t.created_at DESC';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count trips for a specific driver — same WHERE as findForDriver(),
+     * used to compute total pages.
+     */
+    public function countForDriver(int $driverId, string $status = ''): int
+    {
+        $sql    = 'SELECT COUNT(*) AS cnt FROM trips t WHERE t.driver_id = :driver_id';
+        $params = [':driver_id' => $driverId];
+
+        if ($status !== '') {
+            $sql   .= ' AND t.trip_status = :status';
+            $params[':status'] = $status;
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**

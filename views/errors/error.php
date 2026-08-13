@@ -10,7 +10,9 @@
 //
 // Expects: $code (int), $title (string), $message (string),
 //          $detail (string, DEBUG-only), $showLink (bool), $debug (bool)
-$appBase = defined('APP_BASE') ? APP_BASE : '';
+$appBase   = defined('APP_BASE') ? APP_BASE : '';
+$cssFile   = __DIR__ . '/../../public/css/app.css';
+$cssMtime  = file_exists($cssFile) ? filemtime($cssFile) : time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +23,7 @@ $appBase = defined('APP_BASE') ? APP_BASE : '';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= htmlspecialchars($appBase, ENT_QUOTES, 'UTF-8') ?>/public/css/app.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars($appBase, ENT_QUOTES, 'UTF-8') ?>/public/css/app.css?v=<?= $cssMtime ?>">
 </head>
 <body class="app-body">
 <main class="main-content">

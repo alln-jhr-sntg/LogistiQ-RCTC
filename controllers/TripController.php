@@ -42,15 +42,26 @@ class TripController
         $statusFilter = $_GET['status'] ?? '';
         $tripModel    = new TripModel();
 
+        $page      = max(1, (int) ($_GET['page'] ?? 1));
+        $baseQuery = http_build_query(array_filter(['url' => 'trips', 'status' => $statusFilter]));
+
         if ($role === ROLE_DRIVER) {
-            $trips = $tripModel->findForDriver((int) Auth::id(), $statusFilter);
+            $userId       = (int) Auth::id();
+            $total        = $tripModel->countForDriver($userId, $statusFilter);
+            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
+            $trips        = $tripModel->findForDriver($userId, $statusFilter, $pagination['limit'], $pagination['offset']);
         } elseif ($role === ROLE_EMPLOYEE) {
-            $trips = $tripModel->findForEmployee((int) Auth::id(), $statusFilter);
+            $userId       = (int) Auth::id();
+            $total        = $tripModel->countForEmployee($userId, $statusFilter);
+            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
+            $trips        = $tripModel->findForEmployee($userId, $statusFilter, $pagination['limit'], $pagination['offset']);
         } else {
             // Admin, fleet_admin and super_admin see every company's trips
             // here — transparency is intentional. Acting on a trip outside
             // your own company is blocked separately, at the point of action.
-            $trips = $tripModel->findAll($statusFilter);
+            $total        = $tripModel->countAll($statusFilter);
+            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
+            $trips        = $tripModel->findAll($statusFilter, $pagination['limit'], $pagination['offset']);
         }
 
         $this->render('index', [
@@ -58,6 +69,7 @@ class TripController
             'trips'         => $trips,
             'statusFilter'  => $statusFilter,
             'role'          => $role,
+            'pagination'    => $pagination['html'],
         ]);
     }
 
