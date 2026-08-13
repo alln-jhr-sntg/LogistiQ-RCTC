@@ -173,8 +173,7 @@ foreach ($routes as [$routeMethod, $routeUri, $controller, $action]) {
 
     $controllerFile = __DIR__ . '/controllers/' . $controller . '.php';
     if (!file_exists($controllerFile)) {
-        http_response_code(501);
-        echo '501 Not Implemented';
+        render_error_page(501, 'Not Implemented', 'This page is not available yet.', $controller . '::' . $action);
         exit;
     }
 
@@ -182,8 +181,7 @@ foreach ($routes as [$routeMethod, $routeUri, $controller, $action]) {
     $instance = new $controller();
 
     if (!method_exists($instance, $action)) {
-        http_response_code(501);
-        echo '501 Not Implemented — ' . htmlspecialchars($controller . '::' . $action);
+        render_error_page(501, 'Not Implemented', 'This page is not available yet.', $controller . '::' . $action);
         exit;
     }
 
@@ -192,6 +190,5 @@ foreach ($routes as [$routeMethod, $routeUri, $controller, $action]) {
 }
 
 if (!$matched) {
-    http_response_code(404);
-    echo '404 Not Found — ' . htmlspecialchars($uri);
+    render_error_page(404, 'Not Found', 'The page you were looking for doesn\'t exist.', $uri, showLink: true);
 }

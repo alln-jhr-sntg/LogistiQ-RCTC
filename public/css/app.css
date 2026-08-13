@@ -1112,6 +1112,7 @@ button {
 
 table.data-table {
   width: 100%;
+  min-width: 720px; /* scroll instead of squish */
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -1171,6 +1172,22 @@ table.data-table {
 .empty-state p {
   font-size: 14px;
   margin-top: 6px;
+}
+
+/* Error page — DEBUG-only exception/trace detail (views/errors/error.php) */
+.error-detail {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--clr-text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
 }
 
 /* Filter bar */

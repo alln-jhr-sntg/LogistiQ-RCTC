@@ -79,8 +79,7 @@ class Auth
     {
         self::requireLogin();
         if (!in_array(self::role(), $roles, true)) {
-            http_response_code(403);
-            echo '403 Forbidden';
+            render_error_page(403, 'Forbidden', 'You don\'t have permission to view this page.', showLink: true);
             exit;
         }
     }
