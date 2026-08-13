@@ -223,11 +223,13 @@ class GatepassController
     {
         // Wider than the other gatepass actions on purpose — the printed
         // document is what security personnel check at the gate, so the
-        // requester and the assigned driver need to be able to open it too.
+        // requester needs to be able to open it too, not just admin-and-above.
+        // Drivers no longer have web access to this page — the assigned
+        // driver checks the pass on the printed copy the requester carries.
         // Auth::requireRole() calls Auth::requireLogin() first and exits for
         // anyone without an active session, so Auth::id() below is always a
         // real authenticated user id — never null — by the time it's used.
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE, ROLE_DRIVER);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $gpModel  = new GatepassModel();
         $gatepass = $gpModel->findById($id);
@@ -237,16 +239,13 @@ class GatepassController
             Helpers::redirect(Auth::dashboardUrl());
         }
 
-        // Compare as nullable ints, never as (int) casts of both sides —
-        // casting null to 0 on both the session id and a possibly-empty
-        // assigned_driver_id would let a null-id match a driver-less row.
-        $uid            = Auth::id();
-        $requestedById  = $gatepass['requested_by']      !== null ? (int) $gatepass['requested_by']      : null;
-        $assignedDriver = $gatepass['assigned_driver_id'] !== null ? (int) $gatepass['assigned_driver_id'] : null;
+        // Compare as nullable ints, never as (int) casts of both sides — casting
+        // null to 0 on both sides would let a null-id match a requester-less row.
+        $uid           = Auth::id();
+        $requestedById = $gatepass['requested_by'] !== null ? (int) $gatepass['requested_by'] : null;
 
         $allowed = Auth::hasGlobalScope()
-            || ($requestedById  !== null && $uid === $requestedById)
-            || ($assignedDriver !== null && $uid === $assignedDriver);
+            || ($requestedById !== null && $uid === $requestedById);
 
         if (!$allowed || $gatepass['status'] !== 'approved') {
             Helpers::setFlash('error', 'This gatepass is not available to print.');

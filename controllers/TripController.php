@@ -8,8 +8,10 @@
  * These web methods are admin override paths.
  *
  * Role matrix:
- *   index()          — super_admin, fleet_admin, admin, driver, employee
- *   detail()         — super_admin, fleet_admin, admin, driver, employee
+ *   index()          — super_admin, fleet_admin, admin, employee. Drivers
+ *                      have no web access to trips — the Android app is
+ *                      their only trip surface.
+ *   detail()         — super_admin, fleet_admin, admin, employee
  *   start()          — super_admin, fleet_admin (web override)
  *   complete()       — super_admin, fleet_admin (web override)
  *   notes()          — super_admin, fleet_admin, admin (admin_notes),
@@ -36,7 +38,7 @@ class TripController
     // GET /trips
     public function index(): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $role         = Auth::role();
         $statusFilter = $_GET['status'] ?? '';
@@ -45,12 +47,7 @@ class TripController
         $page      = max(1, (int) ($_GET['page'] ?? 1));
         $baseQuery = http_build_query(array_filter(['url' => 'trips', 'status' => $statusFilter]));
 
-        if ($role === ROLE_DRIVER) {
-            $userId       = (int) Auth::id();
-            $total        = $tripModel->countForDriver($userId, $statusFilter);
-            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
-            $trips        = $tripModel->findForDriver($userId, $statusFilter, $pagination['limit'], $pagination['offset']);
-        } elseif ($role === ROLE_EMPLOYEE) {
+        if ($role === ROLE_EMPLOYEE) {
             $userId       = (int) Auth::id();
             $total        = $tripModel->countForEmployee($userId, $statusFilter);
             $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
@@ -65,7 +62,7 @@ class TripController
         }
 
         $this->render('index', [
-            'page_title'    => in_array($role, [ROLE_DRIVER, ROLE_EMPLOYEE]) ? 'My Trips' : 'Trips',
+            'page_title'    => $role === ROLE_EMPLOYEE ? 'My Trips' : 'Trips',
             'trips'         => $trips,
             'statusFilter'  => $statusFilter,
             'role'          => $role,
@@ -78,7 +75,7 @@ class TripController
     // GET /trips/{id}
     public function detail(int $id): void
     {
-        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_DRIVER, ROLE_EMPLOYEE);
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $tripModel = new TripModel();
         $trip      = $tripModel->findById($id);
@@ -89,12 +86,6 @@ class TripController
         }
 
         $role = Auth::role();
-
-        // Drivers can only see their own trips
-        if ($role === ROLE_DRIVER && (int) $trip['driver_id'] !== (int) Auth::id()) {
-            Helpers::setFlash('error', 'Access denied.');
-            Helpers::redirect('/trips');
-        }
 
         // Employees can only see trips for reservations they requested
         if ($role === ROLE_EMPLOYEE && (int) $trip['requested_by'] !== (int) Auth::id()) {
@@ -421,12 +412,13 @@ class TripController
     // ── Active trip stub — driver screen (Step 15) ────────────────
 
     // GET /trips/{id}/active
+    // Was a graceful-fallback redirect for drivers landing here from the
+    // Android app. Drivers no longer have any web access to trips, so this
+    // route has no valid caller left — it 403s for every role instead of
+    // silently redirecting into a page the driver can no longer see.
     public function active(int $id): void
     {
-        Auth::requireRole(ROLE_DRIVER);
-        // Driver active trip UI is in the Android app.
-        // This web stub remains for graceful fallback only.
-        Helpers::redirect('/trips/' . $id);
+        Auth::requireRole();
     }
 
     // ── Resolve incident ──────────────────────────────────────────

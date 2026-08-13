@@ -12,7 +12,7 @@ class NotificationController
     // GET /notifications
     public function index(): void
     {
-        Auth::requireLogin();
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $notifModel = new NotificationModel();
         $userId     = (int) Auth::id();
@@ -33,7 +33,7 @@ class NotificationController
     // POST /notifications/read-all
     public function markAllRead(): void
     {
-        Auth::requireLogin();
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $notifModel = new NotificationModel();
         $notifModel->markAllRead((int) Auth::id());
@@ -46,7 +46,7 @@ class NotificationController
     // Used by both the "View →" link and the card click in the notifications list.
     public function markOneRead(int $id): void
     {
-        Auth::requireLogin();
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $notifModel   = new NotificationModel();
         $notification = $notifModel->getById($id);
@@ -76,7 +76,7 @@ class NotificationController
     // Does not render the layout; outputs JSON and exits.
     public function count(): void
     {
-        Auth::requireLogin();
+        Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
         $notifModel = new NotificationModel();
         $count      = $notifModel->getUnreadCount((int) Auth::id());

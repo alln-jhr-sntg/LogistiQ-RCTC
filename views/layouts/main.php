@@ -136,19 +136,14 @@ function nav_is_active(string $path): string {
             </a>
             <?php endif; ?>
 
-            <?php if ($role === ROLE_DRIVER): ?>
-            <!-- Driver: assigned trips -->
-            <a href="<?= Helpers::url('/trips') ?>" title="My Trips" class="nav-item <?= nav_is_active('/trips') ?>">
-                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M1 3h15v13H1V3zm15 4h4l3 3v6h-7V7zM5.5 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm13 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                <span class="nav-label">My Trips</span>
-            </a>
-            <?php endif; ?>
-
-            <!-- Notifications — all roles -->
+            <?php if ($role !== ROLE_DRIVER): ?>
+            <!-- Notifications — every role except driver. Drivers have no
+                 web access beyond the dashboard and their own profile. -->
             <a href="<?= Helpers::url('/notifications') ?>" title="Notifications" class="nav-item <?= nav_is_active('/notifications') ?>">
                 <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
                 <span class="nav-label">Notifications</span>
             </a>
+            <?php endif; ?>
 
         </nav>
 
@@ -189,6 +184,7 @@ function nav_is_active(string $path): string {
         <header class="topbar">
             <h1 class="topbar-title"><?= Helpers::e($page_title ?? '') ?></h1>
             <div class="topbar-right">
+                <?php if ($role !== ROLE_DRIVER): ?>
                 <?php
                 // Render initial badge count server-side so it appears on page load,
                 // not after the first JS poll (which can take up to 30s).
@@ -212,6 +208,7 @@ function nav_is_active(string $path): string {
                         <?= $_initNotifCount > 0 ? ($_initNotifCount > 99 ? '99+' : $_initNotifCount) : '' ?>
                     </span>
                 </a>
+                <?php endif; ?>
                 <a href="<?= Helpers::url('/profile') ?>" class="topbar-avatar" aria-label="Profile">
                     <?php if (Auth::profilePhoto()): ?>
                     <img src="<?= APP_BASE ?>/public/uploads/profile_photos/<?= Helpers::e(Auth::profilePhoto()) ?>"
