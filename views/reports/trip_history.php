@@ -68,13 +68,14 @@
             <th>Driver</th>
             <th>Destination</th>
             <th>Departure</th>
+            <th>Return</th>
             <th>Distance</th>
             <th>Status</th>
         </tr>
     </thead>
     <tbody>
     <?php if (empty($trips)): ?>
-        <tr><td colspan="7" class="td-muted" style="text-align:center;padding:24px;">
+        <tr><td colspan="8" class="td-muted" style="text-align:center;padding:24px;">
             No trips found<?= !empty(array_filter($filters)) ? ' matching the selected filters' : '' ?>.
         </td></tr>
     <?php else: ?>
@@ -116,6 +117,11 @@
             <td class="td-muted">
                 <?= $trip['actual_departure']
                     ? date('M d Y, g:i A', strtotime($trip['actual_departure']))
+                    : '—' ?>
+            </td>
+            <td class="td-muted">
+                <?= $trip['actual_return']
+                    ? date('M d Y, g:i A', strtotime($trip['actual_return']))
                     : '—' ?>
             </td>
             <td class="td-muted"><?= $distance ?></td>

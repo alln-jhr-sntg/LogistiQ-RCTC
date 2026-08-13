@@ -1203,7 +1203,8 @@ table.data-table {
 }
 
 .pagination-links span.disabled {
-  color: var(--clr-border);
+  color: var(--clr-text-3);
+  opacity: 0.5;
 }
 
 /* Empty state */

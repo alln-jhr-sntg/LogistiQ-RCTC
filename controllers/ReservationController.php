@@ -19,22 +19,30 @@ class ReservationController
         $role   = Auth::role();
         $status = $_GET['status'] ?? '';
 
-        $resModel = new ReservationModel();
+        $resModel  = new ReservationModel();
+        $page      = max(1, (int) ($_GET['page'] ?? 1));
+        $baseQuery = http_build_query(array_filter(['url' => 'reservations', 'status' => $status]));
 
         if ($role === ROLE_EMPLOYEE) {
-            $reservations = $resModel->findForEmployee((int) Auth::id(), $status);
+            $userId       = (int) Auth::id();
+            $total        = $resModel->countForEmployee($userId, $status);
+            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
+            $reservations = $resModel->findForEmployee($userId, $status, $pagination['limit'], $pagination['offset']);
         } else {
             // Admin, fleet_admin and super_admin see every company's
             // reservations here — transparency is intentional. Acting on a
             // record outside your own company is blocked separately, at the
             // point of action (review/approve/reject/cancel/edit).
-            $reservations = $resModel->findAll($status);
+            $total        = $resModel->countAll($status);
+            $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
+            $reservations = $resModel->findAll($status, $pagination['limit'], $pagination['offset']);
         }
 
         $this->render('index', [
             'page_title'   => 'Reservations',
             'reservations' => $reservations,
             'statusFilter' => $status,
+            'pagination'   => $pagination['html'],
         ]);
     }
 

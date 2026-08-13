@@ -236,9 +236,16 @@ class ReservationModel extends BaseModel
     /**
      * Reservations for a specific employee (their own requests only).
      *
+     * $limit/$offset are cast to int and interpolated directly rather than
+     * bound — PDO::ATTR_EMULATE_PREPARES is off (config/database.php), and
+     * MySQL's native prepared-statement protocol does not reliably accept a
+     * bound param in LIMIT/OFFSET position. Safe here since both are
+     * hard-cast to int right before use, never raw user input. Default null
+     * = no LIMIT (full result set).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findForEmployee(int $userId, string $status = ''): array
+    public function findForEmployee(int $userId, string $status = '', ?int $limit = null, ?int $offset = null): array
     {
         $sql    = $this->baseSelect() . ' WHERE r.requested_by = :user_id';
         $params = [':user_id' => $userId];
@@ -248,7 +255,30 @@ class ReservationModel extends BaseModel
             $params[':status'] = $status;
         }
 
-        return $this->fetchAll($sql . ' ORDER BY r.created_at DESC', $params);
+        $sql .= ' ORDER BY r.created_at DESC';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count reservations for a specific employee — same WHERE as
+     * findForEmployee(), used to compute total pages.
+     */
+    public function countForEmployee(int $userId, string $status = ''): int
+    {
+        $sql    = 'SELECT COUNT(*) AS cnt FROM reservations r WHERE r.requested_by = :user_id';
+        $params = [':user_id' => $userId];
+
+        if ($status !== '') {
+            $sql   .= ' AND r.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**
@@ -257,9 +287,12 @@ class ReservationModel extends BaseModel
      * (transparency, per spec). Acting on a record outside your own company
      * is blocked separately, at the point of action.
      *
+     * $limit/$offset — see findForEmployee() above for why these are
+     * interpolated rather than bound. Default null = no LIMIT (full result set).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $status = ''): array
+    public function findAll(string $status = '', ?int $limit = null, ?int $offset = null): array
     {
         $sql    = $this->baseSelect();
         $params = [];
@@ -269,7 +302,30 @@ class ReservationModel extends BaseModel
             $params = [':status' => $status];
         }
 
-        return $this->fetchAll($sql . ' ORDER BY r.created_at DESC', $params);
+        $sql .= ' ORDER BY r.created_at DESC';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(0, $limit) . ' OFFSET ' . max(0, $offset ?? 0);
+        }
+
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
+     * Count all reservations, no scoping — same WHERE as findAll(), used to
+     * compute total pages.
+     */
+    public function countAll(string $status = ''): int
+    {
+        $sql    = 'SELECT COUNT(*) AS cnt FROM reservations r';
+        $params = [];
+
+        if ($status !== '') {
+            $sql   .= ' WHERE r.status = :status';
+            $params = [':status' => $status];
+        }
+
+        $row = $this->fetchOne($sql, $params);
+        return (int) ($row['cnt'] ?? 0);
     }
 
     /**

@@ -183,7 +183,7 @@ class ReportController
 
         $this->streamCsv(
             'trip_history_' . date('Y-m-d') . '.csv',
-            ['Reservation', 'Purpose', 'Vehicle', 'Driver', 'Destination', 'Departure', 'Distance (km)', 'Status'],
+            ['Reservation', 'Purpose', 'Vehicle', 'Driver', 'Destination', 'Departure', 'Return', 'Distance (km)', 'Status'],
             $trips,
             function (array $t): array {
                 $distance = ($t['odometer_start_km'] !== null && $t['odometer_end_km'] !== null)
@@ -197,6 +197,7 @@ class ReportController
                     trim($t['driver_first_name'] . ' ' . $t['driver_last_name']),
                     $t['destination'],
                     $t['actual_departure'] ? date('Y-m-d H:i', strtotime($t['actual_departure'])) : '',
+                    $t['actual_return'] ? date('Y-m-d H:i', strtotime($t['actual_return'])) : '',
                     $distance,
                     ucwords(str_replace('_', ' ', $t['trip_status'])),
                 ];
@@ -270,6 +271,12 @@ class ReportController
      * Stream $rows as a CSV attachment named $filename. $rowMapper converts
      * one model row into a flat array of CSV cell values, in $headers order.
      * Terminates execution — never returns.
+     *
+     * A plain CSV carries no column-width info, so Excel always opens it
+     * with uniform default-width columns and long values visually spill
+     * into their neighbors. Rather than a real spreadsheet format, the first
+     * row is a one-cell tip on the keyboard shortcut to auto-fit — cheap and
+     * sits above the real header row, so it never shifts column data.
      */
     private function streamCsv(string $filename, array $headers, array $rows, callable $rowMapper): never
     {
@@ -277,6 +284,7 @@ class ReportController
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $out = fopen('php://output', 'w');
+        fputcsv($out, ['Tip: select all cells (Ctrl+A), then press Alt, H, O, I to auto-fit these columns to their content.']);
         fputcsv($out, $headers);
         foreach ($rows as $row) {
             fputcsv($out, $rowMapper($row));

@@ -89,3 +89,4 @@ $role = Auth::role();
     <?php endif; ?>
     </tbody>
 </table></div></div>
+<?= $pagination ?>
