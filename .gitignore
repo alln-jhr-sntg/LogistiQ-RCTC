@@ -1,3 +1,5 @@
 config/secrets.php
 public/uploads/
 !public/uploads/.gitkeep
+public/downloads/
+!public/downloads/.gitkeep

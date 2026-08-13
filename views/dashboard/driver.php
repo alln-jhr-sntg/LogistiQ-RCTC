@@ -10,7 +10,7 @@
     <div class="notice-card-body">
         <div class="notice-card-title">I-download ang Application</div>
         <p>I-download ang MoveOps Driver App mula sa link sa ibaba.</p>
-        <a href="#" class="btn btn-solid">Download App</a>
+        <a href="<?= APP_BASE ?>/public/downloads/moveops-driver.apk" download="MoveOps-Driver.apk" class="btn btn-solid">Download App</a>
     </div>
 </div>
 
