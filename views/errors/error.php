@@ -13,6 +13,8 @@
 $appBase   = defined('APP_BASE') ? APP_BASE : '';
 $cssFile   = __DIR__ . '/../../public/css/app.css';
 $cssMtime  = file_exists($cssFile) ? filemtime($cssFile) : time();
+$favFile   = __DIR__ . '/../../public/favicon.png';
+$favMtime  = file_exists($favFile) ? filemtime($favFile) : time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,6 +22,7 @@ $cssMtime  = file_exists($cssFile) ? filemtime($cssFile) : time();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?> — MoveOps</title>
+    <link rel="icon" type="image/png" href="<?= htmlspecialchars($appBase, ENT_QUOTES, 'UTF-8') ?>/public/favicon.png?v=<?= $favMtime ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
