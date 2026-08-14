@@ -36,8 +36,8 @@
             </form>
             <?php if (!empty($demoAccounts)): ?>
             <div class="demo-accounts">
-                <strong>Demo accounts <br>
-                password: <code>password</code></strong>
+                <strong>Demo Accounts <br>
+                Password: <code>password</code></strong>
                 <?php foreach ($demoAccounts as $account): ?>
                 <div class="demo-accounts-row">
                     <span><?= Helpers::e($account['label']) ?>:</span>
