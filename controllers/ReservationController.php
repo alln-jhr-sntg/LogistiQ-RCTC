@@ -18,31 +18,54 @@ class ReservationController
 
         $role   = Auth::role();
         $status = $_GET['status'] ?? '';
+        if (!array_key_exists($status, RES_STATUS_LABELS)) {
+            $status = '';
+        }
+
+        $range = $_GET['range'] ?? '';
+        if (!in_array($range, ['today', 'week', 'month', 'last30'], true)) {
+            $range = '';
+        }
+        $dateFrom = Helpers::dateRangeFloor($range);
+
+        // The company filter only makes sense for admin-and-above, who see
+        // every company's reservations here. Employees are already scoped
+        // to their own requests by findForEmployee(), so it's a no-op there.
+        $companyId = Auth::isAdminOrAbove() ? (int) ($_GET['company_id'] ?? 0) : 0;
+        $companies = Auth::isAdminOrAbove() ? (new CompanyModel())->findAll() : [];
 
         $resModel  = new ReservationModel();
         $page      = max(1, (int) ($_GET['page'] ?? 1));
-        $baseQuery = http_build_query(array_filter(['url' => 'reservations', 'status' => $status]));
+        $baseQuery = http_build_query(array_filter([
+            'url'        => 'reservations',
+            'status'     => $status,
+            'company_id' => $companyId ?: null,
+            'range'      => $range,
+        ]));
 
         if ($role === ROLE_EMPLOYEE) {
             $userId       = (int) Auth::id();
-            $total        = $resModel->countForEmployee($userId, $status);
+            $total        = $resModel->countForEmployee($userId, $status, $dateFrom);
             $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
-            $reservations = $resModel->findForEmployee($userId, $status, $pagination['limit'], $pagination['offset']);
+            $reservations = $resModel->findForEmployee($userId, $status, $pagination['limit'], $pagination['offset'], $dateFrom);
         } else {
             // Admin, fleet_admin and super_admin see every company's
             // reservations here — transparency is intentional. Acting on a
             // record outside your own company is blocked separately, at the
             // point of action (review/approve/reject/cancel/edit).
-            $total        = $resModel->countAll($status);
+            $total        = $resModel->countAll($status, $companyId, $dateFrom);
             $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
-            $reservations = $resModel->findAll($status, $pagination['limit'], $pagination['offset']);
+            $reservations = $resModel->findAll($status, $pagination['limit'], $pagination['offset'], $companyId, $dateFrom);
         }
 
         $this->render('index', [
-            'page_title'   => 'Reservations',
-            'reservations' => $reservations,
-            'statusFilter' => $status,
-            'pagination'   => $pagination['html'],
+            'page_title'    => 'Reservations',
+            'reservations'  => $reservations,
+            'statusFilter'  => $status,
+            'companyFilter' => $companyId,
+            'rangeFilter'   => $range,
+            'companies'     => $companies,
+            'pagination'    => $pagination['html'],
         ]);
     }
 

@@ -16,6 +16,10 @@ class UserController
 
         $roleFilter    = $_GET['role']       ?? '';
         $companyFilter = (int) ($_GET['company_id'] ?? 0);
+        $activeFilter  = $_GET['is_active']  ?? '';
+        if (!in_array($activeFilter, ['0', '1'], true)) {
+            $activeFilter = '';
+        }
 
         // Admin sees only their own company's staff — a directory of another
         // company's users is not fleet transparency, unlike reservations/trips.
@@ -24,7 +28,7 @@ class UserController
         }
 
         $userModel = new UserModel();
-        $users     = $userModel->findAll($roleFilter, $companyFilter);
+        $users     = $userModel->findAll($roleFilter, $companyFilter, $activeFilter);
 
         $companyModel = new CompanyModel();
         $companies    = $companyModel->findAll();
@@ -35,6 +39,7 @@ class UserController
             'companies'     => $companies,
             'roleFilter'    => $roleFilter,
             'companyFilter' => $companyFilter,
+            'activeFilter'  => $activeFilter,
         ]);
     }
 

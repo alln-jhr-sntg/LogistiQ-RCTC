@@ -42,29 +42,52 @@ class TripController
 
         $role         = Auth::role();
         $statusFilter = $_GET['status'] ?? '';
-        $tripModel    = new TripModel();
+        if (!array_key_exists($statusFilter, TRIP_STATUS_LABELS)) {
+            $statusFilter = '';
+        }
+
+        $range = $_GET['range'] ?? '';
+        if (!in_array($range, ['today', 'week', 'month', 'last30'], true)) {
+            $range = '';
+        }
+        $dateFrom = Helpers::dateRangeFloor($range);
+
+        // Company filter only makes sense for admin-and-above — employees are
+        // already scoped to their own trips by findForEmployee().
+        $companyId = Auth::isAdminOrAbove() ? (int) ($_GET['company_id'] ?? 0) : 0;
+        $companies = Auth::isAdminOrAbove() ? (new CompanyModel())->findAll() : [];
+
+        $tripModel = new TripModel();
 
         $page      = max(1, (int) ($_GET['page'] ?? 1));
-        $baseQuery = http_build_query(array_filter(['url' => 'trips', 'status' => $statusFilter]));
+        $baseQuery = http_build_query(array_filter([
+            'url'        => 'trips',
+            'status'     => $statusFilter,
+            'company_id' => $companyId ?: null,
+            'range'      => $range,
+        ]));
 
         if ($role === ROLE_EMPLOYEE) {
             $userId       = (int) Auth::id();
-            $total        = $tripModel->countForEmployee($userId, $statusFilter);
+            $total        = $tripModel->countForEmployee($userId, $statusFilter, $dateFrom);
             $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
-            $trips        = $tripModel->findForEmployee($userId, $statusFilter, $pagination['limit'], $pagination['offset']);
+            $trips        = $tripModel->findForEmployee($userId, $statusFilter, $pagination['limit'], $pagination['offset'], $dateFrom);
         } else {
             // Admin, fleet_admin and super_admin see every company's trips
             // here — transparency is intentional. Acting on a trip outside
             // your own company is blocked separately, at the point of action.
-            $total        = $tripModel->countAll($statusFilter);
+            $total        = $tripModel->countAll($statusFilter, $companyId, $dateFrom);
             $pagination   = Helpers::paginate($total, $page, 10, $baseQuery);
-            $trips        = $tripModel->findAll($statusFilter, $pagination['limit'], $pagination['offset']);
+            $trips        = $tripModel->findAll($statusFilter, $pagination['limit'], $pagination['offset'], $companyId, $dateFrom);
         }
 
         $this->render('index', [
             'page_title'    => $role === ROLE_EMPLOYEE ? 'My Trips' : 'Trips',
             'trips'         => $trips,
             'statusFilter'  => $statusFilter,
+            'companyFilter' => $companyId,
+            'rangeFilter'   => $range,
+            'companies'     => $companies,
             'role'          => $role,
             'pagination'    => $pagination['html'],
         ]);

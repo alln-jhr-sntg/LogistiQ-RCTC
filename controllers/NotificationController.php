@@ -14,18 +14,31 @@ class NotificationController
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);
 
+        $type = $_GET['type'] ?? '';
+        if (!array_key_exists($type, NOTIF_TYPE_LABELS)) {
+            $type = '';
+        }
+
+        $readState = $_GET['read'] ?? '';
+        if (!in_array($readState, ['unread', 'read'], true)) {
+            $readState = '';
+        }
+
         $notifModel = new NotificationModel();
         $userId     = (int) Auth::id();
 
         $page       = max(1, (int) ($_GET['page'] ?? 1));
-        $total      = $notifModel->countByUser($userId);
-        $pagination = Helpers::paginate($total, $page, 10, 'url=notifications');
+        $total      = $notifModel->countByUser($userId, $type, $readState);
+        $baseQuery  = http_build_query(array_filter(['url' => 'notifications', 'type' => $type, 'read' => $readState]));
+        $pagination = Helpers::paginate($total, $page, 10, $baseQuery);
 
-        $notifications = $notifModel->getByUser($userId, $pagination['limit'], $pagination['offset']);
+        $notifications = $notifModel->getByUser($userId, $pagination['limit'], $pagination['offset'], $type, $readState);
 
         $this->render('index', [
             'page_title'    => 'Notifications',
             'notifications' => $notifications,
+            'typeFilter'    => $type,
+            'readFilter'    => $readState,
             'pagination'    => $pagination['html'],
         ]);
     }

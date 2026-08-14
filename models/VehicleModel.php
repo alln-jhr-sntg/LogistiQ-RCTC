@@ -21,16 +21,24 @@ class VehicleModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $statusFilter = ''): array
+    public function findAll(string $statusFilter = '', int $categoryId = 0): array
     {
         $sql    = 'SELECT   v.*, vc.category_name
                    FROM     vehicles v
                    JOIN     vehicle_categories vc ON vc.category_id = v.category_id';
         $params = [];
+        $where  = [];
 
         if ($statusFilter !== '') {
-            $sql   .= ' WHERE v.status = :status';
-            $params = [':status' => $statusFilter];
+            $where[] = 'v.status = :status';
+            $params[':status'] = $statusFilter;
+        }
+        if ($categoryId > 0) {
+            $where[] = 'v.category_id = :category_id';
+            $params[':category_id'] = $categoryId;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $sql .= ' ORDER BY v.plate_number ASC';

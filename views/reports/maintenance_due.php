@@ -1,5 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left"><h2>Maintenance Due</h2></div>
+<div class="page-header page-header-end">
     <form method="POST" action="<?= Helpers::url('/reports/maintenance-due/export') ?>">
         <button type="submit" class="btn btn-outline">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:4px;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>

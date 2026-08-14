@@ -3,33 +3,38 @@
     $isAdmin = Auth::isAdminOrAbove();
 ?>
 
-<div class="page-header">
-    <div class="page-header-left">
-        <h2><?= $isDriver ? 'My Trips' : 'Trips' ?></h2>
-        <p><?= $isDriver ? 'Your assigned vehicle trips' : 'Active and past fleet trips' ?></p>
+<form method="GET" action="<?= APP_BASE ?>/index.php">
+    <input type="hidden" name="url" value="trips">
+    <div class="filter-bar">
+        <select class="filter-select" name="status" onchange="this.form.submit()">
+            <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>All Statuses</option>
+            <?php foreach (TRIP_STATUS_LABELS as $key => $label): ?>
+                <?php if ($key === TRIP_INCIDENT && $isDriver) continue; ?>
+            <option value="<?= Helpers::e($key) ?>" <?= $statusFilter === $key ? 'selected' : '' ?>>
+                <?= Helpers::e($label) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <?php if (!empty($companies)): ?>
+        <select class="filter-select" name="company_id" onchange="this.form.submit()">
+            <option value="0" <?= $companyFilter === 0 ? 'selected' : '' ?>>All Companies</option>
+            <?php foreach ($companies as $co): ?>
+            <option value="<?= (int) $co['company_id'] ?>"
+                <?= $companyFilter === (int) $co['company_id'] ? 'selected' : '' ?>>
+                <?= Helpers::e($co['company_code']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <?php endif; ?>
+        <select class="filter-select" name="range" onchange="this.form.submit()">
+            <option value=""       <?= $rangeFilter === ''       ? 'selected' : '' ?>>All Time</option>
+            <option value="today"  <?= $rangeFilter === 'today'  ? 'selected' : '' ?>>Today</option>
+            <option value="week"   <?= $rangeFilter === 'week'   ? 'selected' : '' ?>>This Week</option>
+            <option value="month"  <?= $rangeFilter === 'month'  ? 'selected' : '' ?>>This Month</option>
+            <option value="last30" <?= $rangeFilter === 'last30' ? 'selected' : '' ?>>Last 30 Days</option>
+        </select>
     </div>
-</div>
-
-<?php
-// Tab status filter — build URLs preserving current filter
-$statuses = [
-    ''              => 'All',
-    'pending_start' => 'Pending Start',
-    'in_progress'   => 'In Progress',
-    'completed'     => 'Completed',
-    'incident'      => 'Incident',
-    'cancelled'     => 'Cancelled',
-];
-?>
-<div class="tab-bar">
-    <?php foreach ($statuses as $val => $label): ?>
-        <?php if ($val === 'incident' && $isDriver) continue; ?>
-        <a href="<?= APP_BASE ?>/index.php?url=trips<?= $val !== '' ? '&status=' . $val : '' ?>"
-           class="tab-item <?= $statusFilter === $val ? 'active' : '' ?>">
-            <?= $label ?>
-        </a>
-    <?php endforeach; ?>
-</div>
+</form>
 
 <div class="card">
     <div class="table-wrap">

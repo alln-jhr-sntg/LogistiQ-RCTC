@@ -16,16 +16,32 @@ $colors = [
 ];
 ?>
 
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Notifications</h2>
-    </div>
+<div class="page-header page-header-end">
     <?php if (!empty($notifications)): ?>
     <form method="POST" action="<?= Helpers::url('/notifications/read-all') ?>">
         <button type="submit" class="btn btn-outline">Mark All Read</button>
     </form>
     <?php endif; ?>
 </div>
+
+<form method="GET" action="<?= APP_BASE ?>/index.php">
+    <input type="hidden" name="url" value="notifications">
+    <div class="filter-bar">
+        <select class="filter-select" name="type" onchange="this.form.submit()">
+            <option value="" <?= $typeFilter === '' ? 'selected' : '' ?>>All Types</option>
+            <?php foreach (NOTIF_TYPE_LABELS as $key => $label): ?>
+            <option value="<?= Helpers::e($key) ?>" <?= $typeFilter === $key ? 'selected' : '' ?>>
+                <?= Helpers::e($label) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <select class="filter-select" name="read" onchange="this.form.submit()">
+            <option value=""       <?= $readFilter === ''       ? 'selected' : '' ?>>All</option>
+            <option value="unread" <?= $readFilter === 'unread' ? 'selected' : '' ?>>Unread</option>
+            <option value="read"   <?= $readFilter === 'read'   ? 'selected' : '' ?>>Read</option>
+        </select>
+    </div>
+</form>
 
 <div class="card">
     <?php if (empty($notifications)): ?>

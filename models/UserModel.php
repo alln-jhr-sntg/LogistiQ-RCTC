@@ -100,7 +100,7 @@ class UserModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $roleFilter = '', int $companyFilter = 0): array
+    public function findAll(string $roleFilter = '', int $companyFilter = 0, string $activeFilter = ''): array
     {
         $sql    = 'SELECT   u.*, c.company_name, c.company_code,
                             d.department_name
@@ -117,6 +117,10 @@ class UserModel extends BaseModel
         if ($companyFilter > 0) {
             $sql   .= ' AND u.company_id = :company_id';
             $params[':company_id'] = $companyFilter;
+        }
+        if ($activeFilter !== '') {
+            $sql   .= ' AND u.is_active = :is_active';
+            $params[':is_active'] = $activeFilter;
         }
 
         $sql .= ' ORDER BY u.last_name ASC, u.first_name ASC';

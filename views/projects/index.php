@@ -16,13 +16,7 @@ $statusTabs = [
     PROJ_REJECTED  => 'Rejected',
 ];
 ?>
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Projects</h2>
-        <p><?= $isEmployee
-            ? 'Projects at your company, plus your own requests'
-            : 'Active construction and development projects' ?></p>
-    </div>
+<div class="page-header page-header-end">
     <?php if ($isEmployee): ?>
     <a href="<?= Helpers::url('/projects/request') ?>" class="btn btn-solid">
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Request Project

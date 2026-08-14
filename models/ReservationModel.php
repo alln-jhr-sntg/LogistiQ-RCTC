@@ -245,14 +245,23 @@ class ReservationModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findForEmployee(int $userId, string $status = '', ?int $limit = null, ?int $offset = null): array
-    {
+    public function findForEmployee(
+        int $userId,
+        string $status = '',
+        ?int $limit = null,
+        ?int $offset = null,
+        string $dateFrom = ''
+    ): array {
         $sql    = $this->baseSelect() . ' WHERE r.requested_by = :user_id';
         $params = [':user_id' => $userId];
 
         if ($status !== '') {
             $sql   .= ' AND r.status = :status';
             $params[':status'] = $status;
+        }
+        if ($dateFrom !== '') {
+            $sql   .= ' AND r.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
         }
 
         $sql .= ' ORDER BY r.created_at DESC';
@@ -267,7 +276,7 @@ class ReservationModel extends BaseModel
      * Count reservations for a specific employee — same WHERE as
      * findForEmployee(), used to compute total pages.
      */
-    public function countForEmployee(int $userId, string $status = ''): int
+    public function countForEmployee(int $userId, string $status = '', string $dateFrom = ''): int
     {
         $sql    = 'SELECT COUNT(*) AS cnt FROM reservations r WHERE r.requested_by = :user_id';
         $params = [':user_id' => $userId];
@@ -275,6 +284,10 @@ class ReservationModel extends BaseModel
         if ($status !== '') {
             $sql   .= ' AND r.status = :status';
             $params[':status'] = $status;
+        }
+        if ($dateFrom !== '') {
+            $sql   .= ' AND r.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
         }
 
         $row = $this->fetchOne($sql, $params);
@@ -292,14 +305,31 @@ class ReservationModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $status = '', ?int $limit = null, ?int $offset = null): array
-    {
+    public function findAll(
+        string $status = '',
+        ?int $limit = null,
+        ?int $offset = null,
+        int $companyId = 0,
+        string $dateFrom = ''
+    ): array {
         $sql    = $this->baseSelect();
         $params = [];
+        $where  = [];
 
         if ($status !== '') {
-            $sql   .= ' WHERE r.status = :status';
-            $params = [':status' => $status];
+            $where[] = 'r.status = :status';
+            $params[':status'] = $status;
+        }
+        if ($companyId > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        if ($dateFrom !== '') {
+            $where[] = 'r.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $sql .= ' ORDER BY r.created_at DESC';
@@ -314,14 +344,29 @@ class ReservationModel extends BaseModel
      * Count all reservations, no scoping — same WHERE as findAll(), used to
      * compute total pages.
      */
-    public function countAll(string $status = ''): int
+    public function countAll(string $status = '', int $companyId = 0, string $dateFrom = ''): int
     {
-        $sql    = 'SELECT COUNT(*) AS cnt FROM reservations r';
+        $sql    = 'SELECT COUNT(*) AS cnt
+                   FROM   reservations r
+                   JOIN   departments  d ON d.department_id = r.department_id
+                   JOIN   companies    c ON c.company_id    = d.company_id';
         $params = [];
+        $where  = [];
 
         if ($status !== '') {
-            $sql   .= ' WHERE r.status = :status';
-            $params = [':status' => $status];
+            $where[] = 'r.status = :status';
+            $params[':status'] = $status;
+        }
+        if ($companyId > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        if ($dateFrom !== '') {
+            $where[] = 'r.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $row = $this->fetchOne($sql, $params);

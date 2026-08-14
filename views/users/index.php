@@ -7,8 +7,7 @@ $roleBadge = [
     'driver'      => ['class' => 'badge-maintenance', 'label' => 'Driver'],
 ];
 ?>
-<div class="page-header">
-    <div class="page-header-left"><h2>Users</h2><p>All system users across all companies</p></div>
+<div class="page-header page-header-end">
     <a href="<?= Helpers::url('/users/create') ?>" class="btn btn-solid">
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add User
     </a>
@@ -33,6 +32,11 @@ $roleBadge = [
                 <?= Helpers::e($co['company_code']) ?>
             </option>
             <?php endforeach; ?>
+        </select>
+        <select class="filter-select" name="is_active" onchange="this.form.submit()">
+            <option value=""  <?= $activeFilter === ''  ? 'selected' : '' ?>>All Statuses</option>
+            <option value="1" <?= $activeFilter === '1' ? 'selected' : '' ?>>Active</option>
+            <option value="0" <?= $activeFilter === '0' ? 'selected' : '' ?>>Inactive</option>
         </select>
     </div>
 </form>

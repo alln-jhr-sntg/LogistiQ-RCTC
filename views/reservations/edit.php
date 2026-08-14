@@ -7,6 +7,11 @@
        class="btn btn-outline">← Back</a>
 </div>
 
+<?php
+$selectedPid  = (int) ($reservation['project_id'] ?? 0);
+$projectIds   = array_map('intval', array_column($projects, 'project_id'));
+$staleProject = $selectedPid > 0 && !in_array($selectedPid, $projectIds, true);
+?>
 <form method="POST"
       action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/edit') ?>">
 <div class="form-card">
@@ -27,18 +32,26 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" id="projectGroup"
-             style="<?= $reservation['project_id'] ? '' : 'display:none' ?>">
+        <div class="form-group" id="projectGroup" <?= $selectedPid ? '' : 'hidden' ?>>
             <label class="form-label">Project</label>
             <select class="form-select" name="project_id" id="projectSelect">
                 <option value="">— Select Project —</option>
+                <?php if ($staleProject): ?>
+                <option value="<?= $selectedPid ?>"
+                        data-code="<?= Helpers::e($reservation['project_code'] ?? '') ?>"
+                        data-note="inactive" selected><?= Helpers::e($reservation['project_name'] ?? ('Project #' . $selectedPid)) ?></option>
+                <?php endif; ?>
                 <?php foreach ($projects as $pr): ?>
                 <option value="<?= (int) $pr['project_id'] ?>"
-                    <?= (int) $pr['project_id'] === (int) ($reservation['project_id'] ?? 0) ? 'selected' : '' ?>>
+                        data-code="<?= Helpers::e($pr['project_code'] ?? '') ?>"
+                    <?= (int) $pr['project_id'] === $selectedPid ? 'selected' : '' ?>>
                     <?= Helpers::e($pr['project_name']) ?>
                 </option>
                 <?php endforeach; ?>
             </select>
+            <?php if ($staleProject): ?>
+            <p class="form-hint">This project is no longer active. It stays attached unless you pick another one.</p>
+            <?php endif; ?>
         </div>
     </div>
     <div class="form-group">
@@ -104,13 +117,19 @@
 </div>
 </form>
 
+<script src="<?= Helpers::assetUrl('/js/searchable_select.js') ?>"></script>
 <script>
+var projectCombo = SearchableSelect.attach('projectSelect', {
+    placeholder: 'Search project name or code…',
+    emptyText:   'No matching projects'
+});
+
 function handlePurposeChange() {
     var sel = document.getElementById('purposeSelect');
     var opt = sel.options[sel.selectedIndex];
     var req = opt.getAttribute('data-requires-project') === '1';
-    document.getElementById('projectGroup').style.display = req ? '' : 'none';
-    if (!req) document.getElementById('projectSelect').value = '';
+    document.getElementById('projectGroup').hidden = !req;
+    if (!req) projectCombo.setValue('');
 }
 
 window.lvmsLocationPicker = {

@@ -14,11 +14,7 @@ $statusLabel = [
     'retired'           => 'Retired',
 ];
 ?>
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Fleet Management</h2>
-        <p>Shared vehicle fleet across all companies</p>
-    </div>
+<div class="page-header page-header-end">
     <div style="display:flex;gap:8px;">
         <a href="<?= Helpers::url('/vehicles/categories') ?>" class="btn btn-outline">Categories</a>
         <a href="<?= Helpers::url('/vehicles/create') ?>" class="btn btn-solid">
@@ -37,6 +33,15 @@ $statusLabel = [
             <option value="on_trip"           <?= $statusFilter === 'on_trip'           ? 'selected' : '' ?>>On Trip</option>
             <option value="under_maintenance" <?= $statusFilter === 'under_maintenance' ? 'selected' : '' ?>>Under Maintenance</option>
             <option value="retired"           <?= $statusFilter === 'retired'           ? 'selected' : '' ?>>Retired</option>
+        </select>
+        <select class="filter-select" name="category_id" onchange="this.form.submit()">
+            <option value="0" <?= $categoryFilter === 0 ? 'selected' : '' ?>>All Categories</option>
+            <?php foreach ($categories as $cat): ?>
+            <option value="<?= (int) $cat['category_id'] ?>"
+                <?= $categoryFilter === (int) $cat['category_id'] ? 'selected' : '' ?>>
+                <?= Helpers::e($cat['category_name']) ?>
+            </option>
+            <?php endforeach; ?>
         </select>
     </div>
 </form>

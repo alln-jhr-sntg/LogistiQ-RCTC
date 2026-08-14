@@ -1,4 +1,3 @@
-<div class="page-header"><div class="page-header-left"><h2>System Settings</h2><p>Global configuration — changes affect all companies</p></div></div>
 <form method="POST" action="<?= Helpers::url('/settings') ?>"><div class="form-card">
 <div class="form-section-title">Application</div>
 <?php foreach ($settings as $s): ?>

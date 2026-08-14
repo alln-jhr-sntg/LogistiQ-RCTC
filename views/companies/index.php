@@ -12,13 +12,6 @@ $badgeMap = [
     'TENBUILD' => 'TBD',
 ];
 ?>
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Companies</h2>
-        <p>The three companies sharing the vehicle fleet</p>
-    </div>
-</div>
-
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
 <?php foreach ($companies as $co):
     $code  = $co['company_code'];

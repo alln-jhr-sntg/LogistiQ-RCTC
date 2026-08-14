@@ -1,5 +1,3 @@
-<div class="page-header"><div class="page-header-left"><h2>My Profile</h2></div></div>
-
 <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start;">
 
     <!-- Avatar / Photo card -->

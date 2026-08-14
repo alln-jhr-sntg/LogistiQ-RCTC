@@ -1,4 +1,4 @@
-<div class="dashboard-grid dashboard-grid--3">
+<div class="dashboard-grid">
     <div class="stat-card">
         <div class="stat-label">Pending</div>
         <div class="stat-value"><?= (int) $stats['pending'] ?></div>

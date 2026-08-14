@@ -1,5 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left"><h2>Vehicle Utilization</h2></div>
+<div class="page-header page-header-end">
     <form method="POST" action="<?= Helpers::url('/reports/vehicle-utilization/export') ?>">
         <input type="hidden" name="date_from" value="<?= Helpers::e($date_from) ?>">
         <input type="hidden" name="date_to" value="<?= Helpers::e($date_to) ?>">

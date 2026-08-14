@@ -32,6 +32,17 @@ const RES_REJECTED         = 'rejected';
 const RES_CANCELLED        = 'cancelled';
 const RES_IN_PROGRESS      = 'in_progress';
 const RES_COMPLETED        = 'completed';
+
+// Display labels for the Reservations list status filter dropdown.
+const RES_STATUS_LABELS = [
+    RES_PENDING          => 'Pending',
+    RES_APPROVED         => 'Approved',
+    RES_GATEPASS_PENDING => 'Gatepass',
+    RES_IN_PROGRESS      => 'In Progress',
+    RES_COMPLETED        => 'Completed',
+    RES_REJECTED         => 'Rejected',
+    RES_CANCELLED        => 'Cancelled',
+];
 // Gate pass exists in the schema only (gatepasses table + the reservation status
 // above). No controller, model, route or view yet — built in a later step. When it
 // lands, its review/approve/reject guards are super_admin ONLY.
@@ -41,6 +52,15 @@ const TRIP_IN_PROGRESS   = 'in_progress';
 const TRIP_COMPLETED     = 'completed';
 const TRIP_INCIDENT      = 'incident';
 const TRIP_CANCELLED     = 'cancelled';
+
+// Display labels for the Trips list status filter dropdown.
+const TRIP_STATUS_LABELS = [
+    TRIP_PENDING_START => 'Pending Start',
+    TRIP_IN_PROGRESS   => 'In Progress',
+    TRIP_COMPLETED     => 'Completed',
+    TRIP_INCIDENT      => 'Incident',
+    TRIP_CANCELLED     => 'Cancelled',
+];
 
 // Statuses a trip cannot leave. Guards read this instead of comparing
 // to 'completed' by hand, so adding a future terminal status is one edit.
@@ -89,6 +109,15 @@ const NOTIF_TRIP        = 'trip';
 const NOTIF_MAINTENANCE = 'maintenance';
 const NOTIF_SYSTEM      = 'system';
 const NOTIF_INCIDENT    = 'incident';
+
+// Display labels for the Notifications list type filter dropdown.
+const NOTIF_TYPE_LABELS = [
+    NOTIF_RESERVATION => 'Reservation',
+    NOTIF_TRIP        => 'Trip',
+    NOTIF_MAINTENANCE => 'Maintenance',
+    NOTIF_SYSTEM      => 'System',
+    NOTIF_INCIDENT    => 'Incident',
+];
 
 const MAINTENANCE_INTERVAL_KM = 5000;
 

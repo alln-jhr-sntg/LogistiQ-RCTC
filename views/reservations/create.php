@@ -43,13 +43,14 @@
             </select>
         </div>
         <div class="form-group" id="projectGroup">
-            <label class="form-label">Project <span class="required" id="projectRequiredMark" style="display:none;">*</span></label>
+            <label class="form-label">Project <span class="required" id="projectRequiredMark" hidden>*</span></label>
             <select class="form-select" name="project_id" id="projectSelect"
                     <?php if ($needsDeptPicker): ?>data-all-projects="<?= Helpers::e(json_encode($projects)) ?>"<?php endif; ?>>
                 <option value="">— Select Project —</option>
                 <?php if (!$needsDeptPicker): ?>
                 <?php foreach ($projects as $pr): ?>
-                <option value="<?= (int) $pr['project_id'] ?>"><?= Helpers::e($pr['project_name']) ?></option>
+                <option value="<?= (int) $pr['project_id'] ?>"
+                        data-code="<?= Helpers::e($pr['project_code'] ?? '') ?>"><?= Helpers::e($pr['project_name']) ?></option>
                 <?php endforeach; ?>
                 <?php endif; ?>
             </select>
@@ -129,11 +130,17 @@ window.lvmsLocationPicker = {
 };
 </script>
 <script src="<?= APP_BASE ?>/public/js/location_picker.js"></script>
+<script src="<?= Helpers::assetUrl('/js/searchable_select.js') ?>"></script>
 <script
     src="https://maps.googleapis.com/maps/api/js?key=<?= GOOGLE_MAPS_API_KEY ?>&callback=initLocationPicker"
     loading="async" defer>
 </script>
 <script>
+var projectCombo = SearchableSelect.attach('projectSelect', {
+    placeholder: 'Search project name or code…',
+    emptyText:   'No matching projects'
+});
+
 <?php if ($needsDeptPicker): ?>
 // Company → Department / Project cascade, for accounts with no home
 // department (super_admin, fleet_admin). Same client-side filtering
@@ -155,16 +162,11 @@ function filterDepartments(companyId) {
 }
 
 function filterProjectsByCompany(companyId) {
-    var select = document.getElementById('projectSelect');
-    select.innerHTML = '<option value="">— Select Project —</option>';
-    allProjects
-        .filter(function(p) { return parseInt(p.company_id) === companyId; })
-        .forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.project_id;
-            opt.text  = p.project_name;
-            select.add(opt);
-        });
+    projectCombo.setOptions(
+        allProjects
+            .filter(function (p) { return parseInt(p.company_id) === companyId; })
+            .map(function (p) { return { value: p.project_id, label: p.project_name, code: p.project_code || '' }; })
+    );
 }
 
 function handleCompanyChange() {
@@ -196,8 +198,8 @@ function handlePurposeChange() {
     var req = opt.getAttribute('data-requires-project') === '1';
     var max = opt.getAttribute('data-max');
 
-    document.getElementById('projectRequiredMark').style.display = req ? '' : 'none';
-    document.getElementById('projectSelect').required = req;
+    document.getElementById('projectRequiredMark').hidden = !req;
+    projectCombo.setRequired(req);
 
     // Shown whenever a limit exists, not only when the project is mandatory:
     // TripLimitService::check() runs for ANY purpose once a project is

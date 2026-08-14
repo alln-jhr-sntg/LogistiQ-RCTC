@@ -150,14 +150,31 @@ class TripModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findAll(string $status = '', ?int $limit = null, ?int $offset = null): array
-    {
+    public function findAll(
+        string $status = '',
+        ?int $limit = null,
+        ?int $offset = null,
+        int $companyId = 0,
+        string $dateFrom = ''
+    ): array {
         $sql    = $this->baseSelect();
         $params = [];
+        $where  = [];
 
         if ($status !== '') {
-            $sql   .= ' WHERE t.trip_status = :status';
-            $params = [':status' => $status];
+            $where[] = 't.trip_status = :status';
+            $params[':status'] = $status;
+        }
+        if ($companyId > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        if ($dateFrom !== '') {
+            $where[] = 't.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $sql .= ' ORDER BY t.created_at DESC';
@@ -171,14 +188,30 @@ class TripModel extends BaseModel
     /**
      * Count all trips — same WHERE as findAll(), used to compute total pages.
      */
-    public function countAll(string $status = ''): int
+    public function countAll(string $status = '', int $companyId = 0, string $dateFrom = ''): int
     {
-        $sql    = 'SELECT COUNT(*) AS cnt FROM trips t';
+        $sql    = 'SELECT COUNT(*) AS cnt
+                   FROM   trips        t
+                   JOIN   reservations r ON r.reservation_id  = t.reservation_id
+                   JOIN   departments  d ON d.department_id   = r.department_id
+                   JOIN   companies    c ON c.company_id      = d.company_id';
         $params = [];
+        $where  = [];
 
         if ($status !== '') {
-            $sql   .= ' WHERE t.trip_status = :status';
-            $params = [':status' => $status];
+            $where[] = 't.trip_status = :status';
+            $params[':status'] = $status;
+        }
+        if ($companyId > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        if ($dateFrom !== '') {
+            $where[] = 't.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
 
         $row = $this->fetchOne($sql, $params);
@@ -194,14 +227,23 @@ class TripModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function findForEmployee(int $userId, string $status = '', ?int $limit = null, ?int $offset = null): array
-    {
+    public function findForEmployee(
+        int $userId,
+        string $status = '',
+        ?int $limit = null,
+        ?int $offset = null,
+        string $dateFrom = ''
+    ): array {
         $sql    = $this->baseSelect() . ' WHERE r.requested_by = :user_id';
         $params = [':user_id' => $userId];
 
         if ($status !== '') {
             $sql   .= ' AND t.trip_status = :status';
             $params[':status'] = $status;
+        }
+        if ($dateFrom !== '') {
+            $sql   .= ' AND t.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
         }
 
         $sql .= ' ORDER BY t.created_at DESC';
@@ -217,7 +259,7 @@ class TripModel extends BaseModel
      * used to compute total pages. Requires the reservations join since
      * requested_by lives on reservations, not trips.
      */
-    public function countForEmployee(int $userId, string $status = ''): int
+    public function countForEmployee(int $userId, string $status = '', string $dateFrom = ''): int
     {
         $sql = 'SELECT COUNT(*) AS cnt
                 FROM   trips t
@@ -228,6 +270,10 @@ class TripModel extends BaseModel
         if ($status !== '') {
             $sql   .= ' AND t.trip_status = :status';
             $params[':status'] = $status;
+        }
+        if ($dateFrom !== '') {
+            $sql   .= ' AND t.created_at >= :date_from';
+            $params[':date_from'] = $dateFrom;
         }
 
         $row = $this->fetchOne($sql, $params);

@@ -8,20 +8,9 @@ $statusBadge = [
     'in_progress'      => ['class' => 'badge-on-trip',    'label' => 'In Progress'],
     'completed'        => ['class' => 'badge-available',  'label' => 'Completed'],
 ];
-$tabs = [
-    ''                 => 'All',
-    'pending'          => 'Pending',
-    'approved'         => 'Approved',
-    'gatepass_pending' => 'Gatepass',
-    'in_progress'      => 'In Progress',
-    'completed'        => 'Completed',
-    'rejected'         => 'Rejected',
-    'cancelled'        => 'Cancelled',
-];
 $role = Auth::role();
 ?>
-<div class="page-header">
-    <div class="page-header-left"><h2>Reservations</h2></div>
+<div class="page-header page-header-end">
     <div style="display: flex; gap:8px;">
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN])): ?>
         <a href="<?= Helpers::url('/reservations/purposes') ?>" class="btn btn-outline">Purposes</a>
@@ -36,15 +25,37 @@ $role = Auth::role();
     </div>
 </div>
 
-<!-- Status tabs -->
-<div class="tab-bar" style="margin-bottom:20px;">
-    <?php foreach ($tabs as $key => $label): ?>
-    <a href="<?= APP_BASE ?>/index.php?url=reservations<?= $key !== '' ? '&status=' . $key : '' ?>"
-       class="tab-item <?= $statusFilter === $key ? 'active' : '' ?>">
-        <?= $label ?>
-    </a>
-    <?php endforeach; ?>
-</div>
+<form method="GET" action="<?= APP_BASE ?>/index.php">
+    <input type="hidden" name="url" value="reservations">
+    <div class="filter-bar">
+        <select class="filter-select" name="status" onchange="this.form.submit()">
+            <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>All Statuses</option>
+            <?php foreach (RES_STATUS_LABELS as $key => $label): ?>
+            <option value="<?= Helpers::e($key) ?>" <?= $statusFilter === $key ? 'selected' : '' ?>>
+                <?= Helpers::e($label) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <?php if (!empty($companies)): ?>
+        <select class="filter-select" name="company_id" onchange="this.form.submit()">
+            <option value="0" <?= $companyFilter === 0 ? 'selected' : '' ?>>All Companies</option>
+            <?php foreach ($companies as $co): ?>
+            <option value="<?= (int) $co['company_id'] ?>"
+                <?= $companyFilter === (int) $co['company_id'] ? 'selected' : '' ?>>
+                <?= Helpers::e($co['company_code']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+        <?php endif; ?>
+        <select class="filter-select" name="range" onchange="this.form.submit()">
+            <option value=""       <?= $rangeFilter === ''       ? 'selected' : '' ?>>All Time</option>
+            <option value="today"  <?= $rangeFilter === 'today'  ? 'selected' : '' ?>>Today</option>
+            <option value="week"   <?= $rangeFilter === 'week'   ? 'selected' : '' ?>>This Week</option>
+            <option value="month"  <?= $rangeFilter === 'month'  ? 'selected' : '' ?>>This Month</option>
+            <option value="last30" <?= $rangeFilter === 'last30' ? 'selected' : '' ?>>Last 30 Days</option>
+        </select>
+    </div>
+</form>
 
 <div class="card"><div class="table-wrap"><table class="data-table">
     <thead>

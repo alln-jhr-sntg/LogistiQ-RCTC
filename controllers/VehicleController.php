@@ -16,14 +16,19 @@ class VehicleController
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN);
 
-        $statusFilter = $_GET['status'] ?? '';
+        $statusFilter   = $_GET['status'] ?? '';
+        $categoryFilter = (int) ($_GET['category_id'] ?? 0);
+
         $vehicleModel = new VehicleModel();
-        $vehicles     = $vehicleModel->findAll($statusFilter);
+        $vehicles     = $vehicleModel->findAll($statusFilter, $categoryFilter);
+        $categories   = (new VehicleCategoryModel())->findAll();
 
         $this->render('index', [
-            'page_title'    => 'Fleet Management',
-            'vehicles'      => $vehicles,
-            'statusFilter'  => $statusFilter,
+            'page_title'      => 'Fleet Management',
+            'vehicles'        => $vehicles,
+            'statusFilter'    => $statusFilter,
+            'categoryFilter'  => $categoryFilter,
+            'categories'      => $categories,
         ]);
     }
 

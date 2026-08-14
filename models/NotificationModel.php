@@ -92,18 +92,32 @@ class NotificationModel extends BaseModel
      *
      * @return array<int, array<string, mixed>>
      */
-    public function getByUser(int $userId, int $limit = 50, int $offset = 0): array
-    {
+    public function getByUser(
+        int $userId,
+        int $limit = 50,
+        int $offset = 0,
+        string $type = '',
+        string $readState = ''
+    ): array {
         $limit  = max(0, $limit);
         $offset = max(0, $offset);
 
-        return $this->fetchAll(
-            "SELECT * FROM notifications
-             WHERE  user_id    = :user_id
-             ORDER  BY created_at DESC
-             LIMIT  $limit OFFSET $offset",
-            [':user_id' => $userId]
-        );
+        $sql    = 'SELECT * FROM notifications WHERE user_id = :user_id';
+        $params = [':user_id' => $userId];
+
+        if ($type !== '') {
+            $sql   .= ' AND type = :type';
+            $params[':type'] = $type;
+        }
+        if ($readState === 'unread') {
+            $sql .= ' AND is_read = 0';
+        } elseif ($readState === 'read') {
+            $sql .= ' AND is_read = 1';
+        }
+
+        $sql .= " ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
+
+        return $this->fetchAll($sql, $params);
     }
 
     /**
@@ -111,12 +125,22 @@ class NotificationModel extends BaseModel
      * total pages for NotificationController::index(). Distinct from
      * getUnreadCount(), which the topbar badge uses.
      */
-    public function countByUser(int $userId): int
+    public function countByUser(int $userId, string $type = '', string $readState = ''): int
     {
-        $row = $this->fetchOne(
-            'SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = :user_id',
-            [':user_id' => $userId]
-        );
+        $sql    = 'SELECT COUNT(*) AS cnt FROM notifications WHERE user_id = :user_id';
+        $params = [':user_id' => $userId];
+
+        if ($type !== '') {
+            $sql   .= ' AND type = :type';
+            $params[':type'] = $type;
+        }
+        if ($readState === 'unread') {
+            $sql .= ' AND is_read = 0';
+        } elseif ($readState === 'read') {
+            $sql .= ' AND is_read = 1';
+        }
+
+        $row = $this->fetchOne($sql, $params);
         return (int) ($row['cnt'] ?? 0);
     }
 

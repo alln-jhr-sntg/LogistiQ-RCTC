@@ -31,6 +31,22 @@ class Helpers
         return APP_BASE . '/public' . $path . '?v=' . $version;
     }
 
+    /**
+     * Translate a date-range preset key into a 'Y-m-d' lower bound, or ''
+     * for "all time". Used by the Reservations and Trips list filters so
+     * both pages agree on what "this week" means.
+     */
+    public static function dateRangeFloor(string $preset): string
+    {
+        return match ($preset) {
+            'today'  => date('Y-m-d'),
+            'week'   => date('Y-m-d', strtotime('monday this week')),
+            'month'  => date('Y-m-01'),
+            'last30' => date('Y-m-d', strtotime('-30 days')),
+            default  => '',
+        };
+    }
+
     public static function setFlash(string $type, string $message): void
     {
         $_SESSION['flash'] = ['type' => $type, 'message' => $message];
