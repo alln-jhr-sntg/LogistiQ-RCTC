@@ -1,21 +1,13 @@
 <div class="auth-wrap">
     <div class="auth-brand">
-        <div class="auth-brand-top">
+        <div class="auth-brand-content">
             <div class="auth-logo">
                 <div class="auth-logo-mark">
-                    <svg viewBox="0 0 24 24"><path d="M1 3h15v13H1V3zm15 4h4l3 3v6h-7V7zM5.5 20a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm13 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                    <img src="<?= Helpers::assetUrl('/img/logo.jpg') ?>" alt="MoveOps logo">
                 </div>
-                <div class="auth-logo-text">Remix Construction<br>and Trading Corp.</div>
+                <div class="auth-logo-text">Move<span class="accent">Ops</span></div>
             </div>
-            <div class="auth-brand-headline">Logistics<br><strong>Management System</strong></div>
-            <p class="auth-brand-sub">Where movement meets operational excellence.</p>
-        </div>
-        <div class="auth-brand-bottom">
-            <div class="auth-brand-stats">
-                <div><div class="auth-stat-label">Companies</div><div class="auth-stat-value">3</div></div>
-                <div><div class="auth-stat-label">Shared Fleet</div><div class="auth-stat-value">—</div></div>
-                <div><div class="auth-stat-label">System</div><div class="auth-stat-value">MoveOps</div></div>
-            </div>
+            <div class="auth-brand-headline">Where movement meets<br><strong>operational excellence.</strong></div>
         </div>
     </div>
     <div class="auth-form-panel">
@@ -32,18 +24,28 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                    <div class="password-field">
+                        <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                        <button type="button" class="password-toggle" data-target="password" aria-label="Show password">
+                            <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="btn-primary">Sign in</button>
             </form>
-            <div style="margin-top:20px;padding:14px;background:var(--clr-surface-2);border-radius:var(--radius-md);font-size:12px;color:var(--clr-text-3);line-height:1.9;">
-                <strong style="color:var(--clr-text-2);display:block;margin-bottom:4px;">Demo accounts &mdash; password: <code>password</code></strong>
-                superadmin@lvms.test &mdash; Super Admin<br>
-                admin@lvms.test &mdash; Admin<br>
-                employee@lvms.test &mdash; Employee<br>
-                driver@lvms.test &mdash; Driver
+            <?php if (!empty($demoAccounts)): ?>
+            <div class="demo-accounts">
+                <strong>Demo accounts &mdash; password: <code>password</code></strong>
+                <?php foreach ($demoAccounts as $account): ?>
+                <div class="demo-accounts-row">
+                    <span><?= Helpers::e($account['email']) ?></span>
+                    <span>&mdash; <?= Helpers::e($account['label']) ?></span>
+                </div>
+                <?php endforeach; ?>
             </div>
-            <p class="auth-footer">&copy; <?= date('Y') ?> Remix Construction and Trading Corporation</p>
+            <?php endif; ?>
+            <p class="auth-footer">&copy; <?= date('Y') ?> <?= Helpers::e($companyName) ?></p>
         </div>
     </div>
 </div>

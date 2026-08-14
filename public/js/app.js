@@ -64,3 +64,20 @@
     updateBadge();                    // Immediate check on page load
     setInterval(updateBadge, 30000);  // Poll every 30 seconds
 })();
+
+// ── Password visibility toggle ──────────────────────────────
+(function () {
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.password-toggle');
+        if (!btn) return;
+
+        var input = document.getElementById(btn.dataset.target);
+        if (!input) return;
+
+        var show = input.type === 'password';
+
+        input.type = show ? 'text' : 'password';
+        btn.classList.toggle('is-visible', show);
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+})();

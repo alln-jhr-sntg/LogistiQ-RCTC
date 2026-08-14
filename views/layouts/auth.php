@@ -12,5 +12,6 @@
 </head>
 <body>
 <?php require_once __DIR__ . '/../auth/login.php'; ?>
+<script src="<?= Helpers::assetUrl('/js/app.js') ?>"></script>
 </body>
 </html>
