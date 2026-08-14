@@ -39,8 +39,8 @@
                 <strong>Demo accounts &mdash; password: <code>password</code></strong>
                 <?php foreach ($demoAccounts as $account): ?>
                 <div class="demo-accounts-row">
-                    <span><?= Helpers::e($account['email']) ?></span>
-                    <span>&mdash; <?= Helpers::e($account['label']) ?></span>
+                    <span><?= Helpers::e($account['label']) ?>:</span>
+                    <span><?= Helpers::e($account['email']) ?></span>                    
                 </div>
                 <?php endforeach; ?>
             </div>
