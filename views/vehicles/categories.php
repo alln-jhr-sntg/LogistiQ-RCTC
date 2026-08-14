@@ -1,5 +1,5 @@
 <div class="page-header">
-    <div class="page-header-left"><h2>Vehicle Categories</h2></div>
+    <div class="page-header-left"></div>
     <div style="display:flex;gap:8px;">
         <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">← Fleet</a>
         <button class="btn btn-solid" onclick="document.getElementById('addCategoryModal').style.display='flex';">

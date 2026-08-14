@@ -12,7 +12,7 @@ $statusLocked  = isset($project) && $project
     && in_array($project['status'], PROJ_LOCKED_STATUSES, true);
 $currentStatus = $project['status'] ?? PROJ_ACTIVE;
 ?>
-<div class="page-header"><div class="page-header-left"><h2><?= isset($project) && $project ? 'Edit Project' : 'New Project' ?></h2></div><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">← Back</a></div>
+<div class="page-header page-header-end"><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">← Back</a></div>
 <form method="POST" action="<?= isset($project) && $project ? Helpers::url('/projects/' . $project['project_id'] . '/edit') : Helpers::url('/projects/create') ?>"><div class="form-card">
 <div class="form-section-title">Project Details</div>
 <div class="form-row">

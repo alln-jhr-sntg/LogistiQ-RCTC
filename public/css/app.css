@@ -972,8 +972,8 @@ button {
   letter-spacing: -0.02em;
 }
 .page-header p {
-  font-size: 13px;
-  color: var(--clr-text-3);
+  font-size: 14px;
+  color: var(--clr-text-2);
 }
 
 .page-header-actions {

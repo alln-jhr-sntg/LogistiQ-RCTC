@@ -1,12 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Edit User — <?= Helpers::e($user['first_name'] . ' ' . $user['last_name']) ?></h2>
-        <p>
-            <?= $user['employee_id'] ? Helpers::e($user['employee_id']) . ' — ' : '' ?>
-            <?= Helpers::e(ROLE_LABELS[$user['role']] ?? ucfirst($user['role'])) ?> — <?= Helpers::e($user['company_code']) ?>
-            <?= $user['department_name'] ? ' ' . Helpers::e($user['department_name']) : '' ?>
-        </p>
-    </div>
+<div class="page-header page-header-end">
     <a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">← Back</a>
 </div>
 

@@ -1,8 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Edit Vehicle — <?= Helpers::e($vehicle['plate_number']) ?></h2>
-        <p><?= Helpers::e($vehicle['brand'] . ' ' . $vehicle['model'] . ' ' . $vehicle['year_model']) ?></p>
-    </div>
+<div class="page-header page-header-end">
     <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">← Back</a>
 </div>
 
@@ -104,7 +100,7 @@ $selectedPurposes = ($rawPref !== null && $rawPref !== '')
         <textarea class="form-textarea" name="remarks"><?= Helpers::e($vehicle['remarks'] ?? '') ?></textarea>
     </div>
 
-    <div class="form-section-title">AI Recommendation</div>
+    <div class="form-section-title">Recommendation</div>
     <div class="form-group">
         <label class="form-label">Preferred Trip Purposes</label>
         <div style="border: 1.5px solid var(--clr-border); border-radius: var(--radius-md);

@@ -1,6 +1,5 @@
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Maintenance — <?= Helpers::e($vehicle['plate_number']) ?></h2>
         <p>
             <?= Helpers::e($vehicle['brand'] . ' ' . $vehicle['model'] . ' ' . $vehicle['year_model']) ?>
             — Current odometer: <?= number_format((float) $vehicle['current_odometer_km'], 0) ?> km

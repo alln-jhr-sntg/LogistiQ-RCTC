@@ -183,7 +183,7 @@ function nav_is_active(string $path): string {
 
         <!-- Topbar -->
         <header class="topbar">
-            <h1 class="topbar-title"><?= Helpers::e($page_title ?? '') ?></h1>
+            <h1 class="topbar-title"><?= Helpers::e(Helpers::truncate($page_title ?? '', 40)) ?></h1>
             <div class="topbar-right">
                 <?php if ($role !== ROLE_DRIVER): ?>
                 <?php

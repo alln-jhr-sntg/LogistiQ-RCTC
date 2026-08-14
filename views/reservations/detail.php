@@ -13,7 +13,6 @@ $role = Auth::role();
 ?>
 <div class="page-header">
     <div class="page-header-left">
-        <h2><?= Helpers::e($reservation['reservation_code']) ?></h2>
         <p>Submitted <?= date('M d, Y', strtotime($reservation['created_at'])) ?></p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">

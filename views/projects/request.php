@@ -1,6 +1,5 @@
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Request a Project</h2>
         <p>Submit a project for review. You will be notified once it is approved or rejected.</p>
     </div>
     <a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">← Back</a>

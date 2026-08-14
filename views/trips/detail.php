@@ -43,9 +43,7 @@ $backUrl = $isSameSite
 
 <div class="page-header">
     <div class="page-header-left">
-        <h2><?= Helpers::e($trip['reservation_code']) ?></h2>
-        <p><?= Helpers::e($trip['destination']) ?> &mdash;
-           <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span></p>
+        <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span>
     </div>
     <div class="page-header-actions">
         <a href="<?= $backUrl ?>" class="btn btn-outline">← Back</a>

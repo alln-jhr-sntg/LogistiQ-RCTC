@@ -1,6 +1,5 @@
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Driver Profile — <?= Helpers::e($user['first_name'] . ' ' . $user['last_name']) ?></h2>
         <p>
             <?= $user['employee_id'] ? Helpers::e($user['employee_id']) . ' — ' : '' ?>
             <?= Helpers::e($user['company_name']) ?>

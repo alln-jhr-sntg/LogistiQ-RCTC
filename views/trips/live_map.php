@@ -11,7 +11,6 @@ $badgeClass  = match($trip['trip_status']) {
 
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Live Map — <?= Helpers::e($trip['reservation_code']) ?></h2>
         <p>
             <?= Helpers::e($trip['driver_first_name'] . ' ' . $trip['driver_last_name']) ?> &mdash;
             <?= Helpers::e($trip['plate_number'] . ' ' . $trip['vehicle_brand'] . ' ' . $trip['vehicle_model']) ?> &mdash;

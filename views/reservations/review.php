@@ -17,7 +17,6 @@ function scoreBar(float $score): string {
 ?>
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Review <?= Helpers::e($reservation['reservation_code']) ?></h2>
         <p>
             <?= Helpers::e($reservation['requester_first_name'] . ' ' . $reservation['requester_last_name']) ?>
             — <?= Helpers::e($reservation['destination']) ?>

@@ -1,5 +1,5 @@
 <div class="page-header">
-    <div class="page-header-left"><h2>Add Vehicle</h2></div>
+    <div class="page-header-left"></div>
     <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">← Back</a>
 </div>
 
@@ -85,7 +85,7 @@
         <textarea class="form-textarea" name="remarks"></textarea>
     </div>
 
-    <div class="form-section-title">AI Recommendation</div>
+    <div class="form-section-title">Recommendation</div>
     <div class="form-group">
         <label class="form-label">Preferred Trip Purposes</label>
         <div style="border: 1.5px solid var(--clr-border); border-radius: var(--radius-md);

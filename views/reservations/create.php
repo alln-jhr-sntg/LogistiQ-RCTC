@@ -1,5 +1,5 @@
 <div class="page-header">
-    <div class="page-header-left"><h2>New Reservation</h2></div>
+    <div class="page-header-left"></div>
     <a href="<?= Helpers::url('/reservations') ?>" class="btn btn-outline">← Back</a>
 </div>
 

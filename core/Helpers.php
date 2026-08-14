@@ -68,6 +68,20 @@ class Helpers
     }
 
     /**
+     * Cut a string to a fixed character count with a trailing ellipsis so a
+     * single long value (e.g. a generated page title) can't blow out a
+     * fixed-width UI element.
+     */
+    public static function truncate(string $value, int $limit): string
+    {
+        $value = trim($value);
+        if (mb_strlen($value) <= $limit) {
+            return $value;
+        }
+        return mb_substr($value, 0, $limit) . '…';
+    }
+
+    /**
      * Build LIMIT/OFFSET values and page-link markup for a paginated list.
      *
      * $baseQuery is the query string to reuse on every page link — everything

@@ -1,5 +1,5 @@
 <div class="page-header">
-    <div class="page-header-left"><h2>Add User</h2></div>
+    <div class="page-header-left"></div>
     <a href="<?= Helpers::url('/users') ?>" class="btn btn-outline">← Back</a>
 </div>
 

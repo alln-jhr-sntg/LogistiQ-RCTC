@@ -1,8 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Edit <?= Helpers::e($reservation['reservation_code']) ?></h2>
-        <p>Only pending reservations can be edited. Changes are logged.</p>
-    </div>
+<div class="page-header page-header-end">
     <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id']) ?>"
        class="btn btn-outline">← Back</a>
 </div>

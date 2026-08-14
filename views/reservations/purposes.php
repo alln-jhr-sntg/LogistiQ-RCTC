@@ -1,6 +1,5 @@
 <div class="page-header">
     <div class="page-header-left">
-        <h2>Trip Purposes</h2>
         <p>Manage valid trip purposes for reservations</p>
     </div>
     <div style="display:flex; gap:8px;">
