@@ -6,6 +6,7 @@ $roleBadge = [
     'employee'    => ['class' => 'badge-pending',     'label' => 'Employee'],
     'driver'      => ['class' => 'badge-maintenance', 'label' => 'Driver'],
 ];
+$viewerRole = Auth::role();
 ?>
 <div class="page-header page-header-end">
     <a href="<?= Helpers::url('/users/create') ?>" class="btn btn-solid">
@@ -16,6 +17,7 @@ $roleBadge = [
 <form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="users">
     <div class="filter-bar">
+        <?php if ($viewerRole === ROLE_SUPER_ADMIN): ?>
         <select class="filter-select" name="role" onchange="this.form.submit()">
             <option value="" <?= $roleFilter === '' ? 'selected' : '' ?>>All Roles</option>
             <option value="super_admin" <?= $roleFilter === 'super_admin' ? 'selected' : '' ?>>Super Admin</option>
@@ -33,6 +35,13 @@ $roleBadge = [
             </option>
             <?php endforeach; ?>
         </select>
+        <?php elseif ($viewerRole === ROLE_FLEET_ADMIN): ?>
+        <select class="filter-select" name="role" onchange="this.form.submit()">
+            <option value="" <?= $roleFilter === '' ? 'selected' : '' ?>>All Roles</option>
+            <option value="employee" <?= $roleFilter === 'employee' ? 'selected' : '' ?>>Employee</option>
+            <option value="driver"   <?= $roleFilter === 'driver'   ? 'selected' : '' ?>>Driver</option>
+        </select>
+        <?php endif; ?>
         <select class="filter-select" name="is_active" onchange="this.form.submit()">
             <option value=""  <?= $activeFilter === ''  ? 'selected' : '' ?>>All Statuses</option>
             <option value="1" <?= $activeFilter === '1' ? 'selected' : '' ?>>Active</option>

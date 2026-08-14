@@ -128,6 +128,81 @@ class UserModel extends BaseModel
     }
 
     /**
+     * Return users visible to the given viewer on the Users list, applying
+     * role-based visibility rules on top of the caller's role/company/status
+     * filters:
+     *   - super_admin sees every role, but only their OWN super_admin row —
+     *     other super_admin accounts stay invisible even to a fellow super_admin.
+     *   - fleet_admin sees employees (scoped to their own company — company_id
+     *     on an employee is their actual department) and drivers (unscoped,
+     *     since the driver fleet is shared across all three companies).
+     *   - admin sees employees in their own company only.
+     * $roleFilter / $companyFilter narrow further within what's already
+     * visible; they can't widen it. $companyFilter is only honored for
+     * super_admin — fleet_admin/admin scope is fixed to their own company.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findVisibleTo(
+        string $viewerRole,
+        int $viewerId,
+        int $viewerCompanyId,
+        string $roleFilter,
+        int $companyFilter,
+        string $activeFilter
+    ): array {
+        $sql    = 'SELECT   u.*, c.company_name, c.company_code,
+                            d.department_name
+                   FROM     users u
+                   JOIN     companies   c ON c.company_id    = u.company_id
+                   LEFT JOIN departments d ON d.department_id = u.department_id
+                   WHERE    1=1';
+        $params = [];
+
+        if ($viewerRole === ROLE_SUPER_ADMIN) {
+            $sql .= ' AND (u.role != :super_admin_role OR u.user_id = :viewer_id)';
+            $params[':super_admin_role'] = ROLE_SUPER_ADMIN;
+            $params[':viewer_id']        = $viewerId;
+
+            if ($roleFilter !== '') {
+                $sql .= ' AND u.role = :role';
+                $params[':role'] = $roleFilter;
+            }
+            if ($companyFilter > 0) {
+                $sql .= ' AND u.company_id = :company_id';
+                $params[':company_id'] = $companyFilter;
+            }
+        } elseif ($viewerRole === ROLE_FLEET_ADMIN) {
+            if ($roleFilter === ROLE_EMPLOYEE) {
+                $sql .= ' AND u.role = :role AND u.company_id = :company_id';
+                $params[':role']       = ROLE_EMPLOYEE;
+                $params[':company_id'] = $viewerCompanyId;
+            } elseif ($roleFilter === ROLE_DRIVER) {
+                $sql .= ' AND u.role = :role';
+                $params[':role'] = ROLE_DRIVER;
+            } else {
+                $sql .= ' AND ((u.role = :emp_role AND u.company_id = :company_id) OR u.role = :drv_role)';
+                $params[':emp_role']   = ROLE_EMPLOYEE;
+                $params[':drv_role']   = ROLE_DRIVER;
+                $params[':company_id'] = $viewerCompanyId;
+            }
+        } else {
+            // admin
+            $sql .= ' AND u.role = :role AND u.company_id = :company_id';
+            $params[':role']       = ROLE_EMPLOYEE;
+            $params[':company_id'] = $viewerCompanyId;
+        }
+
+        if ($activeFilter !== '') {
+            $sql .= ' AND u.is_active = :is_active';
+            $params[':is_active'] = $activeFilter;
+        }
+
+        $sql .= ' ORDER BY u.last_name ASC, u.first_name ASC';
+        return $this->fetchAll($sql, $params);
+    }
+
+    /**
      * Insert a new user. Returns the new user_id.
      * Caller should catch PDOException '23000' for duplicate email/employee_id.
      *

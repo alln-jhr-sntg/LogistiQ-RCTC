@@ -19,8 +19,11 @@ const ROLE_LABELS = [
 ];
 
 // Which roles each actor may assign when creating or editing a user.
+// super_admin is deliberately absent even from its own row: nobody can
+// promote another account to super_admin (or demote their own) through the
+// app. A new super_admin is created directly in the database.
 const ROLE_ASSIGNABLE = [
-    ROLE_SUPER_ADMIN => [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE, ROLE_DRIVER],
+    ROLE_SUPER_ADMIN => [ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE, ROLE_DRIVER],
     ROLE_FLEET_ADMIN => [ROLE_EMPLOYEE, ROLE_DRIVER],
     ROLE_ADMIN       => [ROLE_EMPLOYEE],
 ];

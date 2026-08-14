@@ -60,6 +60,12 @@
     <div class="form-row">
         <div class="form-group">
             <label class="form-label">Role <span class="required">*</span></label>
+            <?php if ($isSelfEdit): ?>
+            <select class="form-select" name="role" disabled>
+                <option><?= Helpers::e(ROLE_LABELS[$user['role']] ?? ucfirst($user['role'])) ?></option>
+            </select>
+            <p class="form-hint">You can't change your own role.</p>
+            <?php else: ?>
             <select class="form-select" name="role" id="roleSelect" required onchange="handleRoleChange()">
                 <?php foreach ((ROLE_ASSIGNABLE[Auth::role()] ?? []) as $r): ?>
                 <option value="<?= Helpers::e($r) ?>" <?= $user['role'] === $r ? 'selected' : '' ?>>
@@ -67,6 +73,7 @@
                 </option>
                 <?php endforeach; ?>
             </select>
+            <?php endif; ?>
         </div>
         <div class="form-group">
             <label class="form-label">Company <span class="required">*</span></label>

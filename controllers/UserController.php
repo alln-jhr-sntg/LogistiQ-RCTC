@@ -9,6 +9,35 @@ class UserController
         require_once __DIR__ . '/../views/layouts/main.php';
     }
 
+    /**
+     * Whether the current actor may view or edit $target's record. Mirrors
+     * the visibility rules in UserModel::findVisibleTo() so a user hidden
+     * from the Users list can't be reached by guessing its URL — list-level
+     * filtering alone would be cosmetic:
+     *   - super_admin may act on anyone except another super_admin.
+     *   - fleet_admin may act on employees in their own company, and any
+     *     driver (drivers are shared across all three companies).
+     *   - admin may act on employees in their own company only.
+     */
+    private function canManage(array $target): bool
+    {
+        $actorRole = Auth::role();
+
+        if ($actorRole === ROLE_SUPER_ADMIN) {
+            return $target['role'] !== ROLE_SUPER_ADMIN || (int) $target['user_id'] === (int) Auth::id();
+        }
+
+        if ($actorRole === ROLE_FLEET_ADMIN) {
+            if ($target['role'] === ROLE_DRIVER) {
+                return true;
+            }
+            return $target['role'] === ROLE_EMPLOYEE && (int) $target['company_id'] === (int) Auth::companyId();
+        }
+
+        // admin
+        return $target['role'] === ROLE_EMPLOYEE && (int) $target['company_id'] === (int) Auth::companyId();
+    }
+
     // GET /users
     public function index(): void
     {
@@ -21,14 +50,15 @@ class UserController
             $activeFilter = '';
         }
 
-        // Admin sees only their own company's staff — a directory of another
-        // company's users is not fleet transparency, unlike reservations/trips.
-        if (Auth::role() === ROLE_ADMIN) {
-            $companyFilter = (int) Auth::companyId();
-        }
-
         $userModel = new UserModel();
-        $users     = $userModel->findAll($roleFilter, $companyFilter, $activeFilter);
+        $users     = $userModel->findVisibleTo(
+            Auth::role(),
+            (int) Auth::id(),
+            (int) Auth::companyId(),
+            $roleFilter,
+            $companyFilter,
+            $activeFilter
+        );
 
         $companyModel = new CompanyModel();
         $companies    = $companyModel->findAll();
@@ -134,7 +164,7 @@ class UserController
         $userModel = new UserModel();
         $user      = $userModel->findById($id);
 
-        if (!$user) {
+        if (!$user || !$this->canManage($user)) {
             Helpers::setFlash('error', 'User not found.');
             Helpers::redirect('/users');
         }
@@ -147,6 +177,7 @@ class UserController
             'user'        => $user,
             'companies'   => $companyModel->findAll(),
             'departments' => $deptModel->findAllWithCompany(),
+            'isSelfEdit'  => (int) $user['user_id'] === (int) Auth::id(),
         ]);
     }
 
@@ -166,6 +197,19 @@ class UserController
         $isActive     = (int) ($_POST['is_active']  ?? 1);
         $newPassword  = $_POST['password'] ?? '';
 
+        $actorRole            = Auth::role();
+        $isSuperAdminSelfEdit = $actorRole === ROLE_SUPER_ADMIN && $id === (int) Auth::id();
+
+        // The role field is a disabled, single-option select for a super_admin
+        // editing themself, so it never reaches $_POST — pin it here too so a
+        // crafted request can't self-demote the account out of admin tooling.
+        // Promoting someone else TO super_admin is blocked below (ROLE_ASSIGNABLE
+        // no longer offers super_admin at all); new super_admin accounts are
+        // created directly in the database.
+        if ($isSuperAdminSelfEdit) {
+            $role = ROLE_SUPER_ADMIN;
+        }
+
         if ($firstName === '' || $lastName === '' || $email === '' ||
             $role === '' || $companyId === 0) {
             Helpers::setFlash('error', 'Please fill in all required fields.');
@@ -175,29 +219,23 @@ class UserController
         $userModel = new UserModel();
         $old       = $userModel->findById($id);
 
-        if (!$old) {
+        if (!$old || !$this->canManage($old)) {
             Helpers::setFlash('error', 'User not found.');
             Helpers::redirect('/users');
         }
 
-        $actorRole    = Auth::role();
         $allowedRoles = ROLE_ASSIGNABLE[$actorRole] ?? [];
 
-        // The actor must be permitted to assign the submitted role AND to
-        // have created the user's current role — an admin must not be able
-        // to edit a super_admin at all, even without changing their role.
-        if (!in_array($role, $allowedRoles, true) || !in_array($old['role'], $allowedRoles, true)) {
-            Helpers::setFlash('error', 'You are not permitted to assign or edit that role.');
+        // The actor must be permitted to assign the submitted role — a
+        // super_admin editing themself is exempt, since their role is
+        // already pinned above.
+        if (!$isSuperAdminSelfEdit && !in_array($role, $allowedRoles, true)) {
+            Helpers::setFlash('error', 'You are not permitted to assign that role.');
             Helpers::redirect('/users/' . $id . '/edit');
         }
 
         if ($actorRole !== ROLE_SUPER_ADMIN && $companyId !== (int) $old['company_id']) {
             Helpers::setFlash('error', "You are not permitted to change a user's company.");
-            Helpers::redirect('/users/' . $id . '/edit');
-        }
-
-        if ($actorRole === ROLE_ADMIN && (int) $old['company_id'] !== (int) Auth::companyId()) {
-            Helpers::setFlash('error', 'You can only edit users in your own company.');
             Helpers::redirect('/users/' . $id . '/edit');
         }
 
