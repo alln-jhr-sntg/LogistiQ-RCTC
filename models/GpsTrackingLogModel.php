@@ -57,4 +57,27 @@ class GpsTrackingLogModel extends BaseModel
             [':trip_id' => $tripId, ':limit' => $limit]
         );
     }
+
+    /**
+     * Return this trip's most recent GPS point plus how many seconds have
+     * elapsed since it was logged — computed with MySQL's own NOW(), not
+     * PHP's time(), so it isn't thrown off by the PHP/MySQL timezone
+     * mismatch noted in config/database.php (the session is pinned to
+     * +08:00 for logged_at, while PHP's default timezone is not).
+     * Used by GpsApiController's movement sanity check.
+     *
+     * @return array{latitude: string, longitude: string, elapsed_seconds: string}|null
+     */
+    public function getLastPointWithElapsed(int $tripId): ?array
+    {
+        return $this->fetchOne(
+            'SELECT latitude, longitude,
+                    TIMESTAMPDIFF(SECOND, logged_at, NOW()) AS elapsed_seconds
+             FROM   gps_tracking_logs
+             WHERE  trip_id = :trip_id
+             ORDER  BY logged_at DESC
+             LIMIT  1',
+            [':trip_id' => $tripId]
+        );
+    }
 }
