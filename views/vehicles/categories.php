@@ -57,6 +57,7 @@
             </button>
         </div>
         <form method="POST" action="<?= Helpers::url('/vehicles/categories') ?>">
+            <?= Csrf::field() ?>
             <div class="form-row form-row-3">
                 <div class="form-group"><label class="form-label">Name <span class="required">*</span></label><input type="text" class="form-input" name="category_name" required></div>
                 <div class="form-group"><label class="form-label">Max Passengers</label><input type="number" class="form-input" name="max_passengers" min="1" value="1"></div>
@@ -80,6 +81,7 @@
             </button>
         </div>
         <form id="editCategoryForm" method="POST" action="">
+            <?= Csrf::field() ?>
             <div class="form-row form-row-3">
                 <div class="form-group"><label class="form-label">Name <span class="required">*</span></label><input type="text" class="form-input" name="category_name" id="editCategoryName" required></div>
                 <div class="form-group"><label class="form-label">Max Passengers</label><input type="number" class="form-input" name="max_passengers" id="editCategoryPassengers" min="1"></div>

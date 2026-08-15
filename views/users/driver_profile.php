@@ -17,6 +17,7 @@
 
 <form method="POST" action="<?= Helpers::url('/users/' . $user['user_id'] . '/driver-profile') ?>"
       enctype="multipart/form-data">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">License Information</div>
     <div class="form-row">

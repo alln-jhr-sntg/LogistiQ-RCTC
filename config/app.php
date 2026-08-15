@@ -144,6 +144,18 @@ register_shutdown_function(function (): void {
 });
 
 if (session_status() === PHP_SESSION_NONE) {
+    // httponly blocks JS access to the session id; samesite=Lax has the
+    // browser withhold the cookie on cross-site POSTs, which is a free
+    // second layer on top of the CSRF token in core/Csrf.php. secure is
+    // computed rather than hard-coded true because local XAMPP is HTTP
+    // and Hostinger is HTTPS -- hard-coding it would break local login.
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
     session_start();
 }
 

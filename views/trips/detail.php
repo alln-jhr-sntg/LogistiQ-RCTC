@@ -189,6 +189,7 @@ $backUrl = $isSameSite
             Record the starting odometer and mark the trip as in progress.
         </p>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['reservation_id'] . '/start') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Odometer Start (km) <span class="required">*</span></label>
                 <input type="number" class="form-input" name="odometer_start_km"
@@ -212,6 +213,7 @@ $backUrl = $isSameSite
             The vehicle and driver will be returned to available.
         </p>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/complete') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Odometer End (km) <span class="required">*</span></label>
                 <input type="number" class="form-input" name="odometer_end_km"
@@ -252,6 +254,7 @@ $backUrl = $isSameSite
         <?php endif; ?>
         <?php if (!$isTerminal): ?>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/notes') ?>">
+            <?= Csrf::field() ?>
             <textarea class="form-textarea" name="admin_notes"
                       placeholder="Add or update admin note…"><?= Helpers::e($trip['admin_notes'] ?? '') ?></textarea>
             <button type="submit" class="btn btn-outline btn-sm btn-mt">Save Note</button>
@@ -280,6 +283,7 @@ $backUrl = $isSameSite
         <?php endif; ?>
         <?php if ($isEmployee && !$isTerminal): ?>
         <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/notes') ?>">
+            <?= Csrf::field() ?>
             <textarea class="form-textarea" name="employee_notes"
                       placeholder="Add a note about this trip…"><?= Helpers::e($trip['employee_notes'] ?? '') ?></textarea>
             <button type="submit" class="btn btn-outline btn-sm btn-mt">Save Note</button>
@@ -331,6 +335,7 @@ $backUrl = $isSameSite
         <form method="POST"
               action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/incident/' . (int) $inc['incident_id'] . '/resolve') ?>"
               style="margin-top:10px;">
+            <?= Csrf::field() ?>
             <input type="text" class="form-input" name="resolution_notes"
                    placeholder="Resolution notes (required)" required
                    style="max-width:400px; display:inline-block; margin-right:8px;">
@@ -348,6 +353,7 @@ $backUrl = $isSameSite
 <div class="form-card form-card--mt">
     <div class="form-section-title">Report Incident</div>
     <form method="POST" action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/incident') ?>">
+        <?= Csrf::field() ?>
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label">Incident Type <span class="required">*</span></label>
@@ -392,6 +398,7 @@ $backUrl = $isSameSite
         </div>
         <form method="POST"
               action="<?= Helpers::url('/trips/' . (int) $trip['trip_id'] . '/cancel') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Reason for Cancellation <span class="required">*</span></label>
                 <textarea class="form-textarea" name="cancellation_reason" rows="3" required></textarea>

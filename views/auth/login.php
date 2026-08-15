@@ -18,6 +18,7 @@
                 <div class="flash flash-<?= Helpers::e($flash['type']) ?>"><?= Helpers::e($flash['message']) ?></div>
             <?php endif; ?>
             <form method="POST" action="<?= Helpers::url('/login') ?>" novalidate>
+                <?= Csrf::field() ?>
                 <div class="form-group">
                     <label class="form-label" for="email">Email address</label>
                     <input class="form-input" type="email" id="email" name="email" placeholder="you@remix.com.ph" autocomplete="email" required>

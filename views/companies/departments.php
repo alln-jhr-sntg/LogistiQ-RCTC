@@ -8,6 +8,7 @@
 <div class="form-card" style="margin-bottom:20px;">
     <div class="form-section-title">Add Department</div>
     <form method="POST" action="<?= Helpers::url('/companies/' . $company['company_id'] . '/departments') ?>">
+        <?= Csrf::field() ?>
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label">Department Name <span class="required">*</span></label>

@@ -37,6 +37,7 @@
 
     <!-- Profile form -->
     <form method="POST" action="<?= Helpers::url('/profile') ?>" enctype="multipart/form-data">
+        <?= Csrf::field() ?>
         <input type="hidden" name="_section" value="profile">
         <div class="form-card">
             <div class="form-section-title">Personal Information</div>
@@ -90,6 +91,7 @@
             </button>
         </div>
         <form method="POST" action="<?= Helpers::url('/profile') ?>">
+            <?= Csrf::field() ?>
             <input type="hidden" name="_section" value="password">
             <div class="form-group">
                 <label class="form-label">Current Password <span class="required">*</span></label>

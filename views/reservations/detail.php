@@ -333,6 +333,7 @@ $role = Auth::role();
         </div>
         <form method="POST"
               action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/cancel') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Reason for Cancellation <span class="required">*</span></label>
                 <textarea class="form-textarea" name="cancellation_reason" rows="3" required></textarea>
@@ -379,6 +380,7 @@ document.getElementById('cancelModal').addEventListener('click', function(e) {
                 Approving clears this reservation for departure and creates the trip.
             </p>
             <form method="POST" action="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/approve') ?>">
+                <?= Csrf::field() ?>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-solid">Approve Gatepass</button>
                 </div>
@@ -388,6 +390,7 @@ document.getElementById('cancelModal').addEventListener('click', function(e) {
         <div id="gpSectionReject" class="form-card hidden">
             <div class="form-section-title">Rejection Reason</div>
             <form method="POST" action="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/reject') ?>">
+                <?= Csrf::field() ?>
                 <div class="form-group">
                     <label class="form-label">Reason <span class="required">*</span></label>
                     <textarea class="form-textarea" name="rejection_reason" rows="4" required

@@ -1,5 +1,6 @@
 <div class="page-header page-header-end">
     <form method="POST" action="<?= Helpers::url('/reports/trip-history/export') ?>">
+        <?= Csrf::field() ?>
         <input type="hidden" name="date_from" value="<?= Helpers::e($filters['date_from']) ?>">
         <input type="hidden" name="date_to" value="<?= Helpers::e($filters['date_to']) ?>">
         <input type="hidden" name="trip_status" value="<?= Helpers::e($filters['trip_status']) ?>">

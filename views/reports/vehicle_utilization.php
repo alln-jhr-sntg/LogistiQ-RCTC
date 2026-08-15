@@ -1,5 +1,6 @@
 <div class="page-header page-header-end">
     <form method="POST" action="<?= Helpers::url('/reports/vehicle-utilization/export') ?>">
+        <?= Csrf::field() ?>
         <input type="hidden" name="date_from" value="<?= Helpers::e($date_from) ?>">
         <input type="hidden" name="date_to" value="<?= Helpers::e($date_to) ?>">
         <button type="submit" class="btn btn-outline">

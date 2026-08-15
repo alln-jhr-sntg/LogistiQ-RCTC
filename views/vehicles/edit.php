@@ -12,6 +12,7 @@ $selectedPurposes = ($rawPref !== null && $rawPref !== '')
 ?>
 
 <form method="POST" action="<?= Helpers::url('/vehicles/' . $vehicle['vehicle_id'] . '/edit') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">Vehicle Information</div>
     <div class="form-row">

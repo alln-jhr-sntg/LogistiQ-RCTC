@@ -852,6 +852,29 @@ button {
   color: var(--clr-text);
 }
 
+/* Notification list card — a <button> inside a per-row <form> (the mark-read
+   route is POST so it carries a CSRF token); all: unset removes button
+   default styles the same way .nav-logout does above. */
+.notif-card {
+  all: unset;
+  display: flex;
+  width: 100%;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--clr-border);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.notif-card:hover {
+  background: var(--clr-surface-2);
+}
+
+.notif-card--unread {
+  background: var(--clr-bg);
+}
+
 /* Notice card (driver dashboard) */
 .notice-card {
   display: flex;

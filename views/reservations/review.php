@@ -145,6 +145,7 @@ function scoreBar(float $score): string {
     <div id="sectionApprove" class="form-card">
         <div class="form-section-title">Assign Vehicle &amp; Driver</div>
         <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/approve') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Vehicle <span class="required">*</span></label>
                 <select class="form-select" name="assigned_vehicle_id" required>
@@ -196,6 +197,7 @@ function scoreBar(float $score): string {
     <div id="sectionReject" class="form-card" style="display:none;">
         <div class="form-section-title">Rejection Reason</div>
         <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/reject') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Reason <span class="required">*</span></label>
                 <textarea class="form-textarea" name="rejection_reason" rows="4" required

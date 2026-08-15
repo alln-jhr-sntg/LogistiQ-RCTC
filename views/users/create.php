@@ -4,6 +4,7 @@
 </div>
 
 <form method="POST" action="<?= Helpers::url('/users/create') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">Account Information</div>
     <div class="form-row">

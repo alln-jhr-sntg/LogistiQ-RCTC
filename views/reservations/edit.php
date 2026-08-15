@@ -10,6 +10,7 @@ $staleProject = $selectedPid > 0 && !in_array($selectedPid, $projectIds, true);
 ?>
 <form method="POST"
       action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/edit') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">Trip Details</div>
     <div class="form-row">

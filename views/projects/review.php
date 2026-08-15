@@ -101,6 +101,7 @@ $hasPin = $project['location_lat'] !== null && $project['location_lng'] !== null
             </p>
             <div class="form-actions">
                 <form method="POST" action="<?= Helpers::url('/projects/' . $project['project_id'] . '/approve') ?>">
+                    <?= Csrf::field() ?>
                     <button type="submit" class="btn btn-solid">Approve Project</button>
                 </form>
                 <button type="button" class="btn btn-danger"
@@ -124,6 +125,7 @@ $hasPin = $project['location_lat'] !== null && $project['location_lng'] !== null
             </button>
         </div>
         <form method="POST" action="<?= Helpers::url('/projects/' . $project['project_id'] . '/reject') ?>">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label">Reason for Rejection <span class="required">*</span></label>
                 <textarea class="form-textarea" name="rejection_reason" rows="3" required

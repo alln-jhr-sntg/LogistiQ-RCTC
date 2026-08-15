@@ -81,6 +81,7 @@
             </button>
         </div>
         <form method="POST" action="<?= Helpers::url('/reservations/purposes') ?>">
+            <?= Csrf::field() ?>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Purpose Name <span class="required">*</span></label>
@@ -122,6 +123,7 @@
             </button>
         </div>
         <form id="editPurposeForm" method="POST" action="">
+            <?= Csrf::field() ?>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Purpose Name <span class="required">*</span></label>

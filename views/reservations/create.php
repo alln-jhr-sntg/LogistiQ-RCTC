@@ -4,6 +4,7 @@
 </div>
 
 <form method="POST" action="<?= Helpers::url('/reservations/create') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
     <?php if ($needsDeptPicker): ?>
     <div class="form-section-title">Filed Under</div>

@@ -19,6 +19,7 @@ $colors = [
 <div class="page-header page-header-end">
     <?php if (!empty($notifications)): ?>
     <form method="POST" action="<?= Helpers::url('/notifications/read-all') ?>">
+        <?= Csrf::field() ?>
         <button type="submit" class="btn btn-outline">Mark All Read</button>
     </form>
     <?php endif; ?>
@@ -56,37 +57,37 @@ $colors = [
             $color    = $colors[$type] ?? $colors['system'];
             $isUnread = !(bool) $n['is_read'];
 
-            // All cards link to the mark-read route, which marks read then
+            // All cards submit to the mark-read route, which marks read then
             // redirects to the referenced resource (or back to notifications).
+            // POST (not a plain link) so the CSRF token in the request is
+            // checked like every other state-changing route.
             $cardUrl = Helpers::url('/notifications/' . (int) $n['notification_id'] . '/read');
         ?>
-        <a href="<?= $cardUrl ?>"
-           style="display:flex; gap:14px; padding:16px 20px;
-                  border-bottom:1px solid var(--clr-border);
-                  text-decoration:none; color:inherit;
-                  <?= $isUnread ? 'background:var(--clr-bg);' : '' ?>
-                  transition:background 0.15s;">
-            <div class="action-icon <?= $color ?>" style="flex-shrink:0; margin-top:2px;">
-                <svg viewBox="0 0 24 24"><?= $icon ?></svg>
-            </div>
-            <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
-                    <span style="font-size:14px; font-weight:<?= $isUnread ? '600' : '500' ?>; color:var(--clr-text);">
-                        <?= Helpers::e($n['title']) ?>
-                    </span>
-                    <?php if ($isUnread): ?>
-                    <span style="width:7px; height:7px; border-radius:50%;
-                                 background:var(--clr-primary-lt); flex-shrink:0;"></span>
-                    <?php endif; ?>
+        <form method="POST" action="<?= $cardUrl ?>">
+            <?= Csrf::field() ?>
+            <button type="submit" class="notif-card <?= $isUnread ? 'notif-card--unread' : '' ?>">
+                <div class="action-icon <?= $color ?>" style="flex-shrink:0; margin-top:2px;">
+                    <svg viewBox="0 0 24 24"><?= $icon ?></svg>
                 </div>
-                <div style="font-size:13px; color:var(--clr-text-2); margin-bottom:4px;">
-                    <?= Helpers::e($n['message']) ?>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
+                        <span style="font-size:14px; font-weight:<?= $isUnread ? '600' : '500' ?>; color:var(--clr-text);">
+                            <?= Helpers::e($n['title']) ?>
+                        </span>
+                        <?php if ($isUnread): ?>
+                        <span style="width:7px; height:7px; border-radius:50%;
+                                     background:var(--clr-primary-lt); flex-shrink:0;"></span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="font-size:13px; color:var(--clr-text-2); margin-bottom:4px;">
+                        <?= Helpers::e($n['message']) ?>
+                    </div>
+                    <div style="font-size:11px; color:var(--clr-text-3);">
+                        <?= date('M d Y, g:i A', strtotime($n['created_at'])) ?>
+                    </div>
                 </div>
-                <div style="font-size:11px; color:var(--clr-text-3);">
-                    <?= date('M d Y, g:i A', strtotime($n['created_at'])) ?>
-                </div>
-            </div>
-        </a>
+            </button>
+        </form>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>

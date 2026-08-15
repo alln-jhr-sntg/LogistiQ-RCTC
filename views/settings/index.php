@@ -1,4 +1,4 @@
-<form method="POST" action="<?= Helpers::url('/settings') ?>"><div class="form-card">
+<form method="POST" action="<?= Helpers::url('/settings') ?>"><?= Csrf::field() ?><div class="form-card">
 <div class="form-section-title">Application</div>
 <?php foreach ($settings as $s): ?>
 <div class="form-group">

@@ -54,9 +54,11 @@ class NotificationController
         Helpers::redirect('/notifications');
     }
 
-    // GET /notifications/{id}/read
+    // POST /notifications/{id}/read
     // Marks the notification read and redirects to its referenced resource.
-    // Used by both the "View →" link and the card click in the notifications list.
+    // Used by the card click in the notifications list (a per-row form, not a
+    // plain link, so the request carries a CSRF token like every other
+    // state-changing route).
     public function markOneRead(int $id): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN, ROLE_EMPLOYEE);

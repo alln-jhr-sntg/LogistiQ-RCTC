@@ -5,6 +5,7 @@ class Auth
     public static function login(array $user): void
     {
         session_regenerate_id(true);
+        Csrf::rotate(); // a pre-auth token must never be reusable post-auth
         $_SESSION['user_id']       = $user['user_id'];
         $_SESSION['role']          = $user['role'];
         $_SESSION['full_name']     = $user['first_name'] . ' ' . $user['last_name'];

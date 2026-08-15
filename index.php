@@ -3,6 +3,7 @@
 require_once __DIR__ . '/config/app.php';
 require_once __DIR__ . '/core/Auth.php';
 require_once __DIR__ . '/core/Helpers.php';
+require_once __DIR__ . '/core/Csrf.php';
 
 // No url param = root visit
 if (empty($_GET['url'])) {
@@ -15,6 +16,12 @@ if (empty($_GET['url'])) {
 
 $uri    = '/' . trim($_GET['url'], '/');
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Central CSRF enforcement — every POST passes through here before any
+// route is matched or any controller runs. See core/Csrf.php.
+if ($method === 'POST') {
+    Csrf::verify();
+}
 
 // ── Route table ──────────────────────────────────────────────
 // Dynamic segments use {id} — matched as one-or-more digits and
@@ -128,7 +135,7 @@ $routes = [
     // Notifications
     ['GET',  '/notifications',           'NotificationController', 'index'],
     ['GET',  '/notifications/count',     'NotificationController', 'count'],
-    ['GET',  '/notifications/{id}/read', 'NotificationController', 'markOneRead'],
+    ['POST', '/notifications/{id}/read', 'NotificationController', 'markOneRead'],
     ['POST', '/notifications/read-all',  'NotificationController', 'markAllRead'],
 
     // Settings

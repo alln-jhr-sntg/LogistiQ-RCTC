@@ -6,6 +6,7 @@
 </div>
 
 <form method="POST" action="<?= Helpers::url('/projects/request') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
 
     <div class="form-section-title">Project Details</div>

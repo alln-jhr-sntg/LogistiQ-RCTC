@@ -144,6 +144,7 @@ function nav_is_active(string $path): string {
                 </div>
             </a>
             <form method="POST" action="<?= Helpers::url('/logout') ?>" id="logoutForm">
+                <?= Csrf::field() ?>
                 <button type="button" class="nav-item nav-logout" title="Sign out" onclick="document.getElementById('logoutModal').style.display='flex';">
                     <svg class="nav-icon" viewBox="0 0 24 24">
                         <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H11c-1.1 0-2 .9-2 2v4h2V5h8v14h-8v-4H9v4c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>

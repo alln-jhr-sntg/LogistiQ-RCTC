@@ -4,6 +4,7 @@
 </div>
 
 <form method="POST" action="<?= Helpers::url('/vehicles/create') ?>">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">Vehicle Information</div>
     <div class="form-row">

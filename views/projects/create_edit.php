@@ -13,7 +13,7 @@ $statusLocked  = isset($project) && $project
 $currentStatus = $project['status'] ?? PROJ_ACTIVE;
 ?>
 <div class="page-header page-header-end"><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">← Back</a></div>
-<form method="POST" action="<?= isset($project) && $project ? Helpers::url('/projects/' . $project['project_id'] . '/edit') : Helpers::url('/projects/create') ?>"><div class="form-card">
+<form method="POST" action="<?= isset($project) && $project ? Helpers::url('/projects/' . $project['project_id'] . '/edit') : Helpers::url('/projects/create') ?>"><?= Csrf::field() ?><div class="form-card">
 <div class="form-section-title">Project Details</div>
 <div class="form-row">
     <div class="form-group"><label class="form-label">Project Name <span class="required">*</span></label><input type="text" class="form-input" name="project_name" value="<?= Helpers::e($project['project_name'] ?? '') ?>" required></div>

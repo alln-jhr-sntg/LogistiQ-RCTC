@@ -11,6 +11,7 @@
         </button>
         <form method="POST"
               action="<?= Helpers::url('/vehicles/' . $vehicle['vehicle_id'] . '/maintenance/check') ?>">
+            <?= Csrf::field() ?>
             <button type="submit" class="btn btn-outline">Check Maintenance Status</button>
         </form>
         <a href="<?= Helpers::url('/vehicles') ?>" class="btn btn-outline">← Fleet</a>
@@ -51,6 +52,7 @@
             </button>
         </div>
         <form method="POST" action="<?= Helpers::url('/vehicles/' . $vehicle['vehicle_id'] . '/maintenance') ?>">
+            <?= Csrf::field() ?>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Maintenance Type <span class="required">*</span></label>

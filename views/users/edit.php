@@ -4,6 +4,7 @@
 
 <form method="POST" action="<?= Helpers::url('/users/' . $user['user_id'] . '/edit') ?>"
       enctype="multipart/form-data">
+<?= Csrf::field() ?>
 <div class="form-card">
     <div class="form-section-title">Account Information</div>
     <div class="form-row">
