@@ -124,6 +124,20 @@ const NOTIF_TYPE_LABELS = [
 
 const MAINTENANCE_INTERVAL_KM = 5000;
 
+// Mirrors the vehicle_maintenance.maintenance_type ENUM (database/migrations/
+// 2026_08_15_maintenance_type_enum.sql) — the single source of truth for the
+// "Log Maintenance Record" type dropdown and the maintenance report/history
+// type filters, so a filter option always matches a value the DB will accept.
+const MAINTENANCE_TYPES = [
+    'Oil Change',
+    'Preventive Maintenance',
+    'Brake Inspection',
+    'Tire Inspection',
+    'Engine Check',
+    'Repair',
+    'Other',
+];
+
 const ROLE_DASHBOARD = [
     ROLE_SUPER_ADMIN => '/dashboard/super_admin',
     ROLE_FLEET_ADMIN => '/dashboard/fleet_admin',

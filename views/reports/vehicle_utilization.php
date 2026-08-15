@@ -3,7 +3,7 @@
         <input type="hidden" name="date_from" value="<?= Helpers::e($date_from) ?>">
         <input type="hidden" name="date_to" value="<?= Helpers::e($date_to) ?>">
         <button type="submit" class="btn btn-outline">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;vertical-align:middle;margin-right:4px;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             Export
         </button>
     </form>
@@ -11,11 +11,11 @@
 
 <div class="tab-bar">
     <a href="<?= Helpers::url('/reports/trip-history') ?>"         class="tab-item">Trip History</a>
-    <a href="<?= Helpers::url('/reports/maintenance-due') ?>"      class="tab-item">Maintenance Due</a>
+    <a href="<?= Helpers::url('/reports/maintenance-history') ?>"  class="tab-item">Maintenance History</a>
     <a href="<?= Helpers::url('/reports/vehicle-utilization') ?>"  class="tab-item active">Vehicle Utilization</a>
 </div>
 
-<form method="GET" action="<?= APP_BASE ?>/index.php" style="margin-bottom:16px;">
+<form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="reports/vehicle-utilization">
     <div class="filter-bar">
         <input type="date" class="filter-input" name="date_from"
@@ -28,14 +28,14 @@
 </form>
 
 <?php if ($date_from !== '' || $date_to !== ''): ?>
-<p class="td-muted" style="font-size:13px; margin-bottom:16px;">
+<p class="filter-note">
     Showing completed trips
     <?= $date_from ? 'from ' . date('M d, Y', strtotime($date_from)) : '' ?>
     <?= $date_to   ? 'to '   . date('M d, Y', strtotime($date_to))   : '' ?>
 </p>
 <?php endif; ?>
 
-<div class="dashboard-grid" style="margin-bottom:24px;">
+<div class="dashboard-grid">
     <div class="stat-card">
         <div class="stat-label">Total Fleet</div>
         <div class="stat-value"><?= $fleet_count ?></div>
@@ -71,7 +71,7 @@
     </thead>
     <tbody>
     <?php if (empty($vehicles)): ?>
-        <tr><td colspan="6" class="td-muted" style="text-align:center;padding:24px;">No vehicles found.</td></tr>
+        <tr><td colspan="6" class="td-muted td-empty">No vehicles found.</td></tr>
     <?php else: ?>
         <?php foreach ($vehicles as $v): ?>
         <?php

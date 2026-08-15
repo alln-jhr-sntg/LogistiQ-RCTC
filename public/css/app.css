@@ -1101,12 +1101,71 @@ button {
   border: 1px solid rgba(27, 94, 53, 0.15);
 }
 
+/* Maintenance alert banner (vehicle maintenance page) */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.alert-banner svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+.alert-banner-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.alert-banner-sub {
+  font-size: 13px;
+  margin-left: 8px;
+}
+.alert-banner-danger {
+  background: var(--clr-error-bg);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: var(--clr-error);
+}
+.alert-banner-warning {
+  background: #fef9e7;
+  border: 1px solid #f5d76e;
+  color: #8a6d00;
+}
+.alert-banner-neutral {
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-3);
+  font-size: 14px;
+}
+
+/* Maintenance status row tint + remaining-km emphasis (Vehicles page) */
+.row-danger {
+  background: rgba(220, 38, 38, 0.04);
+}
+.row-warning {
+  background: rgba(234, 179, 8, 0.06);
+}
+.text-danger {
+  color: var(--clr-danger);
+  font-weight: 600;
+}
+.text-warning {
+  color: var(--clr-warning);
+  font-weight: 600;
+}
+
 /* Card */
 .card {
   background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+}
+.card--spaced {
+  margin-bottom: 32px;
 }
 
 /* Table */
@@ -1157,6 +1216,10 @@ table.data-table {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+.td-empty {
+  text-align: center;
+  padding: 24px;
 }
 
 /* Pagination (reports tables + notifications list) */
@@ -1272,6 +1335,11 @@ table.data-table {
 .filter-input:focus,
 .filter-select:focus {
   border-color: var(--clr-primary-lt);
+}
+.filter-note {
+  font-size: 13px;
+  color: var(--clr-text-3);
+  margin-bottom: 16px;
 }
 
 /* Tab bar */

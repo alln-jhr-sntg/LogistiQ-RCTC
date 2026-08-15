@@ -193,7 +193,7 @@ class VehicleModel extends BaseModel
     /**
      * Return all non-retired vehicles with their latest maintenance data,
      * ordered by urgency (overdue first, then due soon, then ok, then no baseline).
-     * Used by ReportController::maintenanceDue().
+     * Used by the Vehicle Maintenance Status table on VehicleController::index().
      *
      * The correlated subquery finds the latest vehicle_maintenance row that
      * has a next_service_km value set. Rows without next_service_km are skipped
@@ -203,9 +203,13 @@ class VehicleModel extends BaseModel
      * in TripModel for why) default to null = no LIMIT, so the existing
      * findMaintenanceDue() dashboard caller keeps getting the full list.
      *
+     * $statusFilter narrows to one urgency bucket — 'overdue', 'due_soon',
+     * 'ok', or 'no_baseline' — matching the CASE buckets in ORDER BY below.
+     * Used by the maintenance status table embedded on the Vehicles page.
+     *
      * @return array<int, array<string, mixed>>
      */
-    public function findForMaintenanceReport(?int $limit = null, ?int $offset = null): array
+    public function findForMaintenanceReport(?int $limit = null, ?int $offset = null, ?string $statusFilter = null): array
     {
         $sql = 'SELECT v.*,
                     vc.category_name,
@@ -225,8 +229,17 @@ class VehicleModel extends BaseModel
                  ORDER  BY vm2.service_date DESC, vm2.maintenance_id DESC
                  LIMIT  1
              )
-             WHERE  v.status != \'retired\'
-             ORDER  BY
+             WHERE  v.status != \'retired\'';
+
+        $sql .= match ($statusFilter) {
+            'no_baseline' => ' AND vm.next_service_km IS NULL',
+            'overdue'     => ' AND vm.next_service_km IS NOT NULL AND v.current_odometer_km >= vm.next_service_km',
+            'due_soon'    => ' AND vm.next_service_km IS NOT NULL AND v.current_odometer_km >= vm.next_service_km - 500 AND v.current_odometer_km < vm.next_service_km',
+            'ok'          => ' AND vm.next_service_km IS NOT NULL AND v.current_odometer_km < vm.next_service_km - 500',
+            default       => '',
+        };
+
+        $sql .= ' ORDER  BY
                  CASE
                      WHEN vm.next_service_km IS NULL                        THEN 3
                      WHEN v.current_odometer_km >= vm.next_service_km       THEN 0

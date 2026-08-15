@@ -57,48 +57,39 @@ class ReportController
         ]);
     }
 
-    // ── b) Maintenance Due ────────────────────────────────────────
+    // ── b) Maintenance History ──────────────────────────────────────
 
-    // GET /reports/maintenance-due
-    public function maintenanceDue(): void
+    // GET /reports/maintenance-history
+    public function maintenanceHistory(): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
+        $filters = array_filter([
+            'date_from'        => $_GET['date_from']        ?? '',
+            'date_to'          => $_GET['date_to']          ?? '',
+            'vehicle_id'       => (int) ($_GET['vehicle_id'] ?? 0) ?: null,
+            'maintenance_type' => $_GET['maintenance_type']  ?? '',
+        ], fn($v) => $v !== '' && $v !== null);
+
+        $maintModel   = new VehicleMaintenanceModel();
         $vehicleModel = new VehicleModel();
 
-        // Stat cards must reflect the whole fleet, not just the current
-        // page, so the unbounded list is fetched once and reused both for
-        // the counts below and as the pagination total — a second, cheap
-        // COUNT query would just recompute a number already in hand.
-        $allVehicles = $vehicleModel->findForMaintenanceReport();
-
-        $overdue = $dueSoon = $ok = $noBaseline = 0;
-        foreach ($allVehicles as $v) {
-            $next = (float) ($v['next_service_km'] ?? 0);
-            $curr = (float)  $v['current_odometer_km'];
-            if ($next === 0.0) {
-                $noBaseline++;
-            } elseif ($curr >= $next) {
-                $overdue++;
-            } elseif ($curr >= $next - 500) {
-                $dueSoon++;
-            } else {
-                $ok++;
-            }
-        }
-
         $page       = max(1, (int) ($_GET['page'] ?? 1));
-        $pagination = Helpers::paginate(count($allVehicles), $page, 10, 'url=reports/maintenance-due');
-        $vehicles   = $vehicleModel->findForMaintenanceReport($pagination['limit'], $pagination['offset']);
+        $total      = $maintModel->countForReport($filters);
+        $baseQuery  = http_build_query(array_merge(['url' => 'reports/maintenance-history'], $filters));
+        $pagination = Helpers::paginate($total, $page, 10, $baseQuery);
 
-        $this->render('maintenance_due', [
-            'page_title'    => 'Maintenance Due',
-            'vehicles'      => $vehicles,
-            'overdue'       => $overdue,
-            'due_soon'      => $dueSoon,
-            'ok'            => $ok,
-            'no_baseline'   => $noBaseline,
-            'pagination'    => $pagination['html'],
+        $this->render('maintenance_history', [
+            'page_title' => 'Maintenance History',
+            'records'    => $maintModel->findForReport($filters, $pagination['limit'], $pagination['offset']),
+            'vehicles'   => $vehicleModel->findAll(),
+            'filters'    => array_merge([
+                'date_from'        => '',
+                'date_to'          => '',
+                'vehicle_id'       => '',
+                'maintenance_type' => '',
+            ], $filters),
+            'pagination' => $pagination['html'],
         ]);
     }
 
@@ -115,7 +106,8 @@ class ReportController
         $vehicleModel = new VehicleModel();
 
         // Stat cards must reflect the whole filtered fleet, not just the
-        // current page — same reasoning as maintenanceDue() above.
+        // current page, so the unbounded list is fetched once and reused
+        // both for the counts below and as the pagination total.
         $allVehicles = $vehicleModel->findForUtilizationReport($dateFrom, $dateTo);
 
         $fleetCount = count($allVehicles);
@@ -160,8 +152,8 @@ class ReportController
 
         if (str_contains($url, 'trip-history')) {
             $this->exportTripHistory();
-        } elseif (str_contains($url, 'maintenance-due')) {
-            $this->exportMaintenanceDue();
+        } elseif (str_contains($url, 'maintenance-history')) {
+            $this->exportMaintenanceHistory();
         } elseif (str_contains($url, 'vehicle-utilization')) {
             $this->exportVehicleUtilization();
         } else {
@@ -205,42 +197,32 @@ class ReportController
         );
     }
 
-    private function exportMaintenanceDue(): void
+    private function exportMaintenanceHistory(): void
     {
-        $vehicles = (new VehicleModel())->findForMaintenanceReport();
+        $filters = array_filter([
+            'date_from'        => $_POST['date_from']        ?? '',
+            'date_to'          => $_POST['date_to']          ?? '',
+            'vehicle_id'       => (int) ($_POST['vehicle_id'] ?? 0) ?: null,
+            'maintenance_type' => $_POST['maintenance_type']  ?? '',
+        ], fn($v) => $v !== '' && $v !== null);
+
+        $records = (new VehicleMaintenanceModel())->findForReport($filters);
 
         $this->streamCsv(
-            'maintenance_due_' . date('Y-m-d') . '.csv',
-            ['Plate Number', 'Vehicle', 'Current Odometer (km)', 'Next Service (km)', 'Remaining (km)', 'Last Service', 'Alert'],
-            $vehicles,
-            function (array $v): array {
-                $curr = (float) $v['current_odometer_km'];
-                $next = $v['next_service_km'] !== null ? (float) $v['next_service_km'] : null;
-
-                if ($next === null) {
-                    $alert     = 'No Baseline';
-                    $remaining = '';
-                } elseif ($curr >= $next) {
-                    $alert     = 'Overdue';
-                    $remaining = (string) ($curr - $next) . ' over';
-                } elseif ($curr >= $next - 500) {
-                    $alert     = 'Due Soon';
-                    $remaining = (string) ($next - $curr);
-                } else {
-                    $alert     = 'OK';
-                    $remaining = (string) ($next - $curr);
-                }
-
-                return [
-                    $v['plate_number'],
-                    trim($v['brand'] . ' ' . $v['model'] . ' ' . $v['year_model']),
-                    (string) $curr,
-                    $next !== null ? (string) $next : '',
-                    $remaining,
-                    $v['last_service_date'] ? date('Y-m-d', strtotime($v['last_service_date'])) : '',
-                    $alert,
-                ];
-            }
+            'maintenance_history_' . date('Y-m-d') . '.csv',
+            ['Date', 'Vehicle', 'Type', 'Odometer (km)', 'Next Service (km)', 'Cost', 'Performed By', 'Recorded By', 'Description'],
+            $records,
+            fn(array $r): array => [
+                date('Y-m-d', strtotime($r['service_date'])),
+                trim($r['plate_number'] . ' — ' . $r['brand'] . ' ' . $r['model']),
+                $r['maintenance_type'],
+                $r['odometer_at_service'] !== null ? (string) (float) $r['odometer_at_service'] : '',
+                $r['next_service_km']     !== null ? (string) (float) $r['next_service_km']     : '',
+                $r['cost']                !== null ? (string) (float) $r['cost']                : '',
+                (string) $r['performed_by'],
+                trim($r['first_name'] . ' ' . $r['last_name']),
+                (string) $r['description'],
+            ]
         );
     }
 

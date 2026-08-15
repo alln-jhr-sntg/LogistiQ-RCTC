@@ -333,7 +333,7 @@ Table vehicle_maintenance {
   maintenance_id "int(10) unsigned" [pk, increment]
   vehicle_id "int(10) unsigned" [not null]
   recorded_by "int(10) unsigned" [not null]
-  maintenance_type varchar(100) [not null]
+  maintenance_type enum('Oil Change', 'Preventive Maintenance', 'Brake Inspection', 'Tire Inspection', 'Engine Check', 'Repair', 'Other') [not null]
   description text [default: NULL]
   odometer_at_service "decimal(10,2)" [default: NULL]
   service_date date [not null]

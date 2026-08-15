@@ -114,13 +114,13 @@ $routes = [
     ['POST', '/projects/{id}/reject',  'ProjectController', 'reject'],
 
     // Reports
-    ['GET',  '/reports',                            'ReportController', 'index'],
-    ['GET',  '/reports/trip-history',               'ReportController', 'tripHistory'],
-    ['GET',  '/reports/maintenance-due',            'ReportController', 'maintenanceDue'],
-    ['GET',  '/reports/vehicle-utilization',        'ReportController', 'vehicleUtilization'],
-    ['POST', '/reports/trip-history/export',        'ReportController', 'export'],
-    ['POST', '/reports/maintenance-due/export',     'ReportController', 'export'],
-    ['POST', '/reports/vehicle-utilization/export', 'ReportController', 'export'],
+    ['GET',  '/reports',                             'ReportController', 'index'],
+    ['GET',  '/reports/trip-history',                'ReportController', 'tripHistory'],
+    ['GET',  '/reports/maintenance-history',         'ReportController', 'maintenanceHistory'],
+    ['GET',  '/reports/vehicle-utilization',         'ReportController', 'vehicleUtilization'],
+    ['POST', '/reports/trip-history/export',         'ReportController', 'export'],
+    ['POST', '/reports/maintenance-history/export',  'ReportController', 'export'],
+    ['POST', '/reports/vehicle-utilization/export',  'ReportController', 'export'],
 
     // GPS feed — JSON endpoint for the admin live map
     ['GET',  '/gps/{id}/feed', 'GpsController', 'feed'],

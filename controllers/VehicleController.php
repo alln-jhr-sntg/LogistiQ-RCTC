@@ -18,10 +18,12 @@ class VehicleController
 
         $statusFilter   = $_GET['status'] ?? '';
         $categoryFilter = (int) ($_GET['category_id'] ?? 0);
+        $maintFilter    = $_GET['maint_status'] ?? '';
 
         $vehicleModel = new VehicleModel();
         $vehicles     = $vehicleModel->findAll($statusFilter, $categoryFilter);
         $categories   = (new VehicleCategoryModel())->findAll();
+        $maintVehicles = $vehicleModel->findForMaintenanceReport(null, null, $maintFilter ?: null);
 
         $this->render('index', [
             'page_title'      => 'Fleet Management',
@@ -29,6 +31,8 @@ class VehicleController
             'statusFilter'    => $statusFilter,
             'categoryFilter'  => $categoryFilter,
             'categories'      => $categories,
+            'maintVehicles'   => $maintVehicles,
+            'maintFilter'     => $maintFilter,
         ]);
     }
 
@@ -334,9 +338,20 @@ class VehicleController
             Helpers::redirect('/vehicles');
         }
 
-        $maintModel      = new VehicleMaintenanceModel();
-        $latest          = $maintModel->getLatestByVehicle($id);
-        $history         = $maintModel->findByVehicle($id);
+        $filters = array_filter([
+            'date_from'        => $_GET['date_from']        ?? '',
+            'date_to'          => $_GET['date_to']          ?? '',
+            'maintenance_type' => $_GET['maintenance_type'] ?? '',
+        ], fn($v) => $v !== '');
+
+        $maintModel = new VehicleMaintenanceModel();
+        $latest     = $maintModel->getLatestByVehicle($id);
+
+        $page       = max(1, (int) ($_GET['page'] ?? 1));
+        $total      = $maintModel->countByVehicle($id, $filters);
+        $baseQuery  = http_build_query(array_merge(['url' => 'vehicles/' . $id . '/maintenance'], $filters));
+        $pagination = Helpers::paginate($total, $page, 10, $baseQuery);
+        $history    = $maintModel->findByVehicle($id, $filters, $pagination['limit'], $pagination['offset']);
 
         // Pre-compute maintenance alert state in the controller so
         // the view only has to render what it receives.
@@ -367,6 +382,11 @@ class VehicleController
             'latest'            => $latest,
             'history'           => $history,
             'maintenanceAlert'  => $maintenanceAlert,
+            'filters'           => array_merge(
+                ['date_from' => '', 'date_to' => '', 'maintenance_type' => ''],
+                $filters
+            ),
+            'pagination'        => $pagination['html'],
         ]);
     }
 
@@ -386,6 +406,11 @@ class VehicleController
 
         if ($maintType === '' || $serviceDate === '') {
             Helpers::setFlash('error', 'Maintenance type and service date are required.');
+            Helpers::redirect('/vehicles/' . $id . '/maintenance');
+        }
+
+        if (!in_array($maintType, MAINTENANCE_TYPES, true)) {
+            Helpers::setFlash('error', 'Invalid maintenance type.');
             Helpers::redirect('/vehicles/' . $id . '/maintenance');
         }
 
