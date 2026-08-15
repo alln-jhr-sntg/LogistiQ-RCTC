@@ -159,29 +159,42 @@ class TripController
             Helpers::redirect('/trips/' . $trip['trip_id']);
         }
 
-        $tripModel->updateStarted($trip['trip_id'], $odometerStart);
+        // Trip start, reservation status, and vehicle/driver status must
+        // land together — a failure partway through would otherwise leave
+        // the trip started but the vehicle/driver still shown as available.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Update reservation status
-        $resModel = new ReservationModel();
-        $resModel->updateStatus($id, 'in_progress');
+        try {
+            $tripModel->updateStarted($trip['trip_id'], $odometerStart);
 
-        // Transition vehicle and driver to on_trip
-        $vehicleModel = new VehicleModel();
-        $vehicleModel->updateStatus((int) $trip['vehicle_id'], 'on_trip');
+            // Update reservation status
+            $resModel = new ReservationModel();
+            $resModel->updateStatus($id, 'in_progress');
 
-        $driverModel = new DriverProfileModel();
-        $driverModel->updateStatus((int) $trip['driver_id'], 'on_trip');
+            // Transition vehicle and driver to on_trip
+            $vehicleModel = new VehicleModel();
+            $vehicleModel->updateStatus((int) $trip['vehicle_id'], 'on_trip');
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'TRIP_STARTED',
-            'trips',
-            $trip['trip_id'],
-            ['trip_status' => 'pending_start'],
-            ['trip_status'       => 'in_progress',
-             'odometer_start_km' => $odometerStart]
-        );
+            $driverModel = new DriverProfileModel();
+            $driverModel->updateStatus((int) $trip['driver_id'], 'on_trip');
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'TRIP_STARTED',
+                'trips',
+                $trip['trip_id'],
+                ['trip_status' => 'pending_start'],
+                ['trip_status'       => 'in_progress',
+                 'odometer_start_km' => $odometerStart]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         Helpers::setFlash('success', 'Trip started.');
         Helpers::redirect('/trips/' . $trip['trip_id']);
@@ -233,31 +246,45 @@ class TripController
             Helpers::redirect('/trips/' . $id);
         }
 
-        $tripModel->updateCompleted($id, $odometerEnd);
+        // Trip completion, reservation status, and vehicle/driver release
+        // must land together — a failure partway through would otherwise
+        // leave the trip completed but the vehicle/driver still shown as
+        // on_trip, or the odometer left unupdated.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Update reservation to completed
-        $resModel = new ReservationModel();
-        $resModel->updateStatus((int) $trip['reservation_id'], 'completed');
+        try {
+            $tripModel->updateCompleted($id, $odometerEnd);
 
-        // Return vehicle to available and update odometer
-        $vehicleModel = new VehicleModel();
-        $vehicleModel->updateStatus((int) $trip['vehicle_id'], 'available');
-        $vehicleModel->updateOdometer((int) $trip['vehicle_id'], $odometerEnd);
+            // Update reservation to completed
+            $resModel = new ReservationModel();
+            $resModel->updateStatus((int) $trip['reservation_id'], 'completed');
 
-        // Return driver to available
-        $driverModel = new DriverProfileModel();
-        $driverModel->updateStatus((int) $trip['driver_id'], 'available');
+            // Return vehicle to available and update odometer
+            $vehicleModel = new VehicleModel();
+            $vehicleModel->updateStatus((int) $trip['vehicle_id'], 'available');
+            $vehicleModel->updateOdometer((int) $trip['vehicle_id'], $odometerEnd);
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'TRIP_COMPLETED',
-            'trips',
-            $id,
-            ['trip_status' => $trip['trip_status']],
-            ['trip_status'    => 'completed',
-             'odometer_end_km'=> $odometerEnd]
-        );
+            // Return driver to available
+            $driverModel = new DriverProfileModel();
+            $driverModel->updateStatus((int) $trip['driver_id'], 'available');
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'TRIP_COMPLETED',
+                'trips',
+                $id,
+                ['trip_status' => $trip['trip_status']],
+                ['trip_status'    => 'completed',
+                 'odometer_end_km'=> $odometerEnd]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         // MaintenanceService hook (Step 12 — safe stub, swallows error if not yet implemented)
         try {
@@ -353,52 +380,70 @@ class TripController
             Helpers::redirect('/trips/' . $id);
         }
 
-        $incidentModel = new TripIncidentModel();
-        $incidentId    = $incidentModel->create([
-            'trip_id'       => $id,
-            'reported_by'   => (int) Auth::id(),
-            'incident_type' => $incidentType,
-            'description'   => $description,
-            'occurred_at'   => $occurredAt,
-        ]);
+        // Incident creation and the trip's transition to 'incident' must
+        // land together — a failure partway through would otherwise leave
+        // either an open incident on a trip that still shows in_progress,
+        // or a trip flagged 'incident' with no incident row to explain why.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Transition trip status to 'incident'
-        $tripModel->updateToIncident($id);
+        try {
+            $incidentModel = new TripIncidentModel();
+            $incidentId    = $incidentModel->create([
+                'trip_id'       => $id,
+                'reported_by'   => (int) Auth::id(),
+                'incident_type' => $incidentType,
+                'description'   => $description,
+                'occurred_at'   => $occurredAt,
+            ]);
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'INCIDENT_REPORTED',
-            'trip_incidents',
-            $incidentId,
-            null,
-            ['trip_id'       => $id,
-             'incident_type' => $incidentType]
-        );
+            // Transition trip status to 'incident'
+            $tripModel->updateToIncident($id);
 
-        // Notify super_admins, fleet_admins, admins, and the reservation requester
-        $userModel   = new UserModel();
-        $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
-        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
-        $admins      = array_column($userModel->findByRole(ROLE_ADMIN), 'user_id');
-        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins, $admins));
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'INCIDENT_REPORTED',
+                'trip_incidents',
+                $incidentId,
+                null,
+                ['trip_id'       => $id,
+                 'incident_type' => $incidentType]
+            );
 
-        // Include the requester if they're not the reporter
-        if ((int) $trip['requested_by'] !== (int) Auth::id()) {
-            $recipients[] = (int) $trip['requested_by'];
-            $recipients   = array_unique($recipients);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
 
-        $notifModel = new NotificationModel();
-        $notifModel->createForUsers($recipients, [
-            'title'          => 'Incident Reported — '
-                . ucwords(str_replace('_', ' ', $incidentType)),
-            'message'        => $trip['reservation_code'] . ' to '
-                . $trip['destination'] . ': ' . $description,
-            'type'           => 'incident',
-            'reference_id'   => $id,
-            'reference_type' => 'trip',
-        ]);
+        // Notify super_admins, fleet_admins, admins, and the reservation requester
+        try {
+            $userModel   = new UserModel();
+            $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+            $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
+            $admins      = array_column($userModel->findByRole(ROLE_ADMIN), 'user_id');
+            $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins, $admins));
+
+            // Include the requester if they're not the reporter
+            if ((int) $trip['requested_by'] !== (int) Auth::id()) {
+                $recipients[] = (int) $trip['requested_by'];
+                $recipients   = array_unique($recipients);
+            }
+
+            $notifModel = new NotificationModel();
+            $notifModel->createForUsers($recipients, [
+                'title'          => 'Incident Reported — '
+                    . ucwords(str_replace('_', ' ', $incidentType)),
+                'message'        => $trip['reservation_code'] . ' to '
+                    . $trip['destination'] . ': ' . $description,
+                'type'           => 'incident',
+                'reference_id'   => $id,
+                'reference_type' => 'trip',
+            ]);
+        } catch (Throwable $e) {
+            error_log('[LVMS] Notification failed: ' . $e->getMessage());
+        }
 
         Helpers::setFlash('success', 'Incident reported.');
         Helpers::redirect('/trips/' . $id);
@@ -476,26 +521,46 @@ class TripController
             Helpers::redirect('/trips/' . $tripId);
         }
 
-        $updated = $incidentModel->markResolved($incidentId, $resolutionNotes);
+        // Marking the incident resolved and (when it was the last open one)
+        // reverting the trip back to in_progress must land together — a
+        // failure partway through would otherwise leave the trip stuck on
+        // 'incident' status while its last incident row already shows resolved.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        if (!$updated) {
-            Helpers::setFlash('error', 'Incident not found or already resolved.');
-            Helpers::redirect('/trips/' . $tripId);
+        $reverted = false;
+        try {
+            $updated = $incidentModel->markResolved($incidentId, $resolutionNotes);
+
+            if (!$updated) {
+                $db->rollBack();
+                Helpers::setFlash('error', 'Incident not found or already resolved.');
+                Helpers::redirect('/trips/' . $tripId);
+            }
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'INCIDENT_RESOLVED',
+                'trip_incidents',
+                $incidentId,
+                ['resolved' => 0],
+                ['resolved' => 1, 'resolution_notes' => $resolutionNotes]
+            );
+
+            // If no more unresolved incidents, revert trip_status to in_progress
+            if (!$incidentModel->hasUnresolvedByTrip($tripId)) {
+                $tripModel->revertFromIncident($tripId);
+                $reverted = true;
+            }
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'INCIDENT_RESOLVED',
-            'trip_incidents',
-            $incidentId,
-            ['resolved' => 0],
-            ['resolved' => 1, 'resolution_notes' => $resolutionNotes]
-        );
-
-        // If no more unresolved incidents, revert trip_status to in_progress
-        if (!$incidentModel->hasUnresolvedByTrip($tripId)) {
-            $tripModel->revertFromIncident($tripId);
+        if ($reverted) {
             Helpers::setFlash('success', 'Incident resolved. Trip status restored to In Progress.');
         } else {
             Helpers::setFlash('success', 'Incident resolved. Other incidents still open.');
@@ -545,48 +610,69 @@ class TripController
             Helpers::redirect('/trips/' . $id);
         }
 
-        $tripModel->cancel($id, $reason, (int) Auth::id());
+        // Trip cancel, incident resolution, reservation cancel, and the
+        // vehicle/driver release must land together — a failure partway
+        // through would otherwise leave the trip cancelled but the
+        // vehicle/driver still locked up, or open incidents left dangling
+        // on a trip that will never revisit them.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        $incidentModel = new TripIncidentModel();
-        $incidentModel->resolveAllUnresolvedByTrip($id, $reason);
+        try {
+            $tripModel->cancel($id, $reason, (int) Auth::id());
 
-        $resModel = new ReservationModel();
-        $resModel->cancel((int) $trip['reservation_id'], (int) Auth::id(), $reason);
+            $incidentModel = new TripIncidentModel();
+            $incidentModel->resolveAllUnresolvedByTrip($id, $reason);
 
-        TripCancellationService::releaseAndNotify($trip, $vehicleCondition);
+            $resModel = new ReservationModel();
+            $resModel->cancel((int) $trip['reservation_id'], (int) Auth::id(), $reason);
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'CANCELLED_TRIP',
-            'trips',
-            $id,
-            ['trip_status' => 'incident'],
-            ['trip_status'         => 'cancelled',
-             'cancellation_reason' => $reason,
-             'vehicle_status'      => $vehicleCondition]
-        );
+            TripCancellationService::release($trip, $vehicleCondition);
 
-        // Notify super_admins, fleet_admins, and the reservation requester
-        $userModel   = new UserModel();
-        $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
-        $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
-        $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins));
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'CANCELLED_TRIP',
+                'trips',
+                $id,
+                ['trip_status' => 'incident'],
+                ['trip_status'         => 'cancelled',
+                 'cancellation_reason' => $reason,
+                 'vehicle_status'      => $vehicleCondition]
+            );
 
-        if ((int) $trip['requested_by'] !== (int) Auth::id()) {
-            $recipients[] = (int) $trip['requested_by'];
-            $recipients   = array_unique($recipients);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
 
-        $notifModel = new NotificationModel();
-        $notifModel->createForUsers($recipients, [
-            'title'          => 'Trip Cancelled — ' . $trip['reservation_code'],
-            'message'        => $trip['reservation_code'] . ' to '
-                . $trip['destination'] . ' was cancelled: ' . $reason,
-            'type'           => 'trip',
-            'reference_id'   => $id,
-            'reference_type' => 'trip',
-        ]);
+        TripCancellationService::notifyCancelled($trip);
+
+        // Notify super_admins, fleet_admins, and the reservation requester
+        try {
+            $userModel   = new UserModel();
+            $superAdmins = array_column($userModel->findByRole(ROLE_SUPER_ADMIN), 'user_id');
+            $fleetAdmins = array_column($userModel->findByRole(ROLE_FLEET_ADMIN), 'user_id');
+            $recipients  = array_unique(array_merge($superAdmins, $fleetAdmins));
+
+            if ((int) $trip['requested_by'] !== (int) Auth::id()) {
+                $recipients[] = (int) $trip['requested_by'];
+                $recipients   = array_unique($recipients);
+            }
+
+            $notifModel = new NotificationModel();
+            $notifModel->createForUsers($recipients, [
+                'title'          => 'Trip Cancelled — ' . $trip['reservation_code'],
+                'message'        => $trip['reservation_code'] . ' to '
+                    . $trip['destination'] . ' was cancelled: ' . $reason,
+                'type'           => 'trip',
+                'reference_id'   => $id,
+                'reference_type' => 'trip',
+            ]);
+        } catch (Throwable $e) {
+            error_log('[LVMS] Notification failed: ' . $e->getMessage());
+        }
 
         Helpers::setFlash('success', 'Trip cancelled.');
         Helpers::redirect('/trips/' . $id);

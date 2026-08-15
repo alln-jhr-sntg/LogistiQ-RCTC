@@ -35,12 +35,23 @@ class GatepassModel extends BaseModel
      * Any failure rolls back the entire transaction — no orphaned rows
      * with garbage codes will exist in the DB.
      *
+     * Callable either standalone (owns its own transaction, as above) or
+     * from inside a caller's already-open transaction — e.g.
+     * ReservationController::approve() wraps reservation approval,
+     * vehicle status, and this call in one transaction so a failure here
+     * also rolls back the reservation/vehicle changes. PDO cannot nest
+     * beginTransaction() calls, so this only starts/commits/rolls back
+     * its own transaction when it's the outermost caller.
+     *
      * @return int  The new gatepass_id.
      * @throws Throwable  On DB error; transaction is rolled back before throw.
      */
     public function create(int $reservationId): int
     {
-        $this->db->beginTransaction();
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) {
+            $this->db->beginTransaction();
+        }
 
         try {
             // Step 1 — INSERT with a unique random placeholder
@@ -70,11 +81,15 @@ class GatepassModel extends BaseModel
                 [':code' => $code, ':id' => $id]
             );
 
-            $this->db->commit();
+            if ($ownsTransaction) {
+                $this->db->commit();
+            }
             return $id;
 
         } catch (Throwable $e) {
-            $this->db->rollBack();
+            if ($ownsTransaction) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

@@ -100,20 +100,34 @@ class TripApiController extends BaseApiController
             $this->error(400, 'Odometer reading cannot be negative');
         }
 
-        $tripModel->updateStarted($tripId, $odometerStart);
+        // Trip start, reservation status, and vehicle/driver status must
+        // land together — a failure partway through would otherwise leave
+        // the trip started but the vehicle/driver still shown as available.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Transition reservation, vehicle, driver
-        (new ReservationModel())->updateStatus((int) $trip['reservation_id'], 'in_progress');
-        (new VehicleModel())->updateStatus((int) $trip['vehicle_id'], 'on_trip');
-        (new DriverProfileModel())->updateStatus($this->authUserId(), 'on_trip');
-        (new AuditLogModel())->log(
-            $this->authUserId(),
-            'TRIP_STARTED',
-            'trips',
-            $tripId,
-            ['trip_status' => 'pending_start'],
-            ['trip_status' => 'in_progress', 'odometer_start_km' => $odometerStart, 'source' => 'android']
-        );
+        try {
+            $tripModel->updateStarted($tripId, $odometerStart);
+
+            // Transition reservation, vehicle, driver
+            (new ReservationModel())->updateStatus((int) $trip['reservation_id'], 'in_progress');
+            (new VehicleModel())->updateStatus((int) $trip['vehicle_id'], 'on_trip');
+            (new DriverProfileModel())->updateStatus($this->authUserId(), 'on_trip');
+            (new AuditLogModel())->log(
+                $this->authUserId(),
+                'TRIP_STARTED',
+                'trips',
+                $tripId,
+                ['trip_status' => 'pending_start'],
+                ['trip_status' => 'in_progress', 'odometer_start_km' => $odometerStart, 'source' => 'android']
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
         $this->json([
             'status'  => 'ok',
             'trip_id' => $tripId,
@@ -156,23 +170,37 @@ class TripApiController extends BaseApiController
             );
         }
 
-        $tripModel->updateCompleted($tripId, $odometerEnd);
-
         $vehicleId = (int) $trip['vehicle_id'];
 
-        (new ReservationModel())->updateStatus((int) $trip['reservation_id'], 'completed');
-        (new VehicleModel())->updateStatus($vehicleId, 'available');
-        (new VehicleModel())->updateOdometer($vehicleId, $odometerEnd);
-        (new DriverProfileModel())->updateStatus($this->authUserId(), 'available');
-        (new AuditLogModel())->log(
-            $this->authUserId(),
-            'TRIP_COMPLETED',
-            'trips',
-            $tripId,
-            ['trip_status' => $trip['trip_status']],
-            ['trip_status' => 'completed', 'odometer_end_km' => $odometerEnd, 'source' => 'android']
-        );
-        
+        // Trip completion, reservation status, and vehicle/driver release
+        // must land together — a failure partway through would otherwise
+        // leave the trip completed but the vehicle/driver still shown as
+        // on_trip, or the odometer left unupdated.
+        $db = Database::getInstance();
+        $db->beginTransaction();
+
+        try {
+            $tripModel->updateCompleted($tripId, $odometerEnd);
+
+            (new ReservationModel())->updateStatus((int) $trip['reservation_id'], 'completed');
+            (new VehicleModel())->updateStatus($vehicleId, 'available');
+            (new VehicleModel())->updateOdometer($vehicleId, $odometerEnd);
+            (new DriverProfileModel())->updateStatus($this->authUserId(), 'available');
+            (new AuditLogModel())->log(
+                $this->authUserId(),
+                'TRIP_COMPLETED',
+                'trips',
+                $tripId,
+                ['trip_status' => $trip['trip_status']],
+                ['trip_status' => 'completed', 'odometer_end_km' => $odometerEnd, 'source' => 'android']
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
         // MaintenanceService check — same try-catch pattern as web complete()
         try {
             MaintenanceService::checkAfterTrip($vehicleId, $odometerEnd);

@@ -361,32 +361,51 @@ class ReservationController
             }
         }
 
-        $resModel->cancel($id, (int) Auth::id(), $reason);
+        // Reservation cancellation and (when it already has a trip) the
+        // trip cancel + vehicle/driver release must land together — a
+        // failure partway through would otherwise leave the vehicle/driver
+        // locked up against a reservation that's already cancelled.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Since Step 4, an 'approved' reservation always has a trip
-        // (created at gatepass approval, as 'pending_start') — cancelling
-        // the reservation must also close out that trip so it doesn't sit
-        // orphaned and keep the vehicle/driver locked up. Pending
-        // reservations have no trip yet, so that path is untouched.
-        if ($reservation['status'] === 'approved') {
-            $tripModel = new TripModel();
-            $trip      = $tripModel->findByReservation($id);
+        $trip = null;
+        try {
+            $resModel->cancel($id, (int) Auth::id(), $reason);
 
-            if ($trip) {
-                $tripModel->cancel((int) $trip['trip_id'], $reason, (int) Auth::id());
-                TripCancellationService::releaseAndNotify($trip, VEH_AVAILABLE);
+            // Since Step 4, an 'approved' reservation always has a trip
+            // (created at gatepass approval, as 'pending_start') — cancelling
+            // the reservation must also close out that trip so it doesn't sit
+            // orphaned and keep the vehicle/driver locked up. Pending
+            // reservations have no trip yet, so that path is untouched.
+            if ($reservation['status'] === 'approved') {
+                $tripModel = new TripModel();
+                $trip      = $tripModel->findByReservation($id);
+
+                if ($trip) {
+                    $tripModel->cancel((int) $trip['trip_id'], $reason, (int) Auth::id());
+                    TripCancellationService::release($trip, VEH_AVAILABLE);
+                }
             }
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'RESERVATION_CANCELLED',
+                'reservations',
+                $id,
+                ['status' => $reservation['status']],
+                ['status' => 'cancelled', 'cancellation_reason' => $reason]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'RESERVATION_CANCELLED',
-            'reservations',
-            $id,
-            ['status' => $reservation['status']],
-            ['status' => 'cancelled', 'cancellation_reason' => $reason]
-        );
+        if ($trip) {
+            TripCancellationService::notifyCancelled($trip);
+        }
 
         Helpers::setFlash('success', 'Reservation cancelled.');
         Helpers::redirect('/reservations/' . $id);
@@ -604,37 +623,54 @@ class ReservationController
 
         Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
-        // Approve the reservation — status goes to 'gatepass_pending', not
-        // 'approved'. A trip is NOT created here anymore; that now happens
-        // in GatepassController::approve() once a super_admin clears the
-        // gatepass this call creates below.
-        $resModel->approve($id, [
-            'vehicle_id'  => $vehicleId,
-            'driver_id'   => $driverId,
-            'reviewed_by' => (int) Auth::id(),
-        ]);
+        // Reservation approval, the vehicle reservation, and gatepass
+        // creation must land together — a failure partway through would
+        // otherwise leave the vehicle 'reserved' with no gatepass ever
+        // created to review, or a gatepass with no vehicle actually held
+        // for it.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Set vehicle to 'reserved' — driver stays 'available' until trip starts (Step 11)
-        $vehicleModel = new VehicleModel();
-        $vehicleModel->updateStatus($vehicleId, 'reserved');
+        try {
+            // Approve the reservation — status goes to 'gatepass_pending', not
+            // 'approved'. A trip is NOT created here anymore; that now happens
+            // in GatepassController::approve() once a super_admin clears the
+            // gatepass this call creates below.
+            $resModel->approve($id, [
+                'vehicle_id'  => $vehicleId,
+                'driver_id'   => $driverId,
+                'reviewed_by' => (int) Auth::id(),
+            ]);
 
-        // Create the gatepass — 'pending', awaiting super_admin review.
-        // TripModel::create() is intentionally NOT called here; it now
-        // happens exactly once, in GatepassController::approve().
-        $gpModel = new GatepassModel();
-        $gpModel->create($id);
+            // Set vehicle to 'reserved' — driver stays 'available' until trip starts (Step 11)
+            $vehicleModel = new VehicleModel();
+            $vehicleModel->updateStatus($vehicleId, 'reserved');
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'RESERVATION_APPROVED',
-            'reservations',
-            $id,
-            ['status' => 'pending'],
-            ['status' => 'gatepass_pending',
-             'assigned_vehicle_id' => $vehicleId,
-             'assigned_driver_id'  => $driverId]
-        );
+            // Create the gatepass — 'pending', awaiting super_admin review.
+            // TripModel::create() is intentionally NOT called here; it now
+            // happens exactly once, in GatepassController::approve().
+            // GatepassModel::create() detects it's already inside this
+            // transaction and defers commit/rollback to us.
+            $gpModel = new GatepassModel();
+            $gpModel->create($id);
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'RESERVATION_APPROVED',
+                'reservations',
+                $id,
+                ['status' => 'pending'],
+                ['status' => 'gatepass_pending',
+                 'assigned_vehicle_id' => $vehicleId,
+                 'assigned_driver_id'  => $driverId]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         // Notify super_admins — a gatepass now needs their review, not the requester.
         try {

@@ -54,32 +54,46 @@ class GatepassController
         $vehicleId     = (int) $gatepass['assigned_vehicle_id'];
         $driverId      = (int) $gatepass['assigned_driver_id'];
 
-        // Approve the gatepass
-        $gpModel->approve($id, (int) Auth::id());
+        // Gatepass approval, reservation advance, and trip creation must
+        // land together — a failure partway through (e.g. TripModel::create())
+        // would otherwise leave the gatepass approved and the reservation
+        // 'approved' with no trip ever created for it.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Advance the reservation from gatepass_pending -> approved
-        $resModel = new ReservationModel();
-        $resModel->updateStatus($reservationId, 'approved');
+        try {
+            // Approve the gatepass
+            $gpModel->approve($id, (int) Auth::id());
 
-        // Create the trip row now — pending_start, ready for the driver to
-        // start via the app. This is the ONLY place TripModel::create() is
-        // called; no trip exists until this point.
-        $tripModel = new TripModel();
-        $tripId    = $tripModel->create([
-            'reservation_id' => $reservationId,
-            'vehicle_id'     => $vehicleId,
-            'driver_id'      => $driverId,
-        ]);
+            // Advance the reservation from gatepass_pending -> approved
+            $resModel = new ReservationModel();
+            $resModel->updateStatus($reservationId, 'approved');
 
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'GATEPASS_APPROVED',
-            'gatepasses',
-            $id,
-            ['status' => 'pending'],
-            ['status' => 'approved', 'reservation_id' => $reservationId]
-        );
+            // Create the trip row now — pending_start, ready for the driver to
+            // start via the app. This is the ONLY place TripModel::create() is
+            // called; no trip exists until this point.
+            $tripModel = new TripModel();
+            $tripId    = $tripModel->create([
+                'reservation_id' => $reservationId,
+                'vehicle_id'     => $vehicleId,
+                'driver_id'      => $driverId,
+            ]);
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'GATEPASS_APPROVED',
+                'gatepasses',
+                $id,
+                ['status' => 'pending'],
+                ['status' => 'approved', 'reservation_id' => $reservationId]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         // Notify the requester that the gatepass cleared, and the driver
         // that a new trip is waiting. These are two different notifications
@@ -142,30 +156,44 @@ class GatepassController
 
         Auth::requireCompanyScope((int) $gatepass['company_id'], '/reservations/' . $reservationId);
 
-        $gpModel->reject($id, (int) Auth::id(), $reason);
+        // Gatepass rejection, reservation rejection, and the vehicle release
+        // must land together — a failure partway through would otherwise
+        // leave the vehicle stuck at 'reserved' with no active reservation
+        // holding it.
+        $db = Database::getInstance();
+        $db->beginTransaction();
 
-        $resModel = new ReservationModel();
-        $resModel->reject((int) $gatepass['reservation_id'], [
-            'reason'      => $reason,
-            'reviewed_by' => (int) Auth::id(),
-        ]);
+        try {
+            $gpModel->reject($id, (int) Auth::id(), $reason);
 
-        // Release the vehicle back to the pool — driver was never moved off
-        // 'available' at reservation approval time, so nothing to reset there.
-        if ($gatepass['assigned_vehicle_id']) {
-            $vehicleModel = new VehicleModel();
-            $vehicleModel->updateStatus((int) $gatepass['assigned_vehicle_id'], 'available');
+            $resModel = new ReservationModel();
+            $resModel->reject((int) $gatepass['reservation_id'], [
+                'reason'      => $reason,
+                'reviewed_by' => (int) Auth::id(),
+            ]);
+
+            // Release the vehicle back to the pool — driver was never moved off
+            // 'available' at reservation approval time, so nothing to reset there.
+            if ($gatepass['assigned_vehicle_id']) {
+                $vehicleModel = new VehicleModel();
+                $vehicleModel->updateStatus((int) $gatepass['assigned_vehicle_id'], 'available');
+            }
+
+            $auditModel = new AuditLogModel();
+            $auditModel->log(
+                (int) Auth::id(),
+                'GATEPASS_REJECTED',
+                'gatepasses',
+                $id,
+                ['status' => 'pending'],
+                ['status' => 'rejected', 'rejection_reason' => $reason]
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
-
-        $auditModel = new AuditLogModel();
-        $auditModel->log(
-            (int) Auth::id(),
-            'GATEPASS_REJECTED',
-            'gatepasses',
-            $id,
-            ['status' => 'pending'],
-            ['status' => 'rejected', 'rejection_reason' => $reason]
-        );
 
         try {
             $notifModel = new NotificationModel();
