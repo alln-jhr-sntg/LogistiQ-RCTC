@@ -39,7 +39,7 @@ $statusBadge = [
 
 <div class="section-title">Quick Actions</div>
 <div class="quick-actions" style="margin-bottom:32px;">
-    <a href="<?= Helpers::url('/gatepasses') ?>" class="action-card">
+    <a href="<?= Helpers::url('/reservations') . '&status=' . RES_GATEPASS_PENDING ?>" class="action-card">
         <div class="action-icon action-icon--amber">
             <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
         </div>
@@ -94,7 +94,7 @@ $statusBadge = [
             <td class="td-muted"><?= date('M d Y, g:i A', strtotime($g['departure_datetime'])) ?></td>
             <td>
                 <div class="td-actions">
-                    <a href="<?= Helpers::url('/gatepasses/' . $g['gatepass_id'] . '/review') ?>"
+                    <a href="<?= Helpers::url('/reservations/' . $g['reservation_id']) ?>"
                        class="btn btn-outline btn-sm">Review</a>
                 </div>
             </td>

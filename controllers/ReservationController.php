@@ -271,12 +271,46 @@ class ReservationController
         $gpModel  = new GatepassModel();
         $gatepass = $gpModel->findByReservation($id);
 
+        // Trip Execution card — only exists once the gatepass has been
+        // approved (GatepassController::approve() is the only TripModel::create()
+        // call site).
+        $tripModel = new TripModel();
+        $trip      = $tripModel->findByReservation($id);
+
+        // Review button on the Gate Pass card — approve/reject is
+        // super_admin ONLY, enforced again server-side in
+        // GatepassController::approve()/reject(); this flag only controls
+        // whether the modal trigger is shown.
+        $canReviewGatepass = Auth::isSuperAdmin()
+            && $gatepass
+            && $gatepass['status'] === 'pending';
+
+        // Print link on the Gate Pass card — mirrors GatepassController::printView()'s
+        // guard exactly: super_admin unrestricted; fleet_admin and admin both
+        // scoped to their own company (fleet_admin is also the REMIX admin,
+        // so it does NOT get the free pass Auth::hasGlobalScope()/canActOnCompany()
+        // would normally give it — compare company_id directly instead);
+        // everyone else only if they made the booking. Also only while the
+        // trip is still pending_start, re-checked server-side on printView().
+        $canPrintGatepass = false;
+        if ($gatepass && $gatepass['status'] === 'approved'
+            && $trip && $trip['trip_status'] === TRIP_PENDING_START) {
+            $requestedById    = $reservation['requested_by'] !== null ? (int) $reservation['requested_by'] : null;
+            $canPrintGatepass = Auth::isSuperAdmin()
+                || (in_array(Auth::role(), [ROLE_FLEET_ADMIN, ROLE_ADMIN], true)
+                    && (int) Auth::companyId() === (int) $reservation['company_id'])
+                || ($requestedById !== null && (int) Auth::id() === $requestedById);
+        }
+
         $this->render('detail', [
-            'page_title'   => $reservation['reservation_code'],
-            'reservation'  => $reservation,
-            'canEdit'      => $canEdit,
-            'canCancel'    => $canCancel,
-            'gatepass'     => $gatepass,
+            'page_title'         => $reservation['reservation_code'],
+            'reservation'        => $reservation,
+            'canEdit'            => $canEdit,
+            'canCancel'          => $canCancel,
+            'gatepass'           => $gatepass,
+            'trip'               => $trip,
+            'canReviewGatepass'  => $canReviewGatepass,
+            'canPrintGatepass'   => $canPrintGatepass,
         ]);
     }
 
@@ -587,8 +621,8 @@ class ReservationController
         // Create the gatepass — 'pending', awaiting super_admin review.
         // TripModel::create() is intentionally NOT called here; it now
         // happens exactly once, in GatepassController::approve().
-        $gpModel  = new GatepassModel();
-        $gatepassId = $gpModel->create($id);
+        $gpModel = new GatepassModel();
+        $gpModel->create($id);
 
         $auditModel = new AuditLogModel();
         $auditModel->log(
@@ -613,8 +647,8 @@ class ReservationController
                 'message'        => $reservation['reservation_code'] . ' — '
                     . $reservation['destination'] . ' needs gatepass approval.',
                 'type'           => 'reservation',
-                'reference_id'   => $gatepassId,
-                'reference_type' => 'gatepass',
+                'reference_id'   => $id,
+                'reference_type' => 'reservation',
             ]);
         } catch (Throwable $e) {
             error_log('[LVMS] Notification failed: ' . $e->getMessage());

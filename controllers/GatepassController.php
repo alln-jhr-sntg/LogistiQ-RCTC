@@ -6,28 +6,25 @@
  * Sits between reservation approval and trip creation. When a reservation
  * is approved (ReservationController::approve()), a gatepass row is
  * created here-adjacent instead of a trip: reservation.status becomes
- * 'gatepass_pending' and the reservation waits in this controller's queue
- * until a super_admin reviews it.
+ * 'gatepass_pending' and the reservation waits for a super_admin to
+ * review it via the modal on that reservation's detail page
+ * (views/reservations/detail.php) — there is no standalone gatepass
+ * queue or review page.
  *
  * Only once GatepassController::approve() runs does a trip row get
  * created — this is the ONLY call site for TripModel::create() in the
  * app. No trip may exist before its gatepass is approved.
  *
- * All review/approve/reject actions are super_admin ONLY (config/constants.php
+ * All approve/reject actions are super_admin ONLY (config/constants.php
  * documents this restriction — narrower than reservation approval, which
  * also allows fleet_admin). printView() is intentionally wider: super_admin,
- * fleet_admin, the requester, and the assigned driver may open the printable
- * document, but only once the gatepass has been approved.
+ * fleet_admin, admin (own company only), and the requester may open the
+ * printable document, but only while the gatepass is approved AND the trip
+ * is still pending_start — see ReservationController::detail() for the
+ * matching $canPrintGatepass flag shown in the view.
  */
 class GatepassController
 {
-    private function render(string $view, array $data = []): void
-    {
-        extract($data);
-        $content_view = __DIR__ . '/../views/gatepasses/' . $view . '.php';
-        require_once __DIR__ . '/../views/layouts/main.php';
-    }
-
     // Renders a gatepass view WITHOUT the sidebar/topbar layout.
     // Used only by printView() — the app's one standalone document page,
     // in the same spirit as views/layouts/auth.php.
@@ -35,40 +32,6 @@ class GatepassController
     {
         extract($data);
         require_once __DIR__ . '/../views/gatepasses/' . $view . '.php';
-    }
-
-    // GET /gatepasses
-    public function index(): void
-    {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
-
-        $gpModel = new GatepassModel();
-
-        $this->render('index', [
-            'page_title' => 'Gatepasses',
-            'gatepasses' => $gpModel->findPending(),
-        ]);
-    }
-
-    // GET /gatepasses/{id}/review
-    public function review(int $id): void
-    {
-        Auth::requireRole(ROLE_SUPER_ADMIN);
-
-        $gpModel  = new GatepassModel();
-        $gatepass = $gpModel->findById($id);
-
-        if (!$gatepass || $gatepass['status'] !== 'pending') {
-            Helpers::setFlash('error', 'This gatepass cannot be reviewed.');
-            Helpers::redirect('/gatepasses');
-        }
-
-        Auth::requireCompanyScope((int) $gatepass['company_id'], '/gatepasses');
-
-        $this->render('review', [
-            'page_title' => 'Review ' . $gatepass['gatepass_code'],
-            'gatepass'   => $gatepass,
-        ]);
     }
 
     // POST /gatepasses/{id}/approve
@@ -81,12 +44,13 @@ class GatepassController
 
         if (!$gatepass || $gatepass['status'] !== 'pending') {
             Helpers::setFlash('error', 'This gatepass cannot be approved.');
-            Helpers::redirect('/gatepasses');
+            Helpers::redirect($gatepass ? '/reservations/' . $gatepass['reservation_id'] : '/reservations');
         }
 
-        Auth::requireCompanyScope((int) $gatepass['company_id'], '/gatepasses');
-
         $reservationId = (int) $gatepass['reservation_id'];
+
+        Auth::requireCompanyScope((int) $gatepass['company_id'], '/reservations/' . $reservationId);
+
         $vehicleId     = (int) $gatepass['assigned_vehicle_id'];
         $driverId      = (int) $gatepass['assigned_driver_id'];
 
@@ -152,7 +116,7 @@ class GatepassController
 
         Helpers::setFlash('success',
             'Gatepass ' . $gatepass['gatepass_code'] . ' approved. Trip is ready to start.');
-        Helpers::redirect('/gatepasses');
+        Helpers::redirect('/reservations/' . $reservationId);
     }
 
     // POST /gatepasses/{id}/reject
@@ -160,21 +124,23 @@ class GatepassController
     {
         Auth::requireRole(ROLE_SUPER_ADMIN);
 
-        $reason = trim($_POST['rejection_reason'] ?? '');
-        if ($reason === '') {
-            Helpers::setFlash('error', 'Rejection reason is required.');
-            Helpers::redirect('/gatepasses/' . $id . '/review');
-        }
-
         $gpModel  = new GatepassModel();
         $gatepass = $gpModel->findById($id);
 
         if (!$gatepass || $gatepass['status'] !== 'pending') {
             Helpers::setFlash('error', 'This gatepass cannot be rejected.');
-            Helpers::redirect('/gatepasses');
+            Helpers::redirect($gatepass ? '/reservations/' . $gatepass['reservation_id'] : '/reservations');
         }
 
-        Auth::requireCompanyScope((int) $gatepass['company_id'], '/gatepasses');
+        $reservationId = (int) $gatepass['reservation_id'];
+
+        $reason = trim($_POST['rejection_reason'] ?? '');
+        if ($reason === '') {
+            Helpers::setFlash('error', 'Rejection reason is required.');
+            Helpers::redirect('/reservations/' . $reservationId);
+        }
+
+        Auth::requireCompanyScope((int) $gatepass['company_id'], '/reservations/' . $reservationId);
 
         $gpModel->reject($id, (int) Auth::id(), $reason);
 
@@ -207,7 +173,7 @@ class GatepassController
                 'title'          => 'Gatepass Rejected',
                 'message'        => $gatepass['gatepass_code'] . ' was rejected: ' . $reason,
                 'type'           => 'reservation',
-                'reference_id'   => (int) $gatepass['reservation_id'],
+                'reference_id'   => $reservationId,
                 'reference_type' => 'reservation',
             ]);
         } catch (Throwable $e) {
@@ -215,7 +181,7 @@ class GatepassController
         }
 
         Helpers::setFlash('success', 'Gatepass rejected.');
-        Helpers::redirect('/gatepasses');
+        Helpers::redirect('/reservations/' . $reservationId);
     }
 
     // GET /gatepasses/{id}/print
@@ -244,11 +210,32 @@ class GatepassController
         $uid           = Auth::id();
         $requestedById = $gatepass['requested_by'] !== null ? (int) $gatepass['requested_by'] : null;
 
-        $allowed = Auth::hasGlobalScope()
+        // super_admin: unrestricted. fleet_admin and admin: own company only —
+        // fleet_admin runs the shared fleet across all companies but is also
+        // the REMIX admin, so for this specific action it's scoped exactly
+        // like admin. Deliberately NOT using Auth::canActOnCompany() here:
+        // that helper treats fleet_admin as global via hasGlobalScope(),
+        // which is what we're overriding. Anyone else: only if they
+        // requested the booking.
+        $allowed = Auth::isSuperAdmin()
+            || (in_array(Auth::role(), [ROLE_FLEET_ADMIN, ROLE_ADMIN], true)
+                && (int) Auth::companyId() === (int) $gatepass['company_id'])
             || ($requestedById !== null && $uid === $requestedById);
 
         if (!$allowed || $gatepass['status'] !== 'approved') {
             Helpers::setFlash('error', 'This gatepass is not available to print.');
+            Helpers::redirect(Auth::dashboardUrl());
+        }
+
+        // Printable only from approval through pending_start — once the trip
+        // starts (or is cancelled/completed/incident before ever starting),
+        // the gate pass stays visible on the reservation but is no longer
+        // printable from here.
+        $tripModel = new TripModel();
+        $trip      = $tripModel->findByReservation((int) $gatepass['reservation_id']);
+
+        if (!$trip || $trip['trip_status'] !== TRIP_PENDING_START) {
+            Helpers::setFlash('error', 'This gatepass is no longer available to print.');
             Helpers::redirect(Auth::dashboardUrl());
         }
 

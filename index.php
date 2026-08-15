@@ -55,9 +55,9 @@ $routes = [
     ['POST', '/reservations/{id}/reject',        'ReservationController', 'reject'],
     ['POST', '/reservations/{id}/cancel',        'ReservationController', 'cancel'],
 
-    // Gatepasses — static before {id}
-    ['GET',  '/gatepasses',              'GatepassController', 'index'],
-    ['GET',  '/gatepasses/{id}/review',  'GatepassController', 'review'],
+    // Gatepasses — approve/reject are triggered from a modal on the
+    // reservation detail page (views/reservations/detail.php); there is no
+    // standalone queue or review page anymore. Only print remains a page.
     ['POST', '/gatepasses/{id}/approve', 'GatepassController', 'approve'],
     ['POST', '/gatepasses/{id}/reject',  'GatepassController', 'reject'],
     ['GET',  '/gatepasses/{id}/print',   'GatepassController', 'printView'],

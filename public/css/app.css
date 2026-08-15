@@ -978,6 +978,7 @@ button {
 
 .page-header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -1066,6 +1067,12 @@ button {
   white-space: nowrap;
 }
 
+/* Larger variant for a page-header status badge sitting next to buttons. */
+.badge-lg {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
 .badge-pending,
 .badge-maintenance {
   background: #fef9e7;
@@ -1151,6 +1158,12 @@ button {
 .text-danger {
   color: var(--clr-danger);
   font-weight: 600;
+}
+.text-sm {
+  font-size: 13px;
+}
+.hidden {
+  display: none;
 }
 .text-warning {
   color: var(--clr-warning);
@@ -1469,6 +1482,9 @@ table.data-table {
   color: var(--clr-text-3);
   margin-top: 4px;
 }
+.form-hint-flush {
+  margin-top: 0;
+}
 
 .form-actions {
   display: flex;
@@ -1591,6 +1607,57 @@ table.data-table {
 }
 .detail-success {
   color: var(--clr-success);
+}
+
+/* Vertical stack of .detail-card within one column of .detail-grid, used
+   in place of an inline margin-bottom on each card. */
+.detail-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Modifier for a .detail-card-title that also carries a right-aligned
+   action link (e.g. "Print ->", "View full details ->"). */
+.detail-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-card-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--clr-primary);
+}
+
+/* Modifier for a .detail-card that reports a rejection/cancellation —
+   tints the border toward the danger token instead of the default. */
+.detail-card-danger {
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.detail-card-text {
+  font-size: 14px;
+  color: var(--clr-text-2);
+  margin: 0;
+}
+
+/* Modifier for a .detail-card that hosts edge-to-edge content (e.g. an
+   embedded map) instead of the card's usual padding. */
+.detail-card-flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-map {
+  height: 220px;
+  width: 100%;
+}
+
+.detail-note {
+  font-size: 13px;
+  margin: 0;
 }
 
 /* Placeholder rows for Capstone 1 */
@@ -1749,6 +1816,13 @@ table.data-table {
   width: 20px;
   height: 20px;
   fill: currentColor;
+}
+
+/* Approve/Reject switcher inside the gatepass review modal. */
+.tab-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 /* AI score breakdown */

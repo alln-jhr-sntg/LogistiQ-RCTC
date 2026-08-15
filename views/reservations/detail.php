@@ -15,8 +15,8 @@ $role = Auth::role();
     <div class="page-header-left">
         <p>Submitted <?= date('M d, Y', strtotime($reservation['created_at'])) ?></p>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-        <span class="badge <?= $sb['class'] ?>" style="font-size:13px;padding:6px 12px;"><?= $sb['label'] ?></span>
+    <div class="page-header-actions">
+        <span class="badge badge-lg <?= $sb['class'] ?>"><?= $sb['label'] ?></span>
         <?php if ($canEdit): ?>
         <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/edit') ?>"
            class="btn btn-outline">Edit</a>
@@ -35,11 +35,11 @@ $role = Auth::role();
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div class="detail-grid">
 
     <!-- Left column -->
-    <div>
-        <div class="detail-card" style="margin-bottom:20px;">
+    <div class="detail-card-stack">
+        <div class="detail-card">
             <div class="detail-card-title">Requester</div>
             <div class="detail-field">
                 <div class="detail-field-label">Name</div>
@@ -55,7 +55,7 @@ $role = Auth::role();
             </div>
         </div>
 
-        <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card">
             <div class="detail-card-title">Trip Details</div>
             <div class="detail-field">
                 <div class="detail-field-label">Purpose</div>
@@ -102,8 +102,8 @@ $role = Auth::role();
     </div>
 
     <!-- Right column -->
-    <div>
-        <div class="detail-card" style="margin-bottom:20px;">
+    <div class="detail-card-stack">
+        <div class="detail-card">
             <div class="detail-card-title">Passengers &amp; Cargo</div>
             <div class="detail-field">
                 <div class="detail-field-label">Passengers</div>
@@ -119,7 +119,7 @@ $role = Auth::role();
         </div>
 
         <?php if (in_array($reservation['status'], ['gatepass_pending', 'approved', 'in_progress', 'completed'])): ?>
-        <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card">
             <div class="detail-card-title">Assignment</div>
             <div class="detail-field">
                 <div class="detail-field-label">Vehicle</div>
@@ -157,13 +157,17 @@ $role = Auth::role();
             ];
             $gb = $gpBadge[$gatepass['status']] ?? ['class' => 'badge-pending', 'label' => $gatepass['status']];
         ?>
-        <div class="detail-card" style="margin-bottom:20px;">
-            <div class="detail-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="detail-card">
+            <div class="detail-card-title detail-card-title-row">
                 <span>Gate Pass</span>
-                <?php if ($gatepass['status'] === 'approved'): ?>
+                <?php if ($canReviewGatepass): ?>
+                <a href="javascript:void(0);" class="detail-card-link"
+                   onclick="document.getElementById('gatepassReviewModal').style.display='flex';">
+                    Review →
+                </a>
+                <?php elseif ($canPrintGatepass): ?>
                 <a href="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/print') ?>"
-                   target="_blank"
-                   style="font-size:12px;font-weight:500;color:var(--clr-primary);">
+                   target="_blank" class="detail-card-link">
                     Print →
                 </a>
                 <?php endif; ?>
@@ -189,28 +193,22 @@ $role = Auth::role();
                 </div>
             </div>
             <?php endif; ?>
-            <?php if ($gatepass['status'] === 'rejected' && $gatepass['rejection_reason']): ?>
-            <div class="detail-field">
-                <div class="detail-field-label">Rejection Reason</div>
-                <div class="detail-field-value"><?= Helpers::e($gatepass['rejection_reason']) ?></div>
-            </div>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
 
         <?php if ($reservation['status'] === 'rejected'): ?>
-        <div class="detail-card" style="margin-bottom:20px;border-color:#f5a09a;">
-            <div class="detail-card-title" style="color:#c0392b;">Rejection Reason</div>
-            <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
+        <div class="detail-card detail-card-danger">
+            <div class="detail-card-title text-danger">Rejection Reason</div>
+            <p class="detail-card-text">
                 <?= Helpers::e($reservation['rejection_reason'] ?? 'No reason provided.') ?>
             </p>
         </div>
         <?php endif; ?>
 
         <?php if ($reservation['status'] === 'cancelled' && $reservation['cancellation_reason']): ?>
-        <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card">
             <div class="detail-card-title">Cancellation Reason</div>
-            <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
+            <p class="detail-card-text">
                 <?= Helpers::e($reservation['cancellation_reason']) ?>
             </p>
         </div>
@@ -218,7 +216,7 @@ $role = Auth::role();
 
         <!-- AI recommendation panel — shows after review is run -->
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN])): ?>
-        <div class="detail-card" style="margin-bottom:20px;">
+        <div class="detail-card">
             <div class="detail-card-title">Vehicle Recommendation</div>
             <?php if ($reservation['ai_recommended_vehicle_id']): ?>
             <div class="detail-field">
@@ -230,19 +228,19 @@ $role = Auth::role();
             </div>
             <div class="detail-field">
                 <div class="detail-field-label">Notes</div>
-                <div class="detail-field-value" style="font-size:13px;">
+                <div class="detail-field-value text-sm">
                     <?= Helpers::e($reservation['ai_recommendation_notes'] ?? '—') ?>
                 </div>
             </div>
             <?php elseif ($reservation['status'] === 'pending'): ?>
-            <p class="td-muted" style="font-size:13px;margin:0;">
+            <p class="td-muted detail-note">
                 Vehicle recommendation runs when an admin opens the review form.
                 <a href="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/review') ?>">
                     Review now →
                 </a>
             </p>
             <?php else: ?>
-            <p class="td-muted" style="font-size:13px;margin:0;">No recommendation data available.</p>
+            <p class="td-muted detail-note">No recommendation data available.</p>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -258,11 +256,10 @@ $role = Auth::role();
             ];
             $tb = $tripBadge[$trip['trip_status']] ?? ['class' => 'badge-pending', 'label' => $trip['trip_status']];
         ?>
-        <div class="detail-card" style="margin-bottom:20px;">
-            <div class="detail-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="detail-card">
+            <div class="detail-card-title detail-card-title-row">
                 <span>Trip Execution</span>
-                <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id']) ?>"
-                   style="font-size:12px;font-weight:500;color:var(--clr-primary);">
+                <a href="<?= Helpers::url('/trips/' . (int) $trip['trip_id']) ?>" class="detail-card-link">
                     View full details →
                 </a>
             </div>
@@ -301,8 +298,8 @@ $role = Auth::role();
 
         <!-- Destination map — shown when coordinates were pinned on create/edit -->
         <?php if ($reservation['destination_lat'] && $reservation['destination_lng']): ?>
-        <div class="detail-card" style="padding:0;overflow:hidden;">
-            <div id="detailMap" style="height:220px;width:100%;"></div>
+        <div class="detail-card detail-card-flush">
+            <div id="detailMap" class="detail-map"></div>
         </div>
         <script>
         window.lvmsLocationPicker = {
@@ -354,5 +351,64 @@ $role = Auth::role();
 document.getElementById('cancelModal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
 });
+</script>
+<?php endif; ?>
+
+<?php if ($canReviewGatepass): ?>
+<!-- Gate Pass Review Modal -->
+<div id="gatepassReviewModal" class="modal-overlay">
+    <div class="modal-card modal-card-wide">
+        <div class="modal-header">
+            <h3>Review <?= Helpers::e($gatepass['gatepass_code']) ?></h3>
+            <button type="button" class="modal-close"
+                    onclick="document.getElementById('gatepassReviewModal').style.display='none';">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <div class="tab-toggle">
+            <button type="button" id="gpBtnApprove" class="btn btn-solid"
+                    onclick="showGatepassSection('approve')">Approve</button>
+            <button type="button" id="gpBtnReject" class="btn btn-outline"
+                    onclick="showGatepassSection('reject')">Reject</button>
+        </div>
+
+        <div id="gpSectionApprove" class="form-card">
+            <div class="form-section-title">Approve Gatepass</div>
+            <p class="form-hint form-hint-flush">
+                Approving clears this reservation for departure and creates the trip.
+            </p>
+            <form method="POST" action="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/approve') ?>">
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-solid">Approve Gatepass</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="gpSectionReject" class="form-card hidden">
+            <div class="form-section-title">Rejection Reason</div>
+            <form method="POST" action="<?= Helpers::url('/gatepasses/' . $gatepass['gatepass_id'] . '/reject') ?>">
+                <div class="form-group">
+                    <label class="form-label">Reason <span class="required">*</span></label>
+                    <textarea class="form-textarea" name="rejection_reason" rows="4" required
+                              placeholder="Explain why this gatepass is being rejected..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Reject Gatepass</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('gatepassReviewModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+function showGatepassSection(which) {
+    document.getElementById('gpSectionApprove').classList.toggle('hidden', which !== 'approve');
+    document.getElementById('gpSectionReject').classList.toggle('hidden', which !== 'reject');
+    document.getElementById('gpBtnApprove').className = which === 'approve' ? 'btn btn-solid' : 'btn btn-outline';
+    document.getElementById('gpBtnReject').className  = which === 'reject'  ? 'btn btn-solid' : 'btn btn-outline';
+}
 </script>
 <?php endif; ?>

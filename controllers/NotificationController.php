@@ -73,7 +73,6 @@ class NotificationController
                 'reservation' => '/reservations/' . $notification['reference_id'],
                 'trip'        => '/trips/'         . $notification['reference_id'],
                 'maintenance' => '/vehicles/'      . $notification['reference_id'] . '/maintenance',
-                'gatepass'    => '/gatepasses/'    . $notification['reference_id'] . '/review',
             ];
 
             if ($notification['reference_id']
