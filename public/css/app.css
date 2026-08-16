@@ -1354,6 +1354,13 @@ table.data-table {
   align-items: center;
 }
 
+.filter-bar-actions {
+  margin-left: auto;
+  display: flex;
+  alignt-items: center;
+  gap: 8px;
+}
+
 .filter-input,
 .filter-select {
   height: 44px;

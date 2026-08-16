@@ -18,12 +18,7 @@ $statusLabel = [
     <div class="page-header-left">
         <h2>Vehicles</h2>
     </div>
-    <div class="page-header-actions">
-        <a href="<?= Helpers::url('/vehicles/categories') ?>" class="btn btn-outline">Categories</a>
-        <a href="<?= Helpers::url('/vehicles/create') ?>" class="btn btn-solid">
-            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Vehicle
-        </a>
-    </div>
+    
 </div>
 
 <form method="GET" action="<?= APP_BASE ?>/index.php">
@@ -47,6 +42,12 @@ $statusLabel = [
             </option>
             <?php endforeach; ?>
         </select>
+        <div class="filter-bar-actions">
+            <a href="<?= Helpers::url('/vehicles/categories') ?>" class="btn btn-outline">Categories</a>
+            <a href="<?= Helpers::url('/vehicles/create') ?>" class="btn btn-solid">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Vehicle
+            </a>
+        </div>
     </div>
 </form>
 

@@ -8,11 +8,7 @@ $roleBadge = [
 ];
 $viewerRole = Auth::role();
 ?>
-<div class="page-header page-header-end">
-    <a href="<?= Helpers::url('/users/create') ?>" class="btn btn-solid">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add User
-    </a>
-</div>
+
 
 <form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="users">
@@ -47,6 +43,11 @@ $viewerRole = Auth::role();
             <option value="1" <?= $activeFilter === '1' ? 'selected' : '' ?>>Active</option>
             <option value="0" <?= $activeFilter === '0' ? 'selected' : '' ?>>Inactive</option>
         </select>
+        <div class="filter-bar-actions">
+            <a href="<?= Helpers::url('/users/create') ?>" class="btn btn-solid">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add User
+            </a>
+        </div>
     </div>
 </form>
 
