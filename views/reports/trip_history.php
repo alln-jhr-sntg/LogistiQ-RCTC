@@ -1,22 +1,21 @@
-<div class="page-header page-header-end">
-    <form method="POST" action="<?= Helpers::url('/reports/trip-history/export') ?>">
-        <?= Csrf::field() ?>
-        <input type="hidden" name="date_from" value="<?= Helpers::e($filters['date_from']) ?>">
-        <input type="hidden" name="date_to" value="<?= Helpers::e($filters['date_to']) ?>">
-        <input type="hidden" name="trip_status" value="<?= Helpers::e($filters['trip_status']) ?>">
-        <input type="hidden" name="driver_id" value="<?= Helpers::e((string) ($filters['driver_id'] ?? '')) ?>">
-        <input type="hidden" name="vehicle_id" value="<?= Helpers::e((string) ($filters['vehicle_id'] ?? '')) ?>">
-        <button type="submit" class="btn btn-outline">
-            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            Export
-        </button>
-    </form>
-</div>
-
 <div class="tab-bar">
     <a href="<?= Helpers::url('/reports/trip-history') ?>"         class="tab-item active">Trip History</a>
     <a href="<?= Helpers::url('/reports/maintenance-history') ?>"  class="tab-item">Maintenance History</a>
     <a href="<?= Helpers::url('/reports/vehicle-utilization') ?>"  class="tab-item">Vehicle Utilization</a>
+    <div class="tab-bar-actions">
+        <form method="POST" action="<?= Helpers::url('/reports/trip-history/export') ?>">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="date_from" value="<?= Helpers::e($filters['date_from']) ?>">
+            <input type="hidden" name="date_to" value="<?= Helpers::e($filters['date_to']) ?>">
+            <input type="hidden" name="trip_status" value="<?= Helpers::e($filters['trip_status']) ?>">
+            <input type="hidden" name="driver_id" value="<?= Helpers::e((string) ($filters['driver_id'] ?? '')) ?>">
+            <input type="hidden" name="vehicle_id" value="<?= Helpers::e((string) ($filters['vehicle_id'] ?? '')) ?>">
+            <button type="submit" class="btn btn-outline">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Export
+            </button>
+        </form>
+    </div>
 </div>
 
 <!-- Filters (GET so the filtered URL is bookmarkable) -->

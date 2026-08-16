@@ -1388,9 +1388,17 @@ table.data-table {
 /* Tab bar */
 .tab-bar {
   display: flex;
+  align-items: center;
   gap: 2px;
   border-bottom: 1px solid var(--clr-border);
   margin-bottom: 20px;
+}
+
+.tab-bar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tab-item {
