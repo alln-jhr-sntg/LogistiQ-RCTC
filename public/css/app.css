@@ -1357,7 +1357,7 @@ table.data-table {
 .filter-bar-actions {
   margin-left: auto;
   display: flex;
-  alignt-items: center;
+  align-items: center;
   gap: 8px;
 }
 
