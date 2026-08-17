@@ -1,5 +1,5 @@
 -- ============================================================
--- LOGISTICS VEHICLE MANAGEMENT SYSTEM
+-- MoveOps Vehicle Reservation and Fleet Management System
 -- Remix Construction and Trading Corporation
 -- Database Schema (MySQL)
 -- ============================================================
