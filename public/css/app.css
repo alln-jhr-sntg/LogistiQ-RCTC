@@ -1613,6 +1613,50 @@ table.data-table.data-table--compact {
 .map-panel--sm {
   height: 220px;
 }
+/* Trip live map — taller than the form/review picker maps above so the
+   route trail has room to read. */
+.map-panel--live {
+  height: 520px;
+  margin-bottom: 20px;
+}
+
+/* Trip live map info bar (destination, GPS status, last ping, speed,
+   warehouse origin) — a row of .detail-field-label/.detail-field-value
+   pairs. font-weight:500 matches the page's former inline styling. */
+.info-bar {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.info-bar .detail-field-value {
+  font-weight: 500;
+}
+
+/* "Following Vehicle" toggle dot on the trip live map toolbar — pulses
+   while following is on, sits flat and grey once turned off. */
+.follow-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--clr-success);
+  margin-right: 6px;
+  animation: follow-pulse 1.5s ease-in-out infinite;
+}
+.follow-dot.is-off {
+  background: var(--clr-text-3);
+  animation: none;
+}
+@keyframes follow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
 
 /* Detail view */
 .detail-grid {

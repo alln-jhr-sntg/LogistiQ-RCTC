@@ -469,11 +469,22 @@ class TripController
         $warehouseLat = (float) ($settingModel->getByKey('warehouse_lat') ?? '0');
         $warehouseLng = (float) ($settingModel->getByKey('warehouse_lng') ?? '0');
 
+        // GPS health for the initial render, so the status badge is correct
+        // before Google Maps loads and live_map.js takes over polling.
+        // Same age source and classifier as GpsController::feed() uses on
+        // every subsequent poll.
+        $gpsModel   = new GpsTrackingLogModel();
+        $lastPoint  = $gpsModel->getLastPointWithElapsed($id);
+        $ageSeconds = $lastPoint !== null ? (int) $lastPoint['elapsed_seconds'] : null;
+        $gpsStatus  = Helpers::gpsStatus($ageSeconds, $trip['trip_status']);
+
         $this->render('live_map', [
             'page_title'    => 'Live Map — ' . $trip['reservation_code'],
             'trip'          => $trip,
             'warehouse_lat' => $warehouseLat,
             'warehouse_lng' => $warehouseLng,
+            'gps_status'    => $gpsStatus,
+            'age_seconds'   => $ageSeconds,
         ]);
     }
 

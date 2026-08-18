@@ -85,6 +85,43 @@ const TRIP_TERMINAL_STATUSES = ['completed', 'cancelled'];
 // the trip reaches a terminal status.
 const TRIP_TRACKING_STATUSES = ['in_progress', 'incident'];
 
+// GPS health tiers for the trip live map, derived from how many seconds old
+// the newest gps_tracking_logs row is (computed server-side via MySQL's
+// TIMESTAMPDIFF — see GpsTrackingLogModel::getLastPointWithElapsed()).
+// The Android service posts every 10s (GpsTrackingService.UPDATE_INTERVAL_MS),
+// so Live spans two cycles: one missed ping (bad fix, brief signal loss)
+// should not flash the badge amber.
+const GPS_LIVE_MAX_SECONDS    = 20;
+const GPS_DELAYED_MAX_SECONDS = 60;
+const GPS_STALE_MAX_SECONDS   = 300;
+
+const GPS_STATUS_LIVE      = 'live';
+const GPS_STATUS_DELAYED   = 'delayed';
+const GPS_STATUS_STALE     = 'stale';
+const GPS_STATUS_NO_SIGNAL = 'no_signal';
+const GPS_STATUS_AWAITING  = 'awaiting';
+const GPS_STATUS_ENDED     = 'ended';
+
+const GPS_STATUS_LABELS = [
+    GPS_STATUS_LIVE      => 'Live',
+    GPS_STATUS_DELAYED   => 'Delayed',
+    GPS_STATUS_STALE     => 'Stale',
+    GPS_STATUS_NO_SIGNAL => 'No Signal',
+    GPS_STATUS_AWAITING  => 'Awaiting GPS',
+    GPS_STATUS_ENDED     => 'Trip Ended',
+];
+
+// Reuses existing trip/reservation badge colour variants (see .badge-* in
+// app.css) instead of inventing new colours for the same four hues.
+const GPS_STATUS_BADGES = [
+    GPS_STATUS_LIVE      => 'badge-approved',
+    GPS_STATUS_DELAYED   => 'badge-pending',
+    GPS_STATUS_STALE     => 'badge-rejected',
+    GPS_STATUS_NO_SIGNAL => 'badge-cancelled',
+    GPS_STATUS_AWAITING  => 'badge-cancelled',
+    GPS_STATUS_ENDED     => 'badge-cancelled',
+];
+
 const PROJ_PENDING   = 'pending';
 const PROJ_ACTIVE    = 'active';
 const PROJ_COMPLETED = 'completed';

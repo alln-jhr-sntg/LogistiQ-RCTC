@@ -82,6 +82,43 @@ class Helpers
     }
 
     /**
+     * Classify a trip's GPS health from the age (in seconds) of its newest
+     * gps_tracking_logs row, against the GPS_*_MAX_SECONDS thresholds in
+     * config/constants.php. $ageSeconds must come from MySQL's own NOW()
+     * (e.g. GpsTrackingLogModel::getLastPointWithElapsed()), never from
+     * PHP's time() — the DB session is pinned to +08:00 while PHP's default
+     * timezone is not (see config/database.php).
+     *
+     * Used by TripController::liveMap() for the initial render and by
+     * GpsController::feed() on every poll, so both agree on the same tier
+     * for the same age.
+     *
+     * @return array{key: string, label: string, badge: string}
+     */
+    public static function gpsStatus(?int $ageSeconds, string $tripStatus): array
+    {
+        if (in_array($tripStatus, TRIP_TERMINAL_STATUSES, true)) {
+            $key = GPS_STATUS_ENDED;
+        } elseif ($ageSeconds === null) {
+            $key = GPS_STATUS_AWAITING;
+        } elseif ($ageSeconds <= GPS_LIVE_MAX_SECONDS) {
+            $key = GPS_STATUS_LIVE;
+        } elseif ($ageSeconds <= GPS_DELAYED_MAX_SECONDS) {
+            $key = GPS_STATUS_DELAYED;
+        } elseif ($ageSeconds <= GPS_STALE_MAX_SECONDS) {
+            $key = GPS_STATUS_STALE;
+        } else {
+            $key = GPS_STATUS_NO_SIGNAL;
+        }
+
+        return [
+            'key'   => $key,
+            'label' => GPS_STATUS_LABELS[$key],
+            'badge' => GPS_STATUS_BADGES[$key],
+        ];
+    }
+
+    /**
      * Build LIMIT/OFFSET values and page-link markup for a paginated list.
      *
      * $baseQuery is the query string to reuse on every page link — everything

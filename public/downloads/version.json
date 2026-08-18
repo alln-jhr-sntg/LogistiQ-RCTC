@@ -1,6 +1,6 @@
 {
     "_comment": "Read by the driver app's in-app update check AND by views/dashboard/driver.php. JSON has no comment syntax, so this field is the doc — both parsers ignore unknown keys. On every release: bump versionCode (integer, must be higher than the last release — the app only shows the update banner when server versionCode > installed versionCode), set versionName to whatever you want shown to drivers (e.g. '1.2'), and update apkUrl's '?v=N' to match the NEW versionCode exactly. That query param is required, not cosmetic — Hostinger's CDN caches the .apk by full URL regardless of file content, so reusing the same URL for a new build silently serves drivers the OLD binary. A mismatched or missing ?v= bump means drivers download stale APKs with no error.",
-    "versionCode": 4,
-    "versionName": "1.1.2",
-    "apkUrl": "https://darkgoldenrod-chough-131870.hostingersite.com/public/downloads/moveops-driver.apk?v=4"
+    "versionCode": 5,
+    "versionName": "1.2",
+    "apkUrl": "https://darkgoldenrod-chough-131870.hostingersite.com/public/downloads/moveops-driver.apk?v=5"
 }

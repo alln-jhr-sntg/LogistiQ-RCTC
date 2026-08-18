@@ -14,18 +14,25 @@ class GpsController
     // GET /gps/{id}/feed
     // Returns latest GPS points for a trip as JSON.
     // Also returns trip_status so live_map.js can stop polling
-    // when the trip is completed.
+    // when the trip is completed, plus a GPS health tier derived from the
+    // newest point's age (see Helpers::gpsStatus()) so the map's status
+    // badge and the initial server render always agree.
     //
     // Response shape:
     //   { "trip_status": "in_progress",
+    //     "gps_status": "live", "gps_label": "Live", "gps_badge": "badge-approved",
+    //     "age_seconds": 4,
     //     "points": [
     //       { "latitude": "14.59951200", "longitude": "120.98422200",
     //         "speed_kph": "45.50", "heading_degrees": 180,
-    //         "accuracy_meters": "8.50", "logged_at": "2025-12-11 14:30:25" },
+    //         "accuracy_meters": "8.50", "logged_at": "2025-12-11 14:30:25",
+    //         "age_seconds": 4 },
     //       ...
     //     ]
     //   }
     // Points are ordered newest-first (latest position = points[0]).
+    // age_seconds (both top-level and per-point) is computed by MySQL's
+    // NOW(), not PHP's time() — see GpsTrackingLogModel::getLatestByTrip().
     public function feed(int $tripId): void
     {
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
@@ -43,12 +50,18 @@ class GpsController
         // No company scoping — the live map feed is a read-only view, and
         // admin/fleet_admin/super_admin may all view any company's trips.
 
-        $gpsModel = new GpsTrackingLogModel();
-        $points   = $gpsModel->getLatestByTrip($tripId, 50);
+        $gpsModel   = new GpsTrackingLogModel();
+        $points     = $gpsModel->getLatestByTrip($tripId, 50);
+        $ageSeconds = $points !== [] ? (int) $points[0]['age_seconds'] : null;
+        $gpsStatus  = Helpers::gpsStatus($ageSeconds, $trip['trip_status']);
 
         header('Content-Type: application/json');
         echo json_encode([
             'trip_status' => $trip['trip_status'],
+            'gps_status'  => $gpsStatus['key'],
+            'gps_label'   => $gpsStatus['label'],
+            'gps_badge'   => $gpsStatus['badge'],
+            'age_seconds' => $ageSeconds,
             'points'      => $points,
         ]);
         exit;

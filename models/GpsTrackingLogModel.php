@@ -43,13 +43,19 @@ class GpsTrackingLogModel extends BaseModel
      * Return the N most recent GPS points for a trip, newest first.
      * Used by GpsController to feed the admin live map.
      *
+     * age_seconds is computed by MySQL's own NOW(), not PHP's time(), for
+     * the same reason as getLastPointWithElapsed() below — it lets
+     * GpsController derive a GPS health tier via Helpers::gpsStatus()
+     * without any client/server clock or timezone assumptions.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getLatestByTrip(int $tripId, int $limit = 50): array
     {
         return $this->fetchAll(
             'SELECT latitude, longitude, speed_kph,
-                    heading_degrees, accuracy_meters, logged_at
+                    heading_degrees, accuracy_meters, logged_at,
+                    TIMESTAMPDIFF(SECOND, logged_at, NOW()) AS age_seconds
              FROM   gps_tracking_logs
              WHERE  trip_id  = :trip_id
              ORDER  BY logged_at DESC
