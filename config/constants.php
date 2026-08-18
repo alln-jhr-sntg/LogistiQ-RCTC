@@ -50,6 +50,16 @@ const RES_STATUS_LABELS = [
 // above). No controller, model, route or view yet — built in a later step. When it
 // lands, its review/approve/reject guards are super_admin ONLY.
 
+// Reservation statuses that hold a vehicle and a driver for their booked
+// window — a row in any of these blocks an overlapping assignment to the
+// same vehicle or driver. Used by VehicleModel/DriverProfileModel conflict
+// queries. 'gatepass_pending' matters here: ReservationModel::approve()
+// writes that status (not 'approved') the moment a vehicle/driver is held;
+// the row only becomes 'approved' later, once GatepassController::approve()
+// clears the gatepass. Omitting it would leave every reservation sitting in
+// the gatepass queue invisible to the conflict check.
+const RES_BLOCKING_STATUSES = [RES_GATEPASS_PENDING, RES_APPROVED, RES_IN_PROGRESS];
+
 const TRIP_PENDING_START = 'pending_start';
 const TRIP_IN_PROGRESS   = 'in_progress';
 const TRIP_COMPLETED     = 'completed';
@@ -123,6 +133,50 @@ const NOTIF_TYPE_LABELS = [
 ];
 
 const MAINTENANCE_INTERVAL_KM = 5000;
+
+// ── VehicleRecommendationService tuning ───────────────────────
+// Every number the rule-based weighted scoring engine runs on lives here so
+// none of it is buried as a magic literal inside the service classes.
+
+// Scores are integers on a 0-100 scale (not 0.00-1.00), stored as
+// TINYINT UNSIGNED in ai_recommendation_logs and reservations.
+const SCORE_MAX = 100;
+
+// Weighted criteria, in percentage points — MUST sum to SCORE_MAX (enforced
+// by an assertion in VehicleRecommendationService). A sub-score of null
+// means "not applicable to this request" (e.g. no cargo requested), and
+// that criterion's weight is dropped from the denominator for that vehicle
+// rather than counted as zero — see VehicleRecommendationService::recommend().
+const RECOMMENDATION_WEIGHTS = [
+    'capacity'      => 20,
+    'cargo'         => 15,
+    'schedule'      => 15,
+    'purpose_fit'   => 25,
+    'maintenance'   => 15,
+    'weight_coding' => 10,
+];
+
+// Capacity scoring: seats in excess of the requested passenger count that
+// drive the capacity sub-score down to 0 (a linear ramp from 0 excess seats
+// = 100 down to this many excess seats = 0). Replaces the old
+// requested/available ratio, which cratered for small parties regardless of
+// how well-suited the vehicle actually was.
+const CAPACITY_EXCESS_SEATS_FULL_PENALTY = 12;
+
+// Schedule scoring: hours of clear space on either side of the requested
+// window that earn a full (100) schedule score. A vehicle with no
+// neighboring booking at all also scores 100.
+const SCHEDULE_BUFFER_HOURS = 24;
+
+// Philippine LTO weight-coding truck ban, modeled as a time-window soft
+// criterion (see WeightCodingService) instead of the old unconditional
+// >4,500kg hard exclusion, which made every truck in the fleet permanently
+// unrecommendable. Vehicles at or under this GVWR are unaffected — the
+// criterion doesn't apply to them at all (null sub-score, not a penalty).
+const TRUCK_BAN_GVWR_KG = 4500;
+// ISO-8601 day-of-week numbers, Monday=1 .. Sunday=7.
+const TRUCK_BAN_DAYS    = [1, 2, 3, 4, 5];
+const TRUCK_BAN_WINDOWS = [['06:00', '10:00'], ['17:00', '22:00']];
 
 // Mirrors the vehicle_maintenance.maintenance_type ENUM (database/migrations/
 // 2026_08_15_maintenance_type_enum.sql) — the single source of truth for the

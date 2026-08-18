@@ -16,19 +16,15 @@ $statusTabs = [
     PROJ_REJECTED  => 'Rejected',
 ];
 ?>
-<div class="page-header page-header-end">
-    <?php if ($isEmployee): ?>
-    <a href="<?= Helpers::url('/projects/request') ?>" class="btn btn-solid">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Request Project
-    </a>
-    <?php else: ?>
-    <a href="<?= Helpers::url('/projects/create') ?>" class="btn btn-solid">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> New Project
-    </a>
-    <?php endif; ?>
+<?php if ($isEmployee): ?>
+<div class="filter-bar">
+    <div class="filter-bar-actions">
+        <a href="<?= Helpers::url('/projects/request') ?>" class="btn btn-solid">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Request Project
+        </a>
+    </div>
 </div>
-
-<?php if (!$isEmployee): ?>
+<?php else: ?>
 <form method="GET" action="<?= APP_BASE ?>/index.php">
     <input type="hidden" name="url" value="projects">
     <div class="filter-bar">
@@ -48,6 +44,11 @@ $statusTabs = [
             </option>
             <?php endforeach; ?>
         </select>
+        <div class="filter-bar-actions">
+            <a href="<?= Helpers::url('/projects/create') ?>" class="btn btn-solid">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> New Project
+            </a>
+        </div>
     </div>
 </form>
 <?php endif; ?>

@@ -98,18 +98,20 @@ class ReservationModel extends BaseModel
         }
     }
 
-    // ── Step 10 — AI recommendation + review ─────────────────────
-
     /**
-     * Store the AI recommendation result on the reservation row.
-     * Called once from ReservationController::review() after the
-     * scoring engine runs. Guarded by checking ai_recommended_vehicle_id
-     * is null before calling — so it only runs once per reservation.
+     * Store the recommendation result on the reservation row.
+     * Called once from ReservationController::review() after the scoring
+     * engine runs. Guarded by AiRecommendationLogModel::hasRunFor(),
+     * not by ai_recommended_vehicle_id IS NULL — see that model's docblock
+     * for why the old guard re-ran the engine on every page load whenever
+     * nothing survived Phase 1.
+     *
+     * $score is an int 0-100 (see database/migrations/2026_08_18_recommendation_score_int.sql).
      */
     public function updateAiRecommendation(
         int    $id,
         ?int   $vehicleId,
-        float  $score,
+        int    $score,
         string $notes
     ): void {
         $this->execute(
@@ -124,6 +126,27 @@ class ReservationModel extends BaseModel
                 ':notes'      => $notes,
                 ':id'         => $id,
             ]
+        );
+    }
+
+    /**
+     * Clear a stale recommendation. Called from
+     * ReservationController::updateReservation() when a pending
+     * reservation's dates, passenger count, or cargo weight are edited —
+     * any recommendation already computed (by an admin who opened the
+     * review form before the edit) was scored against the old values and
+     * no longer reflects the current request. The next review() visit
+     * re-runs the engine from scratch.
+     */
+    public function clearAiRecommendation(int $id): void
+    {
+        $this->execute(
+            'UPDATE reservations
+             SET    ai_recommended_vehicle_id = NULL,
+                    ai_recommendation_score   = NULL,
+                    ai_recommendation_notes   = NULL
+             WHERE  reservation_id            = :id',
+            [':id' => $id]
         );
     }
 

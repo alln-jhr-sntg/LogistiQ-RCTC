@@ -525,6 +525,14 @@ class ReservationController
             Helpers::redirect('/reservations/' . $id);
         }
 
+        // Any recommendation already computed (an admin opened the
+        // review form before this edit) was scored against the old
+        // passenger count/cargo/window and no longer reflects the current
+        // request — clear it so the next review() visit re-runs the engine
+        // from scratch instead of showing a stale pick.
+        $resModel->clearAiRecommendation($id);
+        (new AiRecommendationLogModel())->deleteByReservation($id);
+
         $auditModel = new AuditLogModel();
         $auditModel->log(
             (int) Auth::id(),
@@ -560,33 +568,31 @@ class ReservationController
 
         Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
-        // Run AI recommendation only once — guard by checking if already done
-        if ($reservation['ai_recommended_vehicle_id'] === null) {
-            $topId = VehicleRecommendationService::recommend($reservation);
+        $logModel = new AiRecommendationLogModel();
 
-            // Build summary note from log results
-            $logModel = new AiRecommendationLogModel();
-            $logs     = $logModel->findByReservation($id);
-            $topScore = 0.0;
-            $topName  = 'None';
-            foreach ($logs as $log) {
-                if (!$log['disqualified']
-                    && (int) $log['vehicle_id'] === (int) $topId) {
-                    $topScore = $log['score'];
-                    $topName  = $log['plate_number']
-                        . ' — ' . $log['brand'] . ' ' . $log['model'];
-                }
-            }
-            $notes = $topId
-                ? "Recommended: $topName (score: $topScore)"
+        // Run recommendation only once per set of request values — guard
+        // on whether a run has already logged anything for this reservation,
+        // not on ai_recommended_vehicle_id being null. That column stays
+        // null whenever Phase 1 disqualifies every candidate, which made
+        // the old guard re-run the engine (and duplicate every log row) on
+        // every page load. See AiRecommendationLogModel::hasRunFor().
+        if (!$logModel->hasRunFor($id)) {
+            $result = VehicleRecommendationService::recommend($reservation);
+
+            $notes = $result
+                ? "Recommended: {$result['label']} (score: {$result['score']})"
                 : 'No eligible vehicles found after disqualification filters.';
 
-            $resModel->updateAiRecommendation($id, $topId, $topScore, $notes);
-            $reservation = $resModel->findById($id); // refresh with AI fields
+            $resModel->updateAiRecommendation(
+                $id,
+                $result['vehicle_id'] ?? null,
+                $result['score'] ?? 0,
+                $notes
+            );
+            $reservation = $resModel->findById($id); // refresh with recommendationfields
         }
 
-        $logModel   = new AiRecommendationLogModel();
-        $aiLogs     = $logModel->findByReservation($id);
+        $aiLogs = $logModel->findByReservation($id);
 
         $vehicleModel = new VehicleModel();
         $driverModel  = new DriverProfileModel();
@@ -595,8 +601,19 @@ class ReservationController
             'page_title'  => 'Review ' . $reservation['reservation_code'],
             'reservation' => $reservation,
             'aiLogs'      => $aiLogs,
-            'vehicles'    => $vehicleModel->findForRecommendation(),
-            'drivers'     => $driverModel->findAvailable(),
+            // Both lists exclude anything already scheduled during this
+            // reservation's window — see VehicleModel::findAssignableForWindow()
+            // and DriverProfileModel::findAvailableForWindow(). Capacity/
+            // cargo/weight mismatches are still listed; only a genuine
+            // schedule conflict is excluded outright.
+            'vehicles'    => $vehicleModel->findAssignableForWindow(
+                $reservation['departure_datetime'],
+                $reservation['return_datetime']
+            ),
+            'drivers'     => $driverModel->findAvailableForWindow(
+                $reservation['departure_datetime'],
+                $reservation['return_datetime']
+            ),
         ]);
     }
 
@@ -623,6 +640,30 @@ class ReservationController
 
         Auth::requireCompanyScope((int) $reservation['company_id'], '/reservations');
 
+        // Refuse a double-book — the review form's dropdowns already
+        // exclude a vehicle or driver already committed elsewhere during
+        // this window, but that's cosmetic on its own (CLAUDE.md: every
+        // view-level gate needs a matching controller-level check). A
+        // replayed or hand-crafted POST must be rejected the same way.
+        // Capacity, cargo, and weight-coding stay advisory overrides —
+        // only an actual schedule conflict blocks the assignment outright.
+        $vehicleModel = new VehicleModel();
+        $driverModel  = new DriverProfileModel();
+
+        if ($vehicleModel->hasConflictingReservation(
+            $vehicleId, $reservation['departure_datetime'], $reservation['return_datetime'], $id
+        )) {
+            Helpers::setFlash('error', 'That vehicle is already committed to another reservation during this window.');
+            Helpers::redirect('/reservations/' . $id . '/review');
+        }
+
+        if ($driverModel->hasConflictingReservation(
+            $driverId, $reservation['departure_datetime'], $reservation['return_datetime'], $id
+        )) {
+            Helpers::setFlash('error', 'That driver is already committed to another reservation during this window.');
+            Helpers::redirect('/reservations/' . $id . '/review');
+        }
+
         // Reservation approval, the vehicle reservation, and gatepass
         // creation must land together — a failure partway through would
         // otherwise leave the vehicle 'reserved' with no gatepass ever
@@ -643,7 +684,6 @@ class ReservationController
             ]);
 
             // Set vehicle to 'reserved' — driver stays 'available' until trip starts (Step 11)
-            $vehicleModel = new VehicleModel();
             $vehicleModel->updateStatus($vehicleId, 'reserved');
 
             // Create the gatepass — 'pending', awaiting super_admin review.

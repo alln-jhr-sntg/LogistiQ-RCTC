@@ -378,9 +378,30 @@ class VehicleModel extends BaseModel
     }
 
     /**
-     * Return true if this vehicle has an approved/in_progress reservation
-     * that overlaps the requested window. Used by VehicleRecommendationService
-     * Phase 1 availability check.
+     * Bind RES_BLOCKING_STATUSES as individual named placeholders (PDO with
+     * emulated prepares off cannot bind an array to a single IN() param)
+     * and return the comma-joined placeholder list to splice into the SQL.
+     * Mutates $params by reference so callers just merge their own bindings
+     * in and pass the same array to fetchAll()/fetchOne().
+     */
+    private function blockingStatusPlaceholders(array &$params): string
+    {
+        $placeholders = [];
+        foreach (RES_BLOCKING_STATUSES as $i => $status) {
+            $key = ":blocking_status_{$i}";
+            $placeholders[] = $key;
+            $params[$key]   = $status;
+        }
+        return implode(',', $placeholders);
+    }
+
+    /**
+     * Return true if this vehicle has a reservation in a blocking status
+     * (RES_BLOCKING_STATUSES) that overlaps the requested window. Used by
+     * VehicleRecommendationService's Phase 1 hard filter and by
+     * ReservationController::approve() to refuse a double-book server-side —
+     * the review form's dropdown already excludes these, but a replayed or
+     * hand-crafted POST must be rejected the same way.
      *
      * Overlap condition (correct interval logic per the plan):
      *   existing.departure < requested.return
@@ -388,25 +409,139 @@ class VehicleModel extends BaseModel
      *
      * A vehicle whose reservation ends exactly at the requested departure
      * time is NOT considered conflicting (strict inequalities).
+     *
+     * $excludeReservationId lets a caller ignore the reservation being
+     * acted on — irrelevant for a still-pending reservation (it holds no
+     * vehicle yet) but kept for correctness if this is ever called against
+     * a reservation that already has one.
      */
     public function hasConflictingReservation(
         int    $vehicleId,
         string $requestedDeparture,
-        string $requestedReturn
+        string $requestedReturn,
+        ?int   $excludeReservationId = null
     ): bool {
+        $params = [
+            ':vehicle_id'          => $vehicleId,
+            ':requested_return'    => $requestedReturn,
+            ':requested_departure' => $requestedDeparture,
+        ];
+        $statusList = $this->blockingStatusPlaceholders($params);
+
+        $exclude = '';
+        if ($excludeReservationId !== null) {
+            $exclude = ' AND reservation_id != :exclude_id';
+            $params[':exclude_id'] = $excludeReservationId;
+        }
+
         $row = $this->fetchOne(
-            'SELECT COUNT(*) AS cnt
+            "SELECT COUNT(*) AS cnt
              FROM   reservations
              WHERE  assigned_vehicle_id = :vehicle_id
-               AND  status              IN (\'approved\', \'in_progress\')
+               AND  status              IN ($statusList)
                AND  departure_datetime  < :requested_return
-               AND  return_datetime     > :requested_departure',
-            [
-                ':vehicle_id'          => $vehicleId,
-                ':requested_return'    => $requestedReturn,
-                ':requested_departure' => $requestedDeparture,
-            ]
+               AND  return_datetime     > :requested_departure
+               $exclude",
+            $params
         );
         return (int) ($row['cnt'] ?? 0) > 0;
+    }
+
+    /**
+     * Hours of clear space between the requested window and this vehicle's
+     * nearest neighboring blocking reservation, on whichever side is
+     * closer. Feeds the recommendation engine's 'schedule' criterion
+     * (config/constants.php::SCHEDULE_BUFFER_HOURS) — the signal the old
+     * 'availability' criterion never actually carried (it was a hard-coded
+     * 1.0 for every candidate, since a real conflict already fails Phase 1).
+     *
+     * Returns null when the vehicle has no blocking reservation on either
+     * side at all — full score, nothing nearby to be tight against.
+     *
+     * Callers only pass vehicles that already survived the Phase 1 overlap
+     * check, so every blocking reservation found here is guaranteed to sit
+     * entirely before or entirely after the requested window, never
+     * straddling it.
+     */
+    public function nearestBookingGapHours(
+        int    $vehicleId,
+        string $requestedDeparture,
+        string $requestedReturn,
+        ?int   $excludeReservationId = null
+    ): ?float {
+        $params = [
+            ':vehicle_id' => $vehicleId,
+            ':departure'  => $requestedDeparture,
+            ':return'     => $requestedReturn,
+        ];
+        $statusList = $this->blockingStatusPlaceholders($params);
+
+        $exclude = '';
+        if ($excludeReservationId !== null) {
+            $exclude = ' AND reservation_id != :exclude_id';
+            $params[':exclude_id'] = $excludeReservationId;
+        }
+
+        $row = $this->fetchOne(
+            "SELECT
+                MAX(CASE WHEN return_datetime    <= :departure THEN return_datetime    END) AS prev_end,
+                MIN(CASE WHEN departure_datetime >= :return    THEN departure_datetime END) AS next_start
+             FROM   reservations
+             WHERE  assigned_vehicle_id = :vehicle_id
+               AND  status              IN ($statusList)
+               $exclude",
+            $params
+        );
+
+        if (!$row || ($row['prev_end'] === null && $row['next_start'] === null)) {
+            return null;
+        }
+
+        $gaps = [];
+        if ($row['prev_end'] !== null) {
+            $gaps[] = (strtotime($requestedDeparture) - strtotime($row['prev_end'])) / 3600;
+        }
+        if ($row['next_start'] !== null) {
+            $gaps[] = (strtotime($row['next_start']) - strtotime($requestedReturn)) / 3600;
+        }
+
+        return max(0.0, min($gaps));
+    }
+
+    /**
+     * Candidate vehicles for the requested window: same status filter as
+     * findForRecommendation(), plus a NOT EXISTS on the blocking-reservation
+     * overlap so a vehicle already committed elsewhere during this window
+     * can never be selected — the review form's vehicle dropdown. Capacity,
+     * cargo, and weight-coding mismatches are deliberately NOT filtered
+     * here; those stay advisory (an admin can override them), only an
+     * actual schedule conflict is excluded outright.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function findAssignableForWindow(string $requestedDeparture, string $requestedReturn): array
+    {
+        $params = [
+            ':requested_return'    => $requestedReturn,
+            ':requested_departure' => $requestedDeparture,
+        ];
+        $statusList = $this->blockingStatusPlaceholders($params);
+
+        return $this->fetchAll(
+            "SELECT   v.*, vc.category_name
+             FROM     vehicles v
+             JOIN     vehicle_categories vc ON vc.category_id = v.category_id
+             WHERE    v.status IN ('available', 'reserved')
+               AND    NOT EXISTS (
+                   SELECT 1
+                   FROM   reservations r
+                   WHERE  r.assigned_vehicle_id = v.vehicle_id
+                     AND  r.status              IN ($statusList)
+                     AND  r.departure_datetime  < :requested_return
+                     AND  r.return_datetime     > :requested_departure
+               )
+             ORDER BY v.plate_number ASC",
+            $params
+        );
     }
 }

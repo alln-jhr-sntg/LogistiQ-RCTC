@@ -1096,6 +1096,15 @@ button {
   padding: 6px 12px;
 }
 
+/* "TOP" pill on the AI-recommended row of the reservation review score
+   table (views/reservations/review.php). */
+.badge-top {
+  background: var(--clr-primary);
+  color: #fff;
+  border: none;
+  margin-right: 4px;
+}
+
 .badge-pending,
 .badge-maintenance {
   background: #fef9e7;
@@ -1242,6 +1251,20 @@ table.data-table {
 
 .data-table tr:hover td {
   background: #fef2f2;
+}
+
+/* Denser variant for the reservation review page's scores/disqualified
+   tables — .text-sm can't win here since table.data-table's own font-size
+   is more specific than a bare class. */
+table.data-table.data-table--compact {
+  font-size: 13px;
+}
+
+/* AI-recommended row in the reservation review scores table. Placed after
+   the :hover rule (equal specificity) so the accent tint still reads on
+   the top-pick row even while hovering it. */
+.data-table .score-row--top td {
+  background: var(--clr-accent);
 }
 
 .data-table .td-muted {
@@ -1599,11 +1622,67 @@ table.data-table {
   margin-bottom: 24px;
 }
 
+/* Reservation review page (views/reservations/review.php) — wider left
+   column for the scores table, narrower right column for the decision
+   form. Unlike .detail-grid this is deliberately asymmetric (1.4fr/1fr)
+   and top-aligned, since the two columns run to very different heights. */
+.review-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Keeps the decision card in view while the left column's scores table
+   scrolls past it. */
+.review-sticky {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 900px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-sticky {
+    position: static;
+    order: -1; /* decision card first once the columns stack */
+  }
+}
+
 .detail-card {
   background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
   padding: 22px;
+}
+
+/* Two-column field grid inside a .detail-card, no row gap — fields carry
+   their own bottom margin via .detail-field. */
+.detail-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+/* Collapsible .detail-card variant (<details>/<summary>) — used by the
+   reservation review page's Disqualified Vehicles list, which is
+   diagnostic noise in the common case. The summary reuses
+   .detail-card-title's typography; only the disclosure marker is custom. */
+.detail-card > summary {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+}
+.detail-card > summary::-webkit-details-marker {
+  display: none;
+}
+.detail-card > summary::before {
+  content: "▸ ";
+  color: var(--clr-text-3);
+}
+.detail-card[open] > summary::before {
+  content: "▾ ";
 }
 
 .detail-card-title {
@@ -1856,14 +1935,17 @@ table.data-table {
   fill: currentColor;
 }
 
-/* Approve/Reject switcher inside the gatepass review modal. */
+/* Approve/Reject switcher — the gatepass review modal (views/reservations/
+   detail.php) and the reservation review page (views/reservations/review.php). */
 .tab-toggle {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-/* AI score breakdown */
+/* Recommendationscore breakdown — .ai-score-grid/.ai-score-row/.ai-score-label render
+   the "Top pick" summary at the head of the reservation review page's
+   Vehicle Scores card (views/reservations/review.php). */
 .ai-score-grid {
   display: grid;
   gap: 4px;
@@ -1879,6 +1961,47 @@ table.data-table {
 }
 .ai-score-label {
   color: var(--clr-text-3);
+}
+
+/* Per-criterion mini bar in the Vehicle Scores table. --score-pct (0-100)
+   is set inline per row — see review.php's scoreBar(); everything else,
+   including the good/mid/poor color tier, is class-driven. */
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--clr-surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  width: calc(var(--score-pct, 0) * 1%);
+  height: 100%;
+}
+.score-bar-fill--good {
+  background: var(--clr-success);
+}
+.score-bar-fill--mid {
+  background: var(--clr-warning);
+}
+.score-bar-fill--poor {
+  background: var(--clr-danger);
+}
+.score-bar-value {
+  font-size: 12px;
+  color: var(--clr-text-3);
+  min-width: 26px;
+  text-align: right;
+}
+/* "Not applicable" — this criterion doesn't apply to this vehicle/request
+   pair (e.g. no cargo requested), rendered as an em dash instead of a bar. */
+.score-bar--na {
+  color: var(--clr-text-3);
+  font-size: 13px;
 }
 
 /* Rejection banner */

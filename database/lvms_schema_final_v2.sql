@@ -149,10 +149,13 @@ CREATE TABLE vehicle_categories (
 -- ============================================================
 -- 7. VEHICLES
 -- Shared fleet — no company_id.
--- gross_weight_kg = GVWR for LTO weight coding compliance.
+-- gross_weight_kg = GVWR. Read by WeightCodingService as a Phase 2 soft
+--   criterion (weight_coding) modeling the LTO truck-coding time window —
+--   NOT a hard disqualifier; a vehicle over the limit stays recommendable
+--   whenever the trip window doesn't overlap a ban period.
 -- preferred_purpose_ids = CSV of trip_purpose_ids this vehicle
 --   is suited for. Read by VehicleRecommendationService for
---   purpose_fit scoring. NULL = neutral 0.5 score.
+--   purpose_fit scoring. NULL = neutral (criterion doesn't apply).
 -- ============================================================
 CREATE TABLE vehicles (
     vehicle_id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -170,7 +173,7 @@ CREATE TABLE vehicles (
     status                ENUM('available','reserved','on_trip','under_maintenance','retired') NOT NULL DEFAULT 'available',
     remarks               TEXT,
     preferred_purpose_ids VARCHAR(255) DEFAULT NULL
-        COMMENT 'CSV of trip_purpose_ids this vehicle is suited for. NULL = no preference (neutral 0.5 score).',
+        COMMENT 'CSV of trip_purpose_ids this vehicle is suited for. NULL = no preference (criterion does not apply).',
     created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_vehicle_category FOREIGN KEY (category_id) REFERENCES vehicle_categories(category_id)
@@ -285,7 +288,7 @@ CREATE TABLE reservations (
     reviewed_at               TIMESTAMP    NULL,
     rejection_reason          TEXT,
     cancellation_reason       TEXT,
-    ai_recommendation_score   DECIMAL(5,2),
+    ai_recommendation_score   TINYINT UNSIGNED,
     ai_recommendation_notes   TEXT,
     created_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -321,23 +324,32 @@ CREATE TABLE gatepasses (
 
 
 -- ============================================================
--- 13. AI RECOMMENDATION LOGS
+-- 13.RECOMMENDATION LOGS
 -- Rule-based weighted scoring — not machine learning.
 -- Scores per vehicle per reservation run stored for audit.
+-- Scores are 0-100 (see database/migrations/2026_08_18_recommendation_score_int.sql).
+-- A NULL sub-score means that criterion did not apply to this vehicle/
+-- request pair (e.g. no cargo requested) — not that it scored zero.
+-- schedule_score was availability_score before that migration; it now
+-- carries a real schedule-headroom signal (services/VehicleRecommendationService.php)
+-- instead of a hard-coded constant. weight_coding_score is new — GVWR/LTO
+-- truck-coding moved here from a Phase 1 hard disqualifier
+-- (services/WeightCodingService.php).
 -- ============================================================
 CREATE TABLE ai_recommendation_logs (
-    log_id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    reservation_id      INT UNSIGNED NOT NULL,
-    vehicle_id          INT UNSIGNED NOT NULL,
-    score               DECIMAL(5,2) NOT NULL,
-    capacity_score      DECIMAL(5,2),
-    cargo_score         DECIMAL(5,2),
-    availability_score  DECIMAL(5,2),
-    purpose_fit_score   DECIMAL(5,2),
-    maintenance_score   DECIMAL(5,2),
-    disqualified        TINYINT(1)   NOT NULL DEFAULT 0,
-    disqualify_reason   VARCHAR(255),
-    created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    log_id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reservation_id       INT UNSIGNED NOT NULL,
+    vehicle_id           INT UNSIGNED NOT NULL,
+    score                TINYINT UNSIGNED NOT NULL,
+    capacity_score       TINYINT UNSIGNED,
+    cargo_score          TINYINT UNSIGNED,
+    schedule_score       TINYINT UNSIGNED,
+    purpose_fit_score    TINYINT UNSIGNED,
+    maintenance_score    TINYINT UNSIGNED,
+    weight_coding_score  TINYINT UNSIGNED,
+    disqualified         TINYINT(1)   NOT NULL DEFAULT 0,
+    disqualify_reason    VARCHAR(255),
+    created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_ai_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id),
     CONSTRAINT fk_ai_vehicle     FOREIGN KEY (vehicle_id)     REFERENCES vehicles(vehicle_id)
 ) ENGINE=InnoDB;

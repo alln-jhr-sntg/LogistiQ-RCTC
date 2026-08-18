@@ -4,12 +4,13 @@ Table ai_recommendation_logs {
   log_id "int(10) unsigned" [pk, increment]
   reservation_id "int(10) unsigned" [not null]
   vehicle_id "int(10) unsigned" [not null]
-  score "decimal(5,2)" [not null]
-  capacity_score "decimal(5,2)" [default: NULL]
-  cargo_score "decimal(5,2)" [default: NULL]
-  availability_score "decimal(5,2)" [default: NULL]
-  purpose_fit_score "decimal(5,2)" [default: NULL]
-  maintenance_score "decimal(5,2)" [default: NULL]
+  score "tinyint unsigned" [not null, note: '0-100. See database/migrations/2026_08_18_recommendation_score_int.sql.']
+  capacity_score "tinyint unsigned" [default: NULL]
+  cargo_score "tinyint unsigned" [default: NULL]
+  schedule_score "tinyint unsigned" [default: NULL, note: 'Renamed from availability_score — was a hard-coded 1.0, now real schedule headroom.']
+  purpose_fit_score "tinyint unsigned" [default: NULL]
+  maintenance_score "tinyint unsigned" [default: NULL]
+  weight_coding_score "tinyint unsigned" [default: NULL, note: 'Added — GVWR/LTO truck-coding moved from a Phase 1 hard disqualifier to this Phase 2 criterion.']
   disqualified "tinyint(1)" [not null, default: 0]
   disqualify_reason varchar(255) [default: NULL]
   created_at timestamp [not null, default: `current_timestamp()`]
@@ -181,7 +182,7 @@ Table reservations {
   reviewed_at timestamp [default: NULL]
   rejection_reason text [default: NULL]
   cancellation_reason text [default: NULL]
-  ai_recommendation_score "decimal(5,2)" [default: NULL]
+  ai_recommendation_score "tinyint unsigned" [default: NULL, note: '0-100. See database/migrations/2026_08_18_recommendation_score_int.sql.']
   ai_recommendation_notes text [default: NULL]
   created_at timestamp [not null, default: `current_timestamp()`]
   updated_at timestamp [not null, default: `current_timestamp()`]
@@ -268,8 +269,9 @@ Table trip_purposes {
   is_active "tinyint(1)" [not null, default: 1]
   created_at timestamp [not null, default: `current_timestamp()`]
   updated_at timestamp [not null, default: `current_timestamp()`]
-  preferred_category_ids varchar(255) [default: NULL, note: 'CSV of vehicle_category_ids. NULL = no preference (neutral 0.5 score).']
 }
+// preferred_category_ids removed — purpose-fit scoring moved to
+// vehicles.preferred_purpose_ids (vehicle-level granularity, see below).
 
 Table users {
   user_id "int(10) unsigned" [pk, increment]
@@ -310,6 +312,7 @@ Table vehicles {
   gross_weight_kg "decimal(8,2)" [not null, default: 0.00]
   status enum('available', 'reserved', 'on_trip', 'under_maintenance', 'retired') [not null, default: 'available']
   remarks text [default: NULL]
+  preferred_purpose_ids varchar(255) [default: NULL, note: 'CSV of trip_purpose_ids this vehicle is suited for. NULL = no preference (criterion does not apply). Read by VehicleRecommendationService for purpose_fit scoring.']
   created_at timestamp [not null, default: `current_timestamp()`]
   updated_at timestamp [not null, default: `current_timestamp()`]
 

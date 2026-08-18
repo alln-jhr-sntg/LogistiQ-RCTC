@@ -5,14 +5,38 @@ $aiRecommendedId = (int) ($reservation['ai_recommended_vehicle_id'] ?? 0);
 $scored       = array_filter($aiLogs, fn($l) => !(int) $l['disqualified']);
 $disqualified = array_filter($aiLogs, fn($l)  => (int)  $l['disqualified']);
 
-function scoreBar(float $score): string {
-    $pct   = (int) round($score * 100);
-    $color = $score >= 0.7 ? '#27ae60' : ($score >= 0.4 ? '#e67e22' : '#e74c3c');
-    return "<div style='display:flex;align-items:center;gap:6px;'>"
-         . "<div style='flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden;'>"
-         . "<div style='width:{$pct}%;height:100%;background:{$color};'></div></div>"
-         . "<span style='font-size:12px;color:var(--clr-text-3);min-width:30px;'>{$score}</span>"
-         . "</div>";
+// Lookup for the vehicle <select> — score + disqualified flag per vehicle,
+// so the dropdown can be ordered best-first and show the score inline
+// instead of making the admin cross-reference the table above it.
+$scoreByVehicle = [];
+foreach ($aiLogs as $log) {
+    $scoreByVehicle[(int) $log['vehicle_id']] = [
+        'score'        => (int) $log['score'],
+        'disqualified' => (bool) $log['disqualified'],
+    ];
+}
+$vehicleOptions = $vehicles;
+usort($vehicleOptions, function ($a, $b) use ($scoreByVehicle) {
+    $sa = $scoreByVehicle[(int) $a['vehicle_id']]['score'] ?? -1;
+    $sb = $scoreByVehicle[(int) $b['vehicle_id']]['score'] ?? -1;
+    return $sb <=> $sa;
+});
+
+// Renders one sub-score cell: a mini bar for an int 0-100, an em dash for
+// null (criterion not applicable to this vehicle/request pair).
+// --score-pct is the one deliberate inline style left on this page — the
+// fill width is a genuinely per-row computed value with no fixed set of
+// CSS classes that could express it without quantizing the bar.
+function scoreBar(?int $score): string
+{
+    if ($score === null) {
+        return '<span class="score-bar--na">—</span>';
+    }
+    $tier = $score >= 70 ? 'good' : ($score >= 40 ? 'mid' : 'poor');
+    return '<div class="score-bar">'
+         . '<div class="score-bar-track"><div class="score-bar-fill score-bar-fill--' . $tier . '" style="--score-pct:' . $score . '"></div></div>'
+         . '<span class="score-bar-value">' . $score . '</span>'
+         . '</div>';
 }
 ?>
 <div class="page-header">
@@ -27,16 +51,28 @@ function scoreBar(float $score): string {
        class="btn btn-outline">← Detail</a>
 </div>
 
-<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:start;">
+<div class="review-grid">
 
-<!-- ── Left: AI Recommendation Panel ───────────────────────── -->
-<div>
-    <div class="detail-card" style="margin-bottom:20px;">
+<!-- ── Left: Recommendation Panel ───────────────────────── -->
+<div class="detail-card-stack">
+    <div class="detail-card">
         <div class="detail-card-title">Request Summary</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+        <div class="detail-field-grid">
+            <div class="detail-field">
+                <div class="detail-field-label">Destination</div>
+                <div class="detail-field-value"><?= Helpers::e($reservation['destination']) ?></div>
+            </div>
             <div class="detail-field">
                 <div class="detail-field-label">Purpose</div>
                 <div class="detail-field-value"><?= Helpers::e($reservation['purpose_name']) ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Departure</div>
+                <div class="detail-field-value"><?= date('M d, Y g:i A', strtotime($reservation['departure_datetime'])) ?></div>
+            </div>
+            <div class="detail-field">
+                <div class="detail-field-label">Return</div>
+                <div class="detail-field-value"><?= date('M d, Y g:i A', strtotime($reservation['return_datetime'])) ?></div>
             </div>
             <div class="detail-field">
                 <div class="detail-field-label">Passengers</div>
@@ -54,42 +90,64 @@ function scoreBar(float $score): string {
     </div>
 
     <?php if (!empty($scored)): ?>
-    <div class="detail-card" style="margin-bottom:20px;">
+    <div class="detail-card">
         <div class="detail-card-title">Vehicle Scores</div>
+
+        <?php
+            $top = null;
+            foreach ($scored as $log) {
+                if ((int) $log['vehicle_id'] === $aiRecommendedId) {
+                    $top = $log;
+                    break;
+                }
+            }
+        ?>
+        <?php if ($top): ?>
+        <div class="ai-score-grid">
+            <div class="ai-score-row">
+                <span class="ai-score-label">Top pick</span>
+                <span><strong><?= Helpers::e($top['plate_number']) ?></strong> — <?= Helpers::e($top['brand'] . ' ' . $top['model']) ?></span>
+            </div>
+            <div class="ai-score-row">
+                <span class="ai-score-label">Score</span>
+                <span><strong><?= (int) $top['score'] ?></strong> / 100</span>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="table-wrap">
-        <table class="data-table" style="font-size:13px;">
+        <table class="data-table data-table--compact">
             <thead>
                 <tr>
+                    <th>Score</th>
                     <th>Vehicle</th>
                     <th>Capacity</th>
                     <th>Cargo</th>
-                    <th>Avail.</th>
+                    <th>Schedule</th>
                     <th>Purpose</th>
                     <th>Maint.</th>
-                    <th>Score</th>
+                    <th>Weight</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($scored as $log):
                 $isTop = (int) $log['vehicle_id'] === $aiRecommendedId;
             ?>
-            <tr style="<?= $isTop ? 'background:var(--clr-accent);' : '' ?>">
+            <tr class="<?= $isTop ? 'score-row--top' : '' ?>">
+                <td><strong><?= (int) $log['score'] ?></strong></td>
                 <td>
                     <?php if ($isTop): ?>
-                    <span style="font-size:10px;background:var(--clr-primary);color:#fff;
-                                 padding:1px 5px;border-radius:3px;margin-right:4px;">
-                        TOP
-                    </span>
+                    <span class="badge badge-top">TOP</span>
                     <?php endif; ?>
                     <strong><?= Helpers::e($log['plate_number']) ?></strong><br>
                     <span class="td-muted"><?= Helpers::e($log['brand'] . ' ' . $log['model']) ?></span>
                 </td>
-                <td><?= scoreBar((float) $log['capacity_score']) ?></td>
-                <td><?= scoreBar((float) $log['cargo_score']) ?></td>
-                <td><?= scoreBar((float) $log['availability_score']) ?></td>
-                <td><?= scoreBar((float) $log['purpose_fit_score']) ?></td>
-                <td><?= scoreBar((float) $log['maintenance_score']) ?></td>
-                <td><strong><?= $log['score'] ?></strong></td>
+                <td><?= scoreBar($log['capacity_score']      !== null ? (int) $log['capacity_score']      : null) ?></td>
+                <td><?= scoreBar($log['cargo_score']         !== null ? (int) $log['cargo_score']         : null) ?></td>
+                <td><?= scoreBar($log['schedule_score']      !== null ? (int) $log['schedule_score']      : null) ?></td>
+                <td><?= scoreBar($log['purpose_fit_score']   !== null ? (int) $log['purpose_fit_score']   : null) ?></td>
+                <td><?= scoreBar($log['maintenance_score']   !== null ? (int) $log['maintenance_score']   : null) ?></td>
+                <td><?= scoreBar($log['weight_coding_score'] !== null ? (int) $log['weight_coding_score'] : null) ?></td>
             </tr>
             <?php endforeach; ?>
             </tbody>
@@ -97,20 +155,20 @@ function scoreBar(float $score): string {
         </div>
     </div>
     <?php else: ?>
-    <div class="detail-card" style="margin-bottom:20px;border-color:#f5a09a;">
-        <div class="detail-card-title" style="color:#c0392b;">No Eligible Vehicles</div>
-        <p style="font-size:14px;color:var(--clr-text-2);margin:0;">
-            All available vehicles were disqualified. See the disqualification table below,
+    <div class="detail-card detail-card-danger">
+        <div class="detail-card-title text-danger">No Eligible Vehicles</div>
+        <p class="detail-card-text">
+            All available vehicles were disqualified. See the disqualification list below,
             or override manually by selecting a vehicle in the approval form.
         </p>
     </div>
     <?php endif; ?>
 
     <?php if (!empty($disqualified)): ?>
-    <div class="detail-card">
-        <div class="detail-card-title">Disqualified Vehicles</div>
+    <details class="detail-card">
+        <summary class="detail-card-title">Disqualified Vehicles (<?= count($disqualified) ?>)</summary>
         <div class="table-wrap">
-        <table class="data-table" style="font-size:13px;">
+        <table class="data-table data-table--compact">
             <thead>
                 <tr><th>Vehicle</th><th>Reason</th></tr>
             </thead>
@@ -127,86 +185,89 @@ function scoreBar(float $score): string {
             </tbody>
         </table>
         </div>
-    </div>
+    </details>
     <?php endif; ?>
 </div>
 
 <!-- ── Right: Decision Form ─────────────────────────────────── -->
-<div>
-    <!-- Tab toggle -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <button type="button" id="btnApprove" class="btn btn-solid"
-                onclick="showSection('approve')">Approve</button>
-        <button type="button" id="btnReject"  class="btn btn-outline"
-                onclick="showSection('reject')">Reject</button>
-    </div>
+<div class="review-sticky">
+    <div class="form-card">
+        <div class="tab-toggle">
+            <button type="button" id="btnApprove" class="btn btn-solid"
+                    onclick="showSection('approve')">Approve</button>
+            <button type="button" id="btnReject"  class="btn btn-outline"
+                    onclick="showSection('reject')">Reject</button>
+        </div>
 
-    <!-- Approve form -->
-    <div id="sectionApprove" class="form-card">
-        <div class="form-section-title">Assign Vehicle &amp; Driver</div>
-        <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/approve') ?>">
-            <?= Csrf::field() ?>
-            <div class="form-group">
-                <label class="form-label">Vehicle <span class="required">*</span></label>
-                <select class="form-select" name="assigned_vehicle_id" required>
-                    <option value="">— Select Vehicle —</option>
-                    <?php foreach ($vehicles as $v): ?>
-                    <option value="<?= (int) $v['vehicle_id'] ?>"
-                        <?= (int) $v['vehicle_id'] === $aiRecommendedId ? 'selected' : '' ?>>
-                        <?= Helpers::e($v['plate_number'] . ' — ' . $v['brand'] . ' ' . $v['model']
-                            . ' (' . $v['passenger_capacity'] . ' pax)') ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-                <?php if ($aiRecommendedId): ?>
-                <p class="form-hint">
-                    AI recommended: <?php
-                    foreach ($scored as $log) {
-                        if ((int) $log['vehicle_id'] === $aiRecommendedId) {
-                            echo Helpers::e($log['plate_number'] . ' — score ' . $log['score']);
-                            break;
+        <!-- Approve form -->
+        <div id="sectionApprove">
+            <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/approve') ?>">
+                <?= Csrf::field() ?>
+                <div class="form-group">
+                    <label class="form-label">Vehicle <span class="required">*</span></label>
+                    <select class="form-select" name="assigned_vehicle_id" required>
+                        <option value="">— Select Vehicle —</option>
+                        <?php foreach ($vehicleOptions as $v):
+                            $vid        = (int) $v['vehicle_id'];
+                            $info       = $scoreByVehicle[$vid] ?? null;
+                            $scoreLabel = ($info && !$info['disqualified']) ? ' — score ' . $info['score'] : '';
+                        ?>
+                        <option value="<?= $vid ?>"
+                            <?= $vid === $aiRecommendedId ? 'selected' : '' ?>>
+                            <?= Helpers::e($v['plate_number'] . ' — ' . $v['brand'] . ' ' . $v['model']
+                                . ' (' . $v['passenger_capacity'] . ' pax)' . $scoreLabel) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ($aiRecommendedId): ?>
+                    <p class="form-hint">
+                        Recommended: <?php
+                        foreach ($scored as $log) {
+                            if ((int) $log['vehicle_id'] === $aiRecommendedId) {
+                                echo Helpers::e($log['plate_number'] . ' — score ' . (int) $log['score']);
+                                break;
+                            }
                         }
-                    }
-                    ?> (pre-selected, override allowed)
-                </p>
-                <?php endif; ?>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Driver <span class="required">*</span></label>
-                <select class="form-select" name="assigned_driver_id" required>
-                    <option value="">— Select Driver —</option>
-                    <?php if (empty($drivers)): ?>
-                    <option disabled>No available drivers</option>
-                    <?php else: ?>
-                    <?php foreach ($drivers as $d): ?>
-                    <option value="<?= (int) $d['user_id'] ?>">
-                        <?= Helpers::e($d['first_name'] . ' ' . $d['last_name'])
-                            . ($d['employee_id'] ? ' (' . $d['employee_id'] . ')' : '') ?>
-                    </option>
-                    <?php endforeach; ?>
+                        ?> (pre-selected, override allowed)
+                    </p>
                     <?php endif; ?>
-                </select>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-solid">Approve Reservation</button>
-            </div>
-        </form>
-    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Driver <span class="required">*</span></label>
+                    <select class="form-select" name="assigned_driver_id" required>
+                        <option value="">— Select Driver —</option>
+                        <?php if (empty($drivers)): ?>
+                        <option disabled>No available drivers</option>
+                        <?php else: ?>
+                        <?php foreach ($drivers as $d): ?>
+                        <option value="<?= (int) $d['user_id'] ?>">
+                            <?= Helpers::e($d['first_name'] . ' ' . $d['last_name'])
+                                . ($d['employee_id'] ? ' (' . $d['employee_id'] . ')' : '') ?>
+                        </option>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-solid">Approve Reservation</button>
+                </div>
+            </form>
+        </div>
 
-    <!-- Reject form (hidden by default) -->
-    <div id="sectionReject" class="form-card" style="display:none;">
-        <div class="form-section-title">Rejection Reason</div>
-        <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/reject') ?>">
-            <?= Csrf::field() ?>
-            <div class="form-group">
-                <label class="form-label">Reason <span class="required">*</span></label>
-                <textarea class="form-textarea" name="rejection_reason" rows="4" required
-                          placeholder="Explain why this reservation is being rejected..."></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-danger">Reject Reservation</button>
-            </div>
-        </form>
+        <!-- Reject form (hidden by default) -->
+        <div id="sectionReject" class="hidden">
+            <form method="POST" action="<?= Helpers::url('/reservations/' . $reservation['reservation_id'] . '/reject') ?>">
+                <?= Csrf::field() ?>
+                <div class="form-group">
+                    <label class="form-label">Reason <span class="required">*</span></label>
+                    <textarea class="form-textarea" name="rejection_reason" rows="4" required
+                              placeholder="Explain why this reservation is being rejected..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Reject Reservation</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -214,9 +275,11 @@ function scoreBar(float $score): string {
 
 <script>
 function showSection(which) {
-    document.getElementById('sectionApprove').style.display = which === 'approve' ? '' : 'none';
-    document.getElementById('sectionReject').style.display  = which === 'reject'  ? '' : 'none';
-    document.getElementById('btnApprove').className = which === 'approve' ? 'btn btn-solid' : 'btn btn-outline';
-    document.getElementById('btnReject').className  = which === 'reject'  ? 'btn btn-solid' : 'btn btn-outline';
+    document.getElementById('sectionApprove').classList.toggle('hidden', which !== 'approve');
+    document.getElementById('sectionReject').classList.toggle('hidden', which !== 'reject');
+    document.getElementById('btnApprove').classList.toggle('btn-solid', which === 'approve');
+    document.getElementById('btnApprove').classList.toggle('btn-outline', which !== 'approve');
+    document.getElementById('btnReject').classList.toggle('btn-solid', which === 'reject');
+    document.getElementById('btnReject').classList.toggle('btn-outline', which !== 'reject');
 }
 </script>

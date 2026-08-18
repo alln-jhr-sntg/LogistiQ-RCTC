@@ -214,7 +214,7 @@ $role = Auth::role();
         </div>
         <?php endif; ?>
 
-        <!-- AI recommendation panel — shows after review is run -->
+        <!-- Recommendation panel — shows after review is run -->
         <?php if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN])): ?>
         <div class="detail-card">
             <div class="detail-card-title">Vehicle Recommendation</div>
@@ -222,8 +222,8 @@ $role = Auth::role();
             <div class="detail-field">
                 <div class="detail-field-label">Score</div>
                 <div class="detail-field-value">
-                    <?= number_format((float) $reservation['ai_recommendation_score'], 2) ?>
-                    / 1.00
+                    <?= (int) $reservation['ai_recommendation_score'] ?>
+                    / 100
                 </div>
             </div>
             <div class="detail-field">
