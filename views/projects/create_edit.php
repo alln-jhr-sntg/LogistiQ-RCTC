@@ -17,9 +17,9 @@ $currentStatus = $project['status'] ?? PROJ_ACTIVE;
 <div class="form-section-title">Project Details</div>
 <div class="form-row">
     <div class="form-group"><label class="form-label">Project Name <span class="required">*</span></label><input type="text" class="form-input" name="project_name" value="<?= Helpers::e($project['project_name'] ?? '') ?>" required></div>
-    <div class="form-group"><label class="form-label">Project Code</label><input type="text" class="form-input" name="project_code" value="<?= Helpers::e($project['project_code'] ?? '') ?>" placeholder="e.g. RMX-2025-001"></div>
+    <div class="form-group"><label class="form-label">Project Code</label><input type="text" class="form-input" id="projectCodeInput" name="project_code" value="<?= Helpers::e($project['project_code'] ?? '') ?>" placeholder="e.g. RMX-2025-001"></div>
 </div>
-<div class="form-group"><label class="form-label">Company <span class="required">*</span></label><select class="form-select" name="company_id" required>
+<div class="form-group"><label class="form-label">Company <span class="required">*</span></label><select class="form-select" name="company_id" id="companySelect" required onchange="updateProjectCodeSuggestion(this.value)">
     <option value="">— Select Company —</option>
     <?php foreach ($companies as $co): ?>
     <option value="<?= (int) $co['company_id'] ?>"
@@ -66,6 +66,29 @@ $currentStatus = $project['status'] ?? PROJ_ACTIVE;
 <div class="form-actions"><button type="submit" class="btn btn-solid"><?= isset($project) && $project ? 'Save Changes' : 'Create Project' ?></button><a href="<?= Helpers::url('/projects') ?>" class="btn btn-outline">Cancel</a></div>
 </div></form>
 <script>
+var codeSuggestions = <?= json_encode($codeSuggestions) ?>;
+var lastAutoProjectCode = null;
+
+// Fills the project_code field with the suggestion for the selected
+// company, but only when the field is still empty or holds a previous
+// suggestion — a hand-typed or already-saved code is never overwritten.
+function updateProjectCodeSuggestion(companyId) {
+    var suggestion = codeSuggestions[companyId];
+    if (!suggestion) return;
+    var input = document.getElementById('projectCodeInput');
+    if (input.value === '' || input.value === lastAutoProjectCode) {
+        input.value = suggestion;
+        lastAutoProjectCode = suggestion;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var companySelect = document.getElementById('companySelect');
+    if (companySelect && companySelect.value) {
+        updateProjectCodeSuggestion(companySelect.value);
+    }
+});
+
 window.lvmsLocationPicker = {
     mapId:          'projectMap',
     latInputId:     'siteLat',

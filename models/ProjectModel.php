@@ -163,6 +163,33 @@ class ProjectModel extends BaseModel
     }
 
     /**
+     * Suggest the next sequential project_code for one company in
+     * {company_code}-{year}-NNN form, one past the highest numeric suffix
+     * already used by that company this year. project_code is free text,
+     * so codes that don't match the shape (or belong to a different
+     * company/year) are ignored rather than breaking the sequence.
+     * Create-form prefill only — the field stays editable and this format
+     * is never enforced on save.
+     */
+    public function nextProjectCodeSuggestion(string $companyCode, string $year): string
+    {
+        $prefix = $companyCode . '-' . $year . '-';
+        $rows   = $this->fetchAll(
+            'SELECT project_code FROM projects WHERE project_code LIKE :prefix',
+            [':prefix' => $prefix . '%']
+        );
+
+        $maxSeq = 0;
+        foreach ($rows as $row) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '(\d+)$/', $row['project_code'], $m)) {
+                $maxSeq = max($maxSeq, (int) $m[1]);
+            }
+        }
+
+        return $prefix . str_pad((string) ($maxSeq + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Insert a new project. Returns the new project_id.
      *
      * Status defaults to 'pending' to match the column default: an

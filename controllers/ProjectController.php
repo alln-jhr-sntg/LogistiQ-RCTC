@@ -32,6 +32,28 @@ class ProjectController
         return $own ? [$own] : [];
     }
 
+    // Next project_code suggestion for each of the given companies, keyed
+    // by company_id. Feeds the create/edit form's prefill and the client-
+    // side recompute when the company dropdown changes.
+    //
+    // @param array<int, array<string, mixed>> $companies
+    // @return array<int, string>
+    private function projectCodeSuggestions(array $companies): array
+    {
+        $projectModel = new ProjectModel();
+        $year         = date('Y');
+        $suggestions  = [];
+
+        foreach ($companies as $co) {
+            $suggestions[(int) $co['company_id']] = $projectModel->nextProjectCodeSuggestion(
+                (string) $co['company_code'],
+                $year
+            );
+        }
+
+        return $suggestions;
+    }
+
     // Project company-scope rule (differs from the generic Auth guard):
     //   super_admin  — any company
     //   fleet_admin  — REMIX only, not every company
@@ -190,13 +212,15 @@ class ProjectController
         Auth::requireRole(ROLE_SUPER_ADMIN, ROLE_FLEET_ADMIN, ROLE_ADMIN);
 
         $settingModel = new SystemSettingModel();
+        $companies    = $this->assignableCompanies();
 
         $this->render('create_edit', [
-            'page_title'    => 'New Project',
-            'project'       => null,
-            'companies'     => $this->assignableCompanies(),
-            'warehouse_lat' => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
-            'warehouse_lng' => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
+            'page_title'      => 'New Project',
+            'project'         => null,
+            'companies'       => $companies,
+            'codeSuggestions' => $this->projectCodeSuggestions($companies),
+            'warehouse_lat'   => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
+            'warehouse_lng'   => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
         ]);
     }
 
@@ -277,13 +301,15 @@ class ProjectController
         $this->requireProjectCompanyScope((int) $project['company_id']);
 
         $settingModel = new SystemSettingModel();
+        $companies    = $this->assignableCompanies();
 
         $this->render('create_edit', [
-            'page_title'    => 'Edit Project — ' . $project['project_name'],
-            'project'       => $project,
-            'companies'     => $this->assignableCompanies(),
-            'warehouse_lat' => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
-            'warehouse_lng' => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
+            'page_title'      => 'Edit Project — ' . $project['project_name'],
+            'project'         => $project,
+            'companies'       => $companies,
+            'codeSuggestions' => $this->projectCodeSuggestions($companies),
+            'warehouse_lat'   => (float) ($settingModel->getByKey('warehouse_lat') ?? '0'),
+            'warehouse_lng'   => (float) ($settingModel->getByKey('warehouse_lng') ?? '0'),
         ]);
     }
 

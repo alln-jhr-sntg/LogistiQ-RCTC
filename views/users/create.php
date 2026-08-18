@@ -24,7 +24,7 @@
         </div>
         <div class="form-group">
             <label class="form-label">Employee ID</label>
-            <input type="text" class="form-input" name="employee_id" placeholder="e.g. EMP-0099">
+            <input type="text" class="form-input" name="employee_id" value="<?= Helpers::e($employeeIdSuggestion) ?>" placeholder="e.g. EMP-0099">
         </div>
     </div>
     <div class="form-row">

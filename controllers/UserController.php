@@ -80,11 +80,13 @@ class UserController
 
         $companyModel = new CompanyModel();
         $deptModel    = new DepartmentModel();
+        $userModel    = new UserModel();
 
         $this->render('create', [
-            'page_title'  => 'Add User',
-            'companies'   => $companyModel->findAll(),
-            'departments' => $deptModel->findAllWithCompany(),
+            'page_title'            => 'Add User',
+            'companies'             => $companyModel->findAll(),
+            'departments'           => $deptModel->findAllWithCompany(),
+            'employeeIdSuggestion'  => $userModel->nextEmployeeIdSuggestion(),
         ]);
     }
 

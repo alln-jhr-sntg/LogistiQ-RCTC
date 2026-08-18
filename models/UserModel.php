@@ -320,4 +320,29 @@ class UserModel extends BaseModel
         );
         return (int) ($row['cnt'] ?? 0);
     }
+
+    /**
+     * Suggest the next sequential employee_id in EMP-NNNN form, one past
+     * the highest numeric suffix already in use. employee_id is free text,
+     * so rows that don't match the EMP-#### shape are ignored rather than
+     * breaking the sequence. Create-form prefill only — the field stays
+     * editable and this format is never enforced on save.
+     */
+    public function nextEmployeeIdSuggestion(): string
+    {
+        $prefix = 'EMP-';
+        $rows   = $this->fetchAll(
+            'SELECT employee_id FROM users WHERE employee_id LIKE :prefix',
+            [':prefix' => $prefix . '%']
+        );
+
+        $maxSeq = 0;
+        foreach ($rows as $row) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '(\d+)$/', $row['employee_id'], $m)) {
+                $maxSeq = max($maxSeq, (int) $m[1]);
+            }
+        }
+
+        return $prefix . str_pad((string) ($maxSeq + 1), 4, '0', STR_PAD_LEFT);
+    }
 }
