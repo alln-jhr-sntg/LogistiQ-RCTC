@@ -4,10 +4,6 @@
  * UserModel
  *
  * Wraps the `users` table.
- *
- * Step 3:  findByEmail, findById, updateLastLogin, updateApiToken
- * Step 6b: findByRole
- * Step 6g: findAll, create, update, updatePassword
  */
 class UserModel extends BaseModel
 {

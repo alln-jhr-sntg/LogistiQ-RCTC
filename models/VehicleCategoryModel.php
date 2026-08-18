@@ -6,10 +6,10 @@
  * Wraps the `vehicle_categories` table.
  *
  * Used in:
- *   Step 6c  — VehicleController categories CRUD
- *   Step 6d  — VehicleController create/edit (category dropdown)
- *   Step 6f  — TripPurposeModel preferred_category_ids multi-select
- *   Step 10  — VehicleRecommendationService purpose-fit scoring
+ *   VehicleController categories CRUD
+ *   VehicleController create/edit (category dropdown)
+ *   TripPurposeModel preferred_category_ids multi-select
+ *   VehicleRecommendationService purpose-fit scoring
  */
 class VehicleCategoryModel extends BaseModel
 {

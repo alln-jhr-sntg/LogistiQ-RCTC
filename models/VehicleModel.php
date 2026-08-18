@@ -8,10 +8,10 @@
  * are managed exclusively by TripController — never set them here.
  *
  * Used in:
- *   Step 6d  — VehicleController full CRUD
- *   Step 10  — VehicleRecommendationService candidate queries
- *   Step 11  — TripController status transitions
- *   Step 14  — ReportController vehicle utilization
+ *   VehicleController full CRUD
+ *   VehicleRecommendationService candidate queries
+ *   TripController status transitions
+ *   ReportController vehicle utilization
  */
 class VehicleModel extends BaseModel
 {
@@ -403,7 +403,7 @@ class VehicleModel extends BaseModel
      * the review form's dropdown already excludes these, but a replayed or
      * hand-crafted POST must be rejected the same way.
      *
-     * Overlap condition (correct interval logic per the plan):
+     * Overlap condition:
      *   existing.departure < requested.return
      *   AND existing.return > requested.departure
      *

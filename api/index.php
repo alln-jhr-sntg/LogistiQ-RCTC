@@ -15,7 +15,6 @@
  *   POST  /api/gps
  *   GET   /api/notifications
  *   PATCH /api/notifications/{id}/read
- *   POST  /api/incidents
  */
 
 // ── Headers ──────────────────────────────────────────────────

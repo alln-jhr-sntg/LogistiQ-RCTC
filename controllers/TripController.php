@@ -4,7 +4,7 @@
  * TripController
  *
  * Manages the trip lifecycle on the web side. The driver-facing
- * start/complete flow runs through TripApiController (Step 15).
+ * start/complete flow runs through TripApiController.
  * These web methods are admin override paths.
  *
  * Role matrix:
@@ -16,7 +16,7 @@
  *   complete()       — super_admin, fleet_admin (web override)
  *   notes()          — super_admin, fleet_admin, admin (admin_notes),
  *                      employee (employee_notes via reservation detail)
- *   reportIncident() — super_admin, fleet_admin, admin (Decision 5)
+ *   reportIncident() — super_admin, fleet_admin, admin
  *   resolveIncident()— super_admin, fleet_admin, admin
  *   cancelTrip()     — super_admin, fleet_admin — terminal exit for a
  *                      trip that cannot continue (only from 'incident')
@@ -286,7 +286,7 @@ class TripController
             throw $e;
         }
 
-        // MaintenanceService hook (Step 12 — safe stub, swallows error if not yet implemented)
+        // MaintenanceService hook
         try {
             MaintenanceService::checkAfterTrip((int) $trip['vehicle_id'], $odometerEnd);
         } catch (Throwable $e) {
@@ -342,7 +342,7 @@ class TripController
         Helpers::redirect('/trips/' . $id);
     }
 
-    // ── Report incident (admin web, Decision 5) ───────────────────
+    // ── Report incident (admin web) ────────────────────────────────
 
     // POST /trips/{id}/incident
     public function reportIncident(int $id): void
@@ -449,7 +449,7 @@ class TripController
         Helpers::redirect('/trips/' . $id);
     }
 
-    // ── Live map stub (Step 16) ───────────────────────────────────
+    // ── Live map ─────────────────────────────────────────────────
 
     // GET /trips/{id}/map
     public function liveMap(int $id): void
@@ -477,7 +477,7 @@ class TripController
         ]);
     }
 
-    // ── Active trip stub — driver screen (Step 15) ────────────────
+    // ── Active trip stub — driver screen ────────────────
 
     // GET /trips/{id}/active
     // Was a graceful-fallback redirect for drivers landing here from the

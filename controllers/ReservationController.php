@@ -9,8 +9,6 @@ class ReservationController
         require_once __DIR__ . '/../views/layouts/main.php';
     }
 
-    // ── Step 9 — Reservation list ─────────────────────────────────
-
     // GET /reservations
     public function index(): void
     {
@@ -68,8 +66,6 @@ class ReservationController
             'pagination'    => $pagination['html'],
         ]);
     }
-
-    // ── Step 9 — Reservation create ───────────────────────────────
 
     // GET /reservations/create
     public function create(): void
@@ -222,8 +218,6 @@ class ReservationController
         Helpers::redirect('/reservations/' . $newId);
     }
 
-    // ── Step 9 — Reservation detail ───────────────────────────────
-
     // GET /reservations/{id}
     public function detail(int $id): void
     {
@@ -314,8 +308,6 @@ class ReservationController
         ]);
     }
 
-    // ── Step 9 — Reservation cancel ───────────────────────────────
-
     // POST /reservations/{id}/cancel
     public function cancel(int $id): void
     {
@@ -372,7 +364,7 @@ class ReservationController
         try {
             $resModel->cancel($id, (int) Auth::id(), $reason);
 
-            // Since Step 4, an 'approved' reservation always has a trip
+            // An 'approved' reservation always has a trip
             // (created at gatepass approval, as 'pending_start') — cancelling
             // the reservation must also close out that trip so it doesn't sit
             // orphaned and keep the vehicle/driver locked up. Pending
@@ -410,8 +402,6 @@ class ReservationController
         Helpers::setFlash('success', 'Reservation cancelled.');
         Helpers::redirect('/reservations/' . $id);
     }
-
-    // ── Step 9 — Employee self-edit ───────────────────────────────
 
     // GET /reservations/{id}/edit
     public function editReservation(int $id): void
@@ -551,8 +541,6 @@ class ReservationController
         Helpers::redirect('/reservations/' . $id);
     }
 
-    // ── Step 10 — Review / Approve / Reject ──────────────────────
-
     // GET /reservations/{id}/review
     public function review(int $id): void
     {
@@ -683,7 +671,7 @@ class ReservationController
                 'reviewed_by' => (int) Auth::id(),
             ]);
 
-            // Set vehicle to 'reserved' — driver stays 'available' until trip starts (Step 11)
+            // Set vehicle to 'reserved' — driver stays 'available' until trip starts
             $vehicleModel->updateStatus($vehicleId, 'reserved');
 
             // Create the gatepass — 'pending', awaiting super_admin review.
@@ -783,8 +771,6 @@ class ReservationController
         Helpers::setFlash('success', 'Reservation rejected.');
         Helpers::redirect('/reservations/' . $id);
     }
-
-    // ── 6f — Trip Purposes ────────────────────────────────────────
 
     public function purposes(): void
     {

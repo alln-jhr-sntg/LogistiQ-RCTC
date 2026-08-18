@@ -9,8 +9,6 @@ class VehicleController
         require_once __DIR__ . '/../views/layouts/main.php';
     }
 
-    // ── 6d — Fleet List ──────────────────────────────────────────
-
     // GET /vehicles
     public function index(): void
     {
@@ -35,8 +33,6 @@ class VehicleController
             'maintFilter'     => $maintFilter,
         ]);
     }
-
-    // ── 6d — Add Vehicle ─────────────────────────────────────────
 
     // GET /vehicles/create
     public function create(): void
@@ -122,8 +118,6 @@ class VehicleController
         Helpers::setFlash('success', 'Vehicle ' . $plate . ' added.');
         Helpers::redirect('/vehicles');
     }
-
-    // ── 6d — Edit Vehicle ─────────────────────────────────────────
 
     // GET /vehicles/{id}/edit
     public function edit(int $id): void
@@ -221,8 +215,6 @@ class VehicleController
         Helpers::setFlash('success', 'Vehicle ' . $plate . ' updated.');
         Helpers::redirect('/vehicles');
     }
-
-    // ── 6c — Vehicle Categories ───────────────────────────────────
 
     // GET /vehicles/categories
     public function categories(): void
@@ -322,8 +314,6 @@ class VehicleController
         Helpers::setFlash('success', 'Category updated.');
         Helpers::redirect('/vehicles/categories');
     }
-
-    // ── 6d — Maintenance ─────────────────────────────────────────
 
     // GET /vehicles/{id}/maintenance
     public function maintenance(int $id): void

@@ -5,8 +5,10 @@ require_once __DIR__ . '/BaseApiController.php';
 /**
  * IncidentApiController
  *
- * Allows drivers to report trip incidents via the Android app.
- * ROLE_DRIVER only — admins use the web interface.
+ * Would allow drivers to report trip incidents via the Android app
+ * (ROLE_DRIVER only — admins use the web interface), but the route below
+ * is commented out in api/index.php ("Future feature"), so this
+ * controller is currently unreachable.
  *
  * POST /api/incidents
  * Body: {

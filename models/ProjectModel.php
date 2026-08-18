@@ -6,9 +6,9 @@
  * Wraps the `projects` table.
  *
  * Used in:
- *   Step 6e  — ProjectController CRUD
- *   Step 8   — TripLimitService project-based trip counting
- *   Step 9   — ReservationController project dropdown
+ *   ProjectController CRUD
+ *   TripLimitService project-based trip counting
+ *   ReservationController project dropdown
  */
 class ProjectModel extends BaseModel
 {

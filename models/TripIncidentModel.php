@@ -5,12 +5,12 @@
  *
  * Wraps the `trip_incidents` table.
  *
- * Incidents are reported on two platforms (Decision 5):
- *   Web   — TripController::reportIncident(), admin only
- *   Android — IncidentApiController (Step 15), driver only
+ * Incidents are reported via the web by admin-and-above roles
+ * (TripController::reportIncident()). IncidentApiController offers a
+ * driver-facing Android path, but its route is commented out in
+ * api/index.php ("Future feature"), so it isn't reachable yet.
  *
- * Both paths write to this table. reported_by distinguishes
- * the filer by role.
+ * reported_by distinguishes the filer by role.
  */
 class TripIncidentModel extends BaseModel
 {

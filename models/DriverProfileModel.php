@@ -7,9 +7,9 @@
  * One profile per driver user — enforced by UNIQUE on user_id.
  *
  * Used in:
- *   Step 6g  — UserController driverProfile / updateDriverProfile
- *   Step 10  — ReservationController driver dropdown (available drivers)
- *   Step 11  — TripController status transitions (on_trip / available)
+ *   UserController driverProfile / updateDriverProfile
+ *   ReservationController driver dropdown (available drivers)
+ *   TripController status transitions (on_trip / available)
  */
 class DriverProfileModel extends BaseModel
 {
@@ -28,7 +28,7 @@ class DriverProfileModel extends BaseModel
 
     /**
      * Return all available drivers joined with their user info.
-     * Used in the reservation review form (Step 10) to populate
+     * Used in the reservation review form to populate
      * the driver assignment dropdown.
      *
      * @return array<int, array<string, mixed>>

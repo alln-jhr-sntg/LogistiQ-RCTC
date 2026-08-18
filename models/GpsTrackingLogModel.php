@@ -7,8 +7,8 @@
  * High-volume write table — BIGINT PK.
  *
  * Used in:
- *   Step 15 — GpsApiController (Android driver inserts)
- *   Step 16 — GpsController (admin reads for live map feed)
+ *   GpsApiController (Android driver inserts)
+ *   GpsController (admin reads for live map feed)
  */
 class GpsTrackingLogModel extends BaseModel
 {
@@ -41,7 +41,7 @@ class GpsTrackingLogModel extends BaseModel
 
     /**
      * Return the N most recent GPS points for a trip, newest first.
-     * Used by GpsController (Step 16) to feed the admin live map.
+     * Used by GpsController to feed the admin live map.
      *
      * @return array<int, array<string, mixed>>
      */

@@ -5,10 +5,10 @@
  *
  * Wraps the `notifications` table.
  *
- * Step 9:  createForUsers() — write notifications when reservation created
- * Step 12: createForUsers() reused for maintenance alerts
- * Step 13: getByUser(), getUnreadCount(), markAllRead(), markOneRead()
- *          — reading/marking notifications wired in Step 13
+ * createForUsers() — write notifications when reservation created
+ * createForUsers() reused for maintenance alerts
+ * getByUser(), getUnreadCount(), markAllRead(), markOneRead()
+ *          — reading/marking notifications
  */
 class NotificationModel extends BaseModel
 {
@@ -212,7 +212,7 @@ class NotificationModel extends BaseModel
 
     /**
      * Count unread notifications for a user.
-     * Used by the topbar badge in Step 13.
+     * Used by the topbar badge.
      */
     public function getUnreadCount(int $userId): int
     {

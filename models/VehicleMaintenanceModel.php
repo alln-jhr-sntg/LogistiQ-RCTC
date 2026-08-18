@@ -6,9 +6,9 @@
  * Wraps the `vehicle_maintenance` table.
  *
  * Used in:
- *   Step 6d  — VehicleController maintenance log + display
- *   Step 12  — MaintenanceService::checkAfterTrip()
- *   Step 14  — ReportController maintenance history report
+ *   VehicleController maintenance log + display
+ *   MaintenanceService::checkAfterTrip()
+ *   ReportController maintenance history report
  */
 class VehicleMaintenanceModel extends BaseModel
 {

@@ -6,10 +6,10 @@
  * Wraps the `system_settings` table.
  *
  * Used in:
- *   Step 5  — SettingsController reads and updates settings
- *   Step 7  — ReservationCodeService reads reservation_prefix
- *   Step 12 — MaintenanceService reads maintenance_interval_km
- *   Step 16 — GpsController reads warehouse_lat / warehouse_lng
+ *   SettingsController reads and updates settings
+ *   ReservationCodeService reads reservation_prefix
+ *   MaintenanceService reads maintenance_interval_km
+ *   GpsController reads warehouse_lat / warehouse_lng
  */
 class SystemSettingModel extends BaseModel
 {

@@ -6,10 +6,10 @@
  * Wraps the `trip_purposes` table.
  *
  * Used in:
- *   Step 6f  — ReservationController purposes CRUD
- *   Step 8   — TripLimitService max_per_project check
- *   Step 9   — ReservationController create form dropdown
- *   Step 10  — VehicleRecommendationService purpose-fit scoring
+ *   ReservationController purposes CRUD
+ *   TripLimitService max_per_project check
+ *   ReservationController create form dropdown
+ *   VehicleRecommendationService purpose-fit scoring
  *             (scoring now reads preferred_purpose_ids on vehicles,
  *              not preferred_category_ids on trip_purposes)
  */

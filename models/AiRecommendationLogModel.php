@@ -8,7 +8,7 @@
  * — both disqualified vehicles (with reason) and scored vehicles
  * (with all six sub-scores). This provides a full audit trail of
  * why a particular vehicle was or wasn't recommended, and feeds
- * future ML training data as noted in the implementation plan.
+ * future ML training data.
  *
  * Scores are integers 0-100 (TINYINT UNSIGNED) — see
  * database/migrations/2026_08_18_recommendation_score_int.sql. A null

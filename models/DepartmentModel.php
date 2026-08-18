@@ -6,9 +6,9 @@
  * Wraps the `departments` table.
  *
  * Used in:
- *   Step 6a  — CompanyController departments list + create
- *   Step 6g  — UserController employee dropdown
- *   Step 9   — ReservationController department scoping
+ *   CompanyController departments list + create
+ *   UserController employee dropdown
+ *   ReservationController department scoping
  */
 class DepartmentModel extends BaseModel
 {

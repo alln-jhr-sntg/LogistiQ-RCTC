@@ -15,8 +15,8 @@
  *     A failure here must never block trip completion.
  *   - VehicleController uses the return value to flash an appropriate message.
  *
- * Decision 3 (Pre-Step): hooked into TripController::complete() — the only
- * guaranteed moment the new odometer reading is in the DB.
+ * Hooked into TripController::complete() — the only guaranteed moment the
+ * new odometer reading is in the DB.
  */
 class MaintenanceService
 {

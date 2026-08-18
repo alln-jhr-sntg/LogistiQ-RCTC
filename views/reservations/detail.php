@@ -245,7 +245,7 @@ $role = Auth::role();
         </div>
         <?php endif; ?>
 
-        <!-- Trip execution — wired in Step 11 -->
+        <!-- Trip execution -->
         <?php if (!empty($trip)): ?>
         <?php
             $tripBadge = [

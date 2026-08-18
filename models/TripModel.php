@@ -12,14 +12,14 @@
  *   (none)        → pending_start GatepassController::approve() — the only create() call site
  *   pending_start → in_progress   TripController::start() / TripApiController
  *   in_progress   → completed     TripController::complete() / TripApiController
- *   in_progress   → incident      TripController::reportIncident() / IncidentApiController
+ *   in_progress   → incident      TripController::reportIncident()
  *   incident      → in_progress   TripController::resolveIncident()
  *   incident      → cancelled     TripController::cancelTrip() — terminal, no further transitions
  *
  * Used in:
- *   Step 11 — TripController (start, complete, notes, incident, index, detail)
- *   Step 15 — TripApiController (Android driver API)
- *   Step 18 — GatepassController (create, the only place a trip is inserted)
+ *   TripController (start, complete, notes, incident, index, detail)
+ *   TripApiController (Android driver API)
+ *   GatepassController (create, the only place a trip is inserted)
  */
 class TripModel extends BaseModel
 {

@@ -5,18 +5,18 @@
  *
  * Wraps the `reservations` table.
  *
- * Step 7:  create()                          — transaction + code generation
- * Step 8:  countByProjectAndPurpose()        — TripLimitService check
- * Step 9:  findForEmployee(), findAll(), findById(),
- *          updateStatus(), cancel()          — list + detail + edit + cancel
- * Step 10: updateReview()                    — approve / reject
+ * create()                          — transaction + code generation
+ * countByProjectAndPurpose()        — TripLimitService check
+ * findForEmployee(), findAll(), findById(),
+ *          updateStatus(), cancel() — list + detail + edit + cancel
+ * updateReview()                    — approve / reject
  */
 class ReservationModel extends BaseModel
 {
     /**
      * Insert a new reservation inside a transaction and return its ID.
      *
-     * Flow (Pre-Step Decision 4 from the implementation plan):
+     * Flow:
      *   1. BEGIN transaction
      *   2. INSERT with bin2hex(random_bytes(15)) as a unique placeholder
      *      for reservation_code. 15 bytes → 30 hex chars = fits VARCHAR(30).
@@ -40,7 +40,7 @@ class ReservationModel extends BaseModel
         $this->db->beginTransaction();
 
         try {
-            // Step 1 — INSERT with a unique random placeholder
+            // INSERT with a unique random placeholder
             $this->execute(
                 'INSERT INTO reservations
                     (reservation_code,
@@ -75,13 +75,13 @@ class ReservationModel extends BaseModel
                 ]
             );
 
-            // Step 2 — Retrieve the auto-increment ID for this connection
+            // Retrieve the auto-increment ID for this connection
             $id = $this->lastInsertId();
 
-            // Step 3 — Generate the human-readable code e.g. RES-2025-000001
+            // Generate the human-readable code e.g. RES-2025-000001
             $code = ReservationCodeService::generate($id);
 
-            // Step 4 — Replace the placeholder with the real code
+            // Replace the placeholder with the real code
             $this->execute(
                 'UPDATE reservations
                  SET    reservation_code = :code
@@ -152,8 +152,7 @@ class ReservationModel extends BaseModel
 
     /**
      * Approve a reservation — set status, vehicle, driver, reviewer.
-     * Driver status is NOT updated here; that happens in TripController::start()
-     * per the plan (Pre-Step Decision, Step 10 note).
+     * Driver status is NOT updated here; that happens in TripController::start().
      *
      * Status goes to 'gatepass_pending', not 'approved' — a gatepass must
      * be created (GatepassModel::create(), called right after this from

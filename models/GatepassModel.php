@@ -54,7 +54,7 @@ class GatepassModel extends BaseModel
         }
 
         try {
-            // Step 1 — INSERT with a unique random placeholder
+            // INSERT with a unique random placeholder
             $this->execute(
                 'INSERT INTO gatepasses
                     (reservation_id, gatepass_code, status)
@@ -67,13 +67,13 @@ class GatepassModel extends BaseModel
                 ]
             );
 
-            // Step 2 — Retrieve the auto-increment ID for this connection
+            // Retrieve the auto-increment ID for this connection
             $id = $this->lastInsertId();
 
-            // Step 3 — Generate the human-readable code e.g. GP-2026-000001
+            // Generate the human-readable code e.g. GP-2026-000001
             $code = GatepassCodeService::generate($id);
 
-            // Step 4 — Replace the placeholder with the real code
+            // Replace the placeholder with the real code
             $this->execute(
                 'UPDATE gatepasses
                  SET    gatepass_code = :code
