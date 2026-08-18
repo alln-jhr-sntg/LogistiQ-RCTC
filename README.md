@@ -4,8 +4,7 @@ Web-based vehicle reservation and fleet management system with a rule-based
 vehicle recommendation engine, built for **Remix Construction and Trading
 Corporation (RCTC)** and its sister companies. Formerly developed under the
 working title "LogistiQ"; the product and database now use the **MoveOps**
-name (`system_settings.system_name`). The repository folder stays `lvms` —
-do not rename it.
+name (`system_settings.system_name`). The repository folder stays `lvms`
 
 A companion native Android app, **MoveOps Driver**, gives drivers a
 mobile client for their assigned trips and reports GPS location back to the
@@ -37,13 +36,13 @@ repository; a build of it is served for download from inside the web app at
 
 ## Roles
 
-| Role | Scope |
-|---|---|
-| `super_admin` | Full system access; the only role that can approve gatepasses. |
+| Role          | Scope                                                                   |
+| ------------- | ----------------------------------------------------------------------- |
+| `super_admin` | Full system access; the only role that can approve gatepasses.          |
 | `fleet_admin` | Runs the shared fleet across all three companies; also the REMIX admin. |
-| `admin` | Own-company only. |
-| `employee` | Requests reservations, tracks their own trips/projects. |
-| `driver` | Executes trips via the Android app; exempt from company scope. |
+| `admin`       | Own-company only.                                                       |
+| `employee`    | Requests reservations, tracks their own trips/projects.                 |
+| `driver`      | Executes trips via the Android app; exempt from company scope.          |
 
 ## Tech stack
 
