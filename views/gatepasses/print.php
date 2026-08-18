@@ -16,7 +16,7 @@ function gpTruncate(string $value, int $limit = 70): string
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= Helpers::e($gatepass['gatepass_code']) ?> — MoveOps Gatepass</title>
+    <title><?= Helpers::e($gatepass['gatepass_code']) ?> — <?= Helpers::e($system_name) ?> Gatepass</title>
     <link rel="icon" type="image/png" href="<?= Helpers::assetUrl('/favicon.png') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,6 +103,9 @@ function gpTruncate(string $value, int $limit = 70): string
             font-size: 14px;
             font-weight: 500;
         }
+        .gp-field-full {
+            grid-column: 1 / -1;
+        }
         .gp-signature-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -177,12 +180,18 @@ function gpTruncate(string $value, int $limit = 70): string
     <div class="gp-section-title">Trip</div>
     <div class="gp-grid">
         <?php if (!empty($gatepass['project_name'])): ?>
-        <div style="grid-column: 1 / -1;">
+        <div class="gp-field-full">
             <div class="gp-field-label">Project</div>
             <div class="gp-field-value"><?= Helpers::e(gpTruncate($gatepass['project_name'])) ?></div>
         </div>
         <?php endif; ?>
-        <div style="grid-column: 1 / -1;">
+        <?php if ($warehouse_address !== ''): ?>
+        <div class="gp-field-full">
+            <div class="gp-field-label">Dispatch Origin</div>
+            <div class="gp-field-value"><?= Helpers::e(gpTruncate($warehouse_address)) ?></div>
+        </div>
+        <?php endif; ?>
+        <div class="gp-field-full">
             <div class="gp-field-label">Destination</div>
             <div class="gp-field-value"><?= Helpers::e(gpTruncate($gatepass['destination'])) ?></div>
         </div>

@@ -465,9 +465,10 @@ class TripController
         }
 
         // Warehouse coordinates from system settings — these are the trip origin
-        $settingModel = new SystemSettingModel();
-        $warehouseLat = (float) ($settingModel->getByKey('warehouse_lat') ?? '0');
-        $warehouseLng = (float) ($settingModel->getByKey('warehouse_lng') ?? '0');
+        $settingModel     = new SystemSettingModel();
+        $warehouseLat     = (float) ($settingModel->getByKey('warehouse_lat') ?? '0');
+        $warehouseLng     = (float) ($settingModel->getByKey('warehouse_lng') ?? '0');
+        $warehouseAddress = $settingModel->getByKey('warehouse_address') ?? '';
 
         // GPS health for the initial render, so the status badge is correct
         // before Google Maps loads and live_map.js takes over polling.
@@ -479,12 +480,13 @@ class TripController
         $gpsStatus  = Helpers::gpsStatus($ageSeconds, $trip['trip_status']);
 
         $this->render('live_map', [
-            'page_title'    => 'Live Map — ' . $trip['reservation_code'],
-            'trip'          => $trip,
-            'warehouse_lat' => $warehouseLat,
-            'warehouse_lng' => $warehouseLng,
-            'gps_status'    => $gpsStatus,
-            'age_seconds'   => $ageSeconds,
+            'page_title'        => 'Live Map — ' . $trip['reservation_code'],
+            'trip'              => $trip,
+            'warehouse_lat'     => $warehouseLat,
+            'warehouse_lng'     => $warehouseLng,
+            'warehouse_address' => $warehouseAddress,
+            'gps_status'        => $gpsStatus,
+            'age_seconds'       => $ageSeconds,
         ]);
     }
 

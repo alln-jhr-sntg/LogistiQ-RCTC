@@ -57,9 +57,14 @@ $isEnded = $gps_status['key'] === GPS_STATUS_ENDED;
     <div>
         <div class="detail-field-label">Warehouse Origin</div>
         <div class="detail-field-value">
-            <?= $warehouse_lat !== 0.0
-                ? number_format($warehouse_lat, 6) . ', ' . number_format($warehouse_lng, 6)
-                : 'Not configured' ?>
+            <?php if ($warehouse_lat !== 0.0): ?>
+                <?php if ($warehouse_address !== ''): ?>
+                    <?= Helpers::e($warehouse_address) ?><br>
+                <?php endif; ?>
+                <?= number_format($warehouse_lat, 6) . ', ' . number_format($warehouse_lng, 6) ?>
+            <?php else: ?>
+                Not configured
+            <?php endif; ?>
         </div>
     </div>
 </div>

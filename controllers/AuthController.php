@@ -9,8 +9,10 @@ class AuthController
         }
         $flash        = Helpers::getFlash();
         $demoAccounts = $this->buildDemoAccounts();
-        $companyName  = (new SystemSettingModel())->getByKey('company_name')
+        $settingModel = new SystemSettingModel();
+        $companyName  = $settingModel->getByKey('company_name')
             ?? 'Remix Construction and Trading Corporation';
+        $systemName   = $settingModel->getByKey('system_name') ?? 'MoveOps';
         require_once __DIR__ . '/../views/layouts/auth.php';
     }
 

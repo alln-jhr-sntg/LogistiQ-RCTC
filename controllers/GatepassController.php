@@ -267,9 +267,13 @@ class GatepassController
             Helpers::redirect(Auth::dashboardUrl());
         }
 
+        $settingModel = new SystemSettingModel();
+
         $this->renderBare('print', [
-            'page_title' => $gatepass['gatepass_code'],
-            'gatepass'   => $gatepass,
+            'page_title'        => $gatepass['gatepass_code'],
+            'gatepass'          => $gatepass,
+            'system_name'       => $settingModel->getByKey('system_name') ?? 'MoveOps',
+            'warehouse_address' => $settingModel->getByKey('warehouse_address') ?? '',
         ]);
     }
 }

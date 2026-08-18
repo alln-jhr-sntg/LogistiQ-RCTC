@@ -322,15 +322,19 @@ class UserModel extends BaseModel
     }
 
     /**
-     * Suggest the next sequential employee_id in EMP-NNNN form, one past
-     * the highest numeric suffix already in use. employee_id is free text,
-     * so rows that don't match the EMP-#### shape are ignored rather than
-     * breaking the sequence. Create-form prefill only — the field stays
-     * editable and this format is never enforced on save.
+     * Suggest the next sequential employee_id in {PREFIX}-NNNN form, one
+     * past the highest numeric suffix already in use. The prefix comes from
+     * system_settings.employee_id_prefix (falling back to 'EMP') so it can
+     * be changed by a super admin without touching code, matching how
+     * ReservationCodeService/GatepassCodeService read their prefixes.
+     * employee_id is free text, so rows that don't match the
+     * {PREFIX}-#### shape are ignored rather than breaking the sequence.
+     * Create-form prefill only — the field stays editable and this format
+     * is never enforced on save.
      */
     public function nextEmployeeIdSuggestion(): string
     {
-        $prefix = 'EMP-';
+        $prefix = ((new SystemSettingModel())->getByKey('employee_id_prefix') ?? 'EMP') . '-';
         $rows   = $this->fetchAll(
             'SELECT employee_id FROM users WHERE employee_id LIKE :prefix',
             [':prefix' => $prefix . '%']

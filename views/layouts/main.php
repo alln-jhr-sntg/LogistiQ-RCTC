@@ -3,13 +3,21 @@ function nav_is_active(string $path): string {
     $current = '/' . trim($_GET['url'] ?? '', '/');
     return str_starts_with($current, $path) ? 'active' : '';
 }
+
+// system_settings.system_name — guarded the same way as the notification
+// badge count below: a settings-table failure must not take the whole
+// layout down.
+$_systemName = 'MoveOps';
+try {
+    $_systemName = (new SystemSettingModel())->getByKey('system_name') ?? 'MoveOps';
+} catch (Throwable $_e) { /* silent */ }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= Helpers::e($page_title ?? 'LVMS') ?> — MoveOps</title>
+    <title><?= Helpers::e($page_title ?? 'LVMS') ?> — <?= Helpers::e($_systemName) ?></title>
     <link rel="icon" type="image/png" href="<?= Helpers::assetUrl('/favicon.png') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -22,9 +22,15 @@
             <label class="form-label">Email <span class="required">*</span></label>
             <input type="email" class="form-input" name="email" required>
         </div>
+        <?php
+            // Derive the placeholder's prefix from the live suggestion
+            // itself (system_settings.employee_id_prefix) so it can't
+            // contradict a changed prefix.
+            $empPrefix = explode('-', $employeeIdSuggestion, 2)[0] ?: 'EMP';
+        ?>
         <div class="form-group">
             <label class="form-label">Employee ID</label>
-            <input type="text" class="form-input" name="employee_id" value="<?= Helpers::e($employeeIdSuggestion) ?>" placeholder="e.g. EMP-0099">
+            <input type="text" class="form-input" name="employee_id" value="<?= Helpers::e($employeeIdSuggestion) ?>" placeholder="e.g. <?= Helpers::e($empPrefix) ?>-0099">
         </div>
     </div>
     <div class="form-row">

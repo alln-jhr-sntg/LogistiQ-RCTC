@@ -418,11 +418,17 @@ class VehicleController
         }
 
         // Auto-calculate next_service_km if not provided.
-        // Uses the system setting for interval (default 5000 km).
+        // Mirrors VehicleRecommendationService's fallback exactly: the
+        // system setting is the live value, MAINTENANCE_INTERVAL_KM is only
+        // the fallback when the row is missing or <= 0 — not a bare 5000
+        // literal, so the two call sites can't drift apart.
         if ($nextSvcKm === null && $odoAtSvc !== null) {
-            $settingModel  = new SystemSettingModel();
-            $interval      = (float) ($settingModel->getByKey('maintenance_interval_km') ?? 5000);
-            $nextSvcKm     = $odoAtSvc + $interval;
+            $settingModel = new SystemSettingModel();
+            $interval     = (float) ($settingModel->getByKey('maintenance_interval_km') ?? MAINTENANCE_INTERVAL_KM);
+            if ($interval <= 0) {
+                $interval = MAINTENANCE_INTERVAL_KM;
+            }
+            $nextSvcKm    = $odoAtSvc + $interval;
         }
 
         $maintModel = new VehicleMaintenanceModel();

@@ -44,6 +44,8 @@ INSERT INTO system_settings (setting_key, setting_value, description) VALUES
     ('system_name',          'MoveOps',                              'Application display name'),
     ('company_name',         'Remix Construction and Trading Corporation', 'Primary company name'),
     ('reservation_prefix',   'RES',                                  'Prefix used for reservation codes'),
+    ('gatepass_prefix',      'GP',                                   'Prefix used for gatepass codes'),
+    ('employee_id_prefix',   'EMP',                                  'Prefix used for suggested employee IDs'),
     ('maintenance_interval_km', '5000',                              'Standard vehicle maintenance interval in km');
 
 
@@ -311,7 +313,7 @@ CREATE TABLE reservations (
 CREATE TABLE gatepasses (
     gatepass_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     reservation_id   INT UNSIGNED NOT NULL UNIQUE,
-    gatepass_code    VARCHAR(30)  NOT NULL UNIQUE COMMENT 'e.g. GP-2026-00001',
+    gatepass_code    VARCHAR(30)  NOT NULL UNIQUE COMMENT 'e.g. GP-2026-000001',
     status           ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
     reviewed_by      INT UNSIGNED NULL,
     reviewed_at      TIMESTAMP NULL,

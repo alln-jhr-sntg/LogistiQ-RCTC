@@ -169,6 +169,11 @@ const NOTIF_TYPE_LABELS = [
     NOTIF_INCIDENT    => 'Incident',
 ];
 
+// Fallback only — the live value is system_settings.maintenance_interval_km,
+// read by VehicleController::storeMaintenance() and
+// VehicleRecommendationService::recommend(). This constant is used solely
+// when that row is missing or <= 0, guarding the recommendation engine's
+// km-remaining/interval division from a divide-by-zero.
 const MAINTENANCE_INTERVAL_KM = 5000;
 
 // ── VehicleRecommendationService tuning ───────────────────────
@@ -235,6 +240,35 @@ const ROLE_DASHBOARD = [
     ROLE_ADMIN       => '/dashboard/admin',
     ROLE_EMPLOYEE    => '/dashboard/employee',
     ROLE_DRIVER      => '/dashboard/driver',
+];
+
+// ── system_settings editor (SettingsController / views/settings/index.php) ──
+// Section headers for the settings form, in display order.
+const SETTING_GROUPS = [
+    'application' => 'Application',
+    'warehouse'   => 'Dispatch Origin',
+    'codes'       => 'Document Codes',
+    'maintenance' => 'Maintenance',
+];
+
+// The editable subset of system_settings, in display order within each
+// group. Drives both the settings form (label/type/group) and
+// SettingsController::update()'s validation — a posted key not listed here
+// is rejected outright.
+//
+// 'company_name' is deliberately NOT listed. AuthController still reads it
+// for the login footer and the row stays in the table, but it is a
+// code-managed value, not an admin-editable setting — do not add it back
+// without checking why it was excluded.
+const SETTING_SPECS = [
+    'system_name'             => ['group' => 'application', 'label' => 'System Name',             'type' => 'text',    'max' => 50],
+    'warehouse_address'       => ['group' => 'warehouse',   'label' => 'Warehouse Address',        'type' => 'text',    'max' => 255],
+    'warehouse_lat'           => ['group' => 'warehouse',   'label' => 'Warehouse Latitude',       'type' => 'latitude'],
+    'warehouse_lng'           => ['group' => 'warehouse',   'label' => 'Warehouse Longitude',      'type' => 'longitude'],
+    'reservation_prefix'      => ['group' => 'codes',       'label' => 'Reservation Prefix',        'type' => 'prefix'],
+    'gatepass_prefix'         => ['group' => 'codes',       'label' => 'Gatepass Prefix',           'type' => 'prefix'],
+    'employee_id_prefix'      => ['group' => 'codes',       'label' => 'Employee ID Prefix',        'type' => 'prefix'],
+    'maintenance_interval_km' => ['group' => 'maintenance', 'label' => 'Maintenance Interval (km)', 'type' => 'int_min', 'min' => 1],
 ];
 
 // Google Maps JavaScript API key used by live map.

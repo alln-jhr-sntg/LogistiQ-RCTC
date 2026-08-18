@@ -84,7 +84,7 @@ Table driver_profiles {
 Table gatepasses {
   gatepass_id "int(10) unsigned" [pk, increment]
   reservation_id "int(10) unsigned" [unique, not null]
-  gatepass_code varchar(30) [unique, not null, note: 'e.g. GP-2026-00001']
+  gatepass_code varchar(30) [unique, not null, note: 'e.g. GP-2026-000001']
   status enum('pending', 'approved', 'rejected') [not null, default: 'pending']
   reviewed_by "int(10) unsigned" [default: NULL]
   reviewed_at timestamp [default: NULL]
