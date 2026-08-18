@@ -60,9 +60,16 @@ $backUrl = $isSameSite
     </div>
 </div>
 
-<div class="detail-grid">
+<?php
+/* Cards are captured in priority order, then split by count (not fixed
+   left/right slots) so both columns stay balanced across every
+   role/status combo — an employee only ever gets Trip Info + Vehicle&Driver
+   + My Notes, which used to leave "My Notes" stranded alone under Trip
+   Info while Vehicle & Driver sat with nothing beside it. See
+   views/reservations/detail.php for the same pattern. */
+$cards = [];
 
-    <!-- Trip Information -->
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Trip Information</div>
         <div class="detail-field">
@@ -106,8 +113,9 @@ $backUrl = $isSameSite
             </div>
         </div>
     </div>
+<?php $cards[] = ob_get_clean();
 
-    <!-- Vehicle & Driver -->
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Vehicle &amp; Driver</div>
         <div class="detail-field">
@@ -178,11 +186,14 @@ $backUrl = $isSameSite
         <?php endif; ?>
         <?php endif; ?>
     </div>
+<?php $cards[] = ob_get_clean();
 
-    <!-- Admin Controls (admin only) -->
-    <?php if ($isAdmin): ?>
+// Admin Controls (admin only) — Start Trip / Complete Trip / Cancellation
+// are mutually exclusive, only one of the three ever applies.
+if ($isAdmin):
 
-    <?php if ($isPendingStart): ?>
+if ($isPendingStart):
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Start Trip</div>
         <p style="font-size:14px; color:var(--clr-text-2); margin-bottom:16px;">
@@ -203,9 +214,11 @@ $backUrl = $isSameSite
             </div>
         </form>
     </div>
-    <?php endif; ?>
+<?php $cards[] = ob_get_clean();
+endif;
 
-    <?php if ($isInProgress): ?>
+if ($isInProgress):
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Complete Trip</div>
         <p style="font-size:14px; color:var(--clr-text-2); margin-bottom:16px;">
@@ -230,9 +243,11 @@ $backUrl = $isSameSite
             </div>
         </form>
     </div>
-    <?php endif; ?>
+<?php $cards[] = ob_get_clean();
+endif;
 
-    <?php if ($isCancelled): ?>
+if ($isCancelled):
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Cancellation</div>
         <div class="detail-field">
@@ -240,9 +255,10 @@ $backUrl = $isSameSite
             <div class="detail-field-value"><?= nl2br(Helpers::e($trip['cancellation_reason'] ?? '')) ?></div>
         </div>
     </div>
-    <?php endif; ?>
+<?php $cards[] = ob_get_clean();
+endif;
 
-    <!-- Admin Notes -->
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title">Admin Notes</div>
         <?php if ($trip['admin_notes']): ?>
@@ -261,12 +277,14 @@ $backUrl = $isSameSite
         </form>
         <?php endif; ?>
     </div>
+<?php $cards[] = ob_get_clean();
 
-    <?php endif; /* isAdmin */ ?>
+endif; /* isAdmin */
 
-    <!-- Employee Notes: always visible to the employee; visible to admin only when
-         notes exist (something to read) or trip is done (confirm empty state) -->
-    <?php if ($isEmployee || ($isAdmin && ($trip['employee_notes'] || $isTerminal))): ?>
+// Employee Notes: always visible to the employee; visible to admin only when
+// notes exist (something to read) or trip is done (confirm empty state).
+if ($isEmployee || ($isAdmin && ($trip['employee_notes'] || $isTerminal))):
+ob_start(); ?>
     <div class="detail-card">
         <div class="detail-card-title"><?= $isEmployee ? 'My Notes' : 'Employee Notes' ?></div>
         <?php if ($trip['employee_notes']): ?>
@@ -290,8 +308,25 @@ $backUrl = $isSameSite
         </form>
         <?php endif; ?>
     </div>
-    <?php endif; ?>
+<?php $cards[] = ob_get_clean();
+endif;
 
+$mid        = (int) ceil(count($cards) / 2);
+$leftCards  = array_slice($cards, 0, $mid);
+$rightCards = array_slice($cards, $mid);
+?>
+
+<div class="detail-grid">
+    <div class="detail-card-stack">
+        <?php foreach ($leftCards as $card): ?>
+        <?= $card ?>
+        <?php endforeach; ?>
+    </div>
+    <div class="detail-card-stack">
+        <?php foreach ($rightCards as $card): ?>
+        <?= $card ?>
+        <?php endforeach; ?>
+    </div>
 </div><!-- .detail-grid -->
 
 <!-- Incidents -->

@@ -1457,6 +1457,15 @@ table.data-table.data-table--compact {
 
 .form-card--mt {
   margin-top: 24px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.3s ease;
+}
+
+.form-card--mt:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 5px rgba(0, 0, 0, 0.08);
+  border-color: var(--clr-primary-lt);
 }
 
 .form-section-title {
@@ -1699,6 +1708,15 @@ table.data-table.data-table--compact {
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
   padding: 22px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.3s ease;
+}
+
+.detail-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 5px rgba(0, 0, 0, 0.08);
+  border-color: var(--clr-primary-lt);
 }
 
 /* Two-column field grid inside a .detail-card, no row gap — fields carry
