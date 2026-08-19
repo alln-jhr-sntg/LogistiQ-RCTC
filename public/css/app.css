@@ -301,27 +301,6 @@ button {
   line-height: 1.6;
 }
 
-.demo-accounts {
-  margin-top: 20px;
-  padding: 14px;
-  background: var(--clr-surface-2);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  color: var(--clr-text-3);
-  line-height: 1.9;
-}
-
-.demo-accounts strong {
-  color: var(--clr-text-2);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.demo-accounts-row {
-  display: flex;
-  gap: 6px;
-}
-
 /* ── Responsive: stack on small screens ─────────────────────── */
 @media (max-width: 768px) {
   .auth-wrap {

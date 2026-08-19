@@ -35,18 +35,6 @@
                 </div>
                 <button type="submit" class="btn-primary">Sign in</button>
             </form>
-            <?php if (!empty($demoAccounts)): ?>
-            <div class="demo-accounts">
-                <strong>Demo Accounts <br>
-                Password: <code>password</code></strong>
-                <?php foreach ($demoAccounts as $account): ?>
-                <div class="demo-accounts-row">
-                    <span><?= Helpers::e($account['label']) ?>:</span>
-                    <span><?= Helpers::e($account['email']) ?></span>                    
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
             <p class="auth-footer">&copy; <?= date('Y') ?> <?= Helpers::e($companyName) ?></p>
         </div>
     </div>

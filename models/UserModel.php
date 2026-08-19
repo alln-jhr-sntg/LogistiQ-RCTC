@@ -282,25 +282,6 @@ class UserModel extends BaseModel
         );
     }
 
-    /**
-     * Return every active user with their company code, ordered by
-     * user_id. Used to populate the login page's demo-accounts panel —
-     * the caller picks the earliest match per role/company slot, so the
-     * panel always reflects real, currently-active credentials.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public function findActiveWithCompany(): array
-    {
-        return $this->fetchAll(
-            'SELECT   u.email, u.role, c.company_code
-             FROM     users u
-             JOIN     companies c ON c.company_id = u.company_id
-             WHERE    u.is_active = 1
-             ORDER BY u.user_id ASC'
-        );
-    }
-
     /** Count all active users. Used by the super_admin dashboard stat card. */
     public function countAll(): int
     {
