@@ -1,7 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left">
-        <h2>Departments &mdash; <?= Helpers::e($company['company_name']) ?></h2>
-    </div>
+<div class="page-header page-header-end">
     <a href="<?= Helpers::url('/companies') ?>" class="btn btn-outline">← Companies</a>
 </div>
 
