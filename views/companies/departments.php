@@ -1,7 +1,4 @@
-<div class="page-header">
-    <div class="page-header-left">
-        <p><?= Helpers::e($company['company_name']) ?></p>
-    </div>
+<div class="page-header page-header-end">
     <div class="page-header-actions">
         <button type="button" class="btn btn-solid" onclick="document.getElementById('addDepartmentModal').style.display='flex';">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Department
