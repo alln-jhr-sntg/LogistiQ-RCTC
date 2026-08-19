@@ -31,10 +31,10 @@ class AuthController
             ['role' => ROLE_SUPER_ADMIN, 'company' => null,       'label' => 'Super Admin'],
             ['role' => ROLE_FLEET_ADMIN, 'company' => null,       'label' => 'Fleet Admin'],
             ['role' => ROLE_ADMIN,       'company' => 'IDEAL',    'label' => 'Ideal Admin'],
-            ['role' => ROLE_ADMIN,       'company' => 'TENBUILD', 'label' => 'TenBuild Admin'],
+            ['role' => ROLE_ADMIN,       'company' => 'TNBLD', 'label' => 'TenBuild Admin'],
             ['role' => ROLE_EMPLOYEE,    'company' => 'REMIX',    'label' => 'Remix Employee'],
             ['role' => ROLE_EMPLOYEE,    'company' => 'IDEAL',    'label' => 'Ideal Employee'],
-            ['role' => ROLE_EMPLOYEE,    'company' => 'TENBUILD', 'label' => 'TenBuild Employee'],
+            ['role' => ROLE_EMPLOYEE,    'company' => 'TNBLD', 'label' => 'TenBuild Employee'],
             ['role' => ROLE_DRIVER,      'company' => null,       'label' => 'Driver Account'],
         ];
 
