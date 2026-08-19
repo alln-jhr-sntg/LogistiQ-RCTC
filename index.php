@@ -107,6 +107,7 @@ $routes = [
     ['GET',  '/companies',                      'CompanyController', 'index'],
     ['GET',  '/companies/{id}/departments',     'CompanyController', 'departments'],
     ['POST', '/companies/{id}/departments',     'CompanyController', 'storeDepartment'],
+    ['POST', '/companies/{id}/departments/{id}/edit', 'CompanyController', 'updateDepartment'],
 
     // Projects — static before {id}
     ['GET',  '/projects',              'ProjectController', 'index'],

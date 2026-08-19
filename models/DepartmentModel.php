@@ -93,4 +93,20 @@ class DepartmentModel extends BaseModel
         );
         return $this->lastInsertId();
     }
+
+    /** Update a department's name and description. */
+    public function update(int $id, string $name, ?string $description): void
+    {
+        $this->execute(
+            'UPDATE departments
+             SET    department_name = :name,
+                    description     = :description
+             WHERE  department_id   = :id',
+            [
+                ':name'        => $name,
+                ':description' => $description,
+                ':id'          => $id,
+            ]
+        );
+    }
 }

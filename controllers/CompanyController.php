@@ -80,4 +80,41 @@ class CompanyController
         Helpers::redirect('/companies/' . $id . '/departments');
     }
 
+    // POST /companies/{id}/departments/{id}/edit
+    public function updateDepartment(int $companyId, int $deptId): void
+    {
+        Auth::requireRole(ROLE_SUPER_ADMIN);
+
+        $name = trim($_POST['department_name'] ?? '');
+        $desc = trim($_POST['description']     ?? '') ?: null;
+
+        if ($name === '') {
+            Helpers::setFlash('error', 'Department name is required.');
+            Helpers::redirect('/companies/' . $companyId . '/departments');
+        }
+
+        $deptModel = new DepartmentModel();
+        $old       = $deptModel->findById($deptId);
+
+        if (!$old || (int) $old['company_id'] !== $companyId) {
+            Helpers::setFlash('error', 'Department not found.');
+            Helpers::redirect('/companies/' . $companyId . '/departments');
+        }
+
+        $deptModel->update($deptId, $name, $desc);
+
+        $auditModel = new AuditLogModel();
+        $auditModel->log(
+            (int) Auth::id(),
+            'DEPARTMENT_UPDATED',
+            'departments',
+            $deptId,
+            $old,
+            ['department_name' => $name, 'description' => $desc]
+        );
+
+        Helpers::setFlash('success', 'Department "' . $name . '" updated.');
+        Helpers::redirect('/companies/' . $companyId . '/departments');
+    }
+
 }
