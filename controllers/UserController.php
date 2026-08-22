@@ -340,6 +340,15 @@ class UserController
 
         $driverModel  = new DriverProfileModel();
         $existing     = $driverModel->findByUser($id);
+        // Availability status is manually settable only within this set.
+        // 'on_trip' is written and cleared by the trip lifecycle, so a profile
+        // edit must never release a driver who is currently on an active trip.
+        if (!in_array($status, ['available', 'off_duty', 'on_leave'], true)) {
+            $status = 'available';
+        }
+        if (($existing['status'] ?? '') === 'on_trip') {
+            $status = 'on_trip';
+        }
 
         // Handle license photo upload
         $licensePhoto = $existing['license_photo'] ?? null;
@@ -382,7 +391,9 @@ class UserController
             ['license_number' => $licenseNumber, 'status' => $status]
         );
 
-        Helpers::setFlash('success', 'Driver profile saved.');
+        Helpers::setFlash('success', (($existing['status'] ?? '') === 'on_trip')
+            ? 'Driver profile saved. Availability was kept as On Trip because the driver is on an active trip.'
+            : 'Driver profile saved.');
         Helpers::redirect('/users/' . $id . '/driver-profile');
     }
 }

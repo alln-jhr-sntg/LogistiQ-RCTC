@@ -53,11 +53,19 @@ $viewerRole = Auth::role();
 
 <div class="card"><div class="table-wrap"><table class="data-table">
     <thead>
-        <tr><th>Name</th><th>Role</th><th>Company / Dept</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+        <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Company / Dept</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Availability</th>
+            <th>Actions</th>
+        </tr>
     </thead>
     <tbody>
     <?php if (empty($users)): ?>
-        <tr><td colspan="6" class="td-muted" style="text-align:center;padding:24px;">No users found.</td></tr>
+        <tr><td colspan="7" class="td-muted" style="text-align:center;padding:24px;">No users found.</td></tr>
     <?php else: ?>
         <?php foreach ($users as $u):
             $rb = $roleBadge[$u['role']] ?? ['class' => 'badge-pending', 'label' => $u['role']];
@@ -80,6 +88,23 @@ $viewerRole = Auth::role();
                     <span class="badge badge-available">Active</span>
                 <?php else: ?>
                     <span class="badge badge-cancelled">Inactive</span>
+                <?php endif; ?>
+            </td>
+            <td>
+                <?php
+                $dsMap = [
+                    'available' => ['badge-available', 'Available'],
+                    'on_trip'   => ['badge-on-trip',   'On Trip'],
+                    'off_duty'  => ['badge-cancelled', 'Off Duty'],
+                    'on_leave'  => ['badge-pending',   'On Leave'],
+                ];
+                if ($u['role'] === 'driver' && !empty($u['driver_status'])
+                    && isset($dsMap[$u['driver_status']])):
+                    [$dsClass, $dsLabel] = $dsMap[$u['driver_status']];
+                ?>
+                    <span class="badge <?= $dsClass ?>"><?= $dsLabel ?></span>
+                <?php else: ?>
+                    <span class="text-muted">-</span>
                 <?php endif; ?>
             </td>
             <td><div class="td-actions">

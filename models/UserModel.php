@@ -148,10 +148,12 @@ class UserModel extends BaseModel
         string $activeFilter
     ): array {
         $sql    = 'SELECT   u.*, c.company_name, c.company_code,
-                            d.department_name
+                            d.department_name,
+                            dp.status AS driver_status
                    FROM     users u
                    JOIN     companies   c ON c.company_id    = u.company_id
                    LEFT JOIN departments d ON d.department_id = u.department_id
+                   LEFT JOIN driver_profiles dp ON dp.user_id = u.user_id
                    WHERE    1=1';
         $params = [];
 
